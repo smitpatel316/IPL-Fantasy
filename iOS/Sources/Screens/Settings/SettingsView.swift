@@ -4,8 +4,9 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
-    @AppStorage("autoBidEnabled") private var autoBidEnabled = false
-    @State private var showingLogoutAlert = false
+    @AppStorage("soundEnabled") private var soundEnabled = true
+    @AppStorage("hapticsEnabled") private var hapticsEnabled = true
+    @AppStorage("darkModeEnabled") private var darkModeEnabled = true
     
     var body: some View {
         NavigationStack {
@@ -13,166 +14,151 @@ struct SettingsView: View {
                 AppColors.background
                     .ignoresSafeArea()
                 
-                List {
-                    // Profile Section
-                    Section {
-                        HStack(spacing: AppSpacing.md) {
-                            ZStack {
-                                Circle()
-                                    .fill(AppColors.primary.opacity(0.2))
-                                    .frame(width: 60, height: 60)
-                                
-                                Text("JD")
-                                    .font(AppFonts.headline)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(AppColors.primary)
-                            }
+                ScrollView {
+                    VStack(spacing: AppSpacing.lg) {
+                        // Notifications
+                        settingsSection(title: "Notifications") {
+                            SettingsToggle(
+                                icon: "bell.fill",
+                                title: "Push Notifications",
+                                subtitle: "Match updates, league activity",
+                                isOn: $notificationsEnabled
+                            )
                             
-                            VStack(alignment: .leading, spacing: AppSpacing.xs) {
-                                Text("John Doe")
-                                    .font(AppFonts.subheadline)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(AppColors.textPrimary)
-                                
-                                Text("john@example.com")
-                                    .font(AppFonts.caption)
-                                    .foregroundColor(AppColors.textSecondary)
-                            }
+                            SettingsToggle(
+                                icon: "envelope.fill",
+                                title: "Email Notifications",
+                                subtitle: "Weekly summaries, promotions",
+                                isOn: $notificationsEnabled
+                            )
+                        }
+                        
+                        // Sound & Haptics
+                        settingsSection(title: "Sound & Feel") {
+                            SettingsToggle(
+                                icon: "speaker.wave.2.fill",
+                                title: "Sound Effects",
+                                subtitle: "App sounds",
+                                isOn: $soundEnabled
+                            )
                             
-                            Spacer()
-                            
-                            Button(action: {}) {
-                                Text("Edit")
-                                    .font(AppFonts.caption)
-                                    .foregroundColor(AppColors.primary)
-                            }
-                        }
-                        .padding(.vertical, AppSpacing.sm)
-                    }
-                    
-                    // Notifications Section
-                    Section("Notifications") {
-                        Toggle(isOn: $notificationsEnabled) {
-                            HStack {
-                                Image(systemName: "bell.fill")
-                                    .foregroundColor(AppColors.primary)
-                                    .frame(width: 24)
-                                Text("Push Notifications")
-                            }
+                            SettingsToggle(
+                                icon: "iphone.radiowaves.left.and.right",
+                                title: "Haptic Feedback",
+                                subtitle: "Vibration on interactions",
+                                isOn: $hapticsEnabled
+                            )
                         }
                         
-                        Toggle(isOn: .constant(true)) {
-                            HStack {
-                                Image(systemName: "envelope.fill")
-                                    .foregroundColor(AppColors.primary)
-                                    .frame(width: 24)
-                                Text("Email Updates")
-                            }
-                        }
-                    }
-                    
-                    // Draft Settings
-                    Section("Draft Settings") {
-                        Toggle(isOn: $autoBidEnabled) {
-                            HStack {
-                                Image(systemName: "bolt.fill")
-                                    .foregroundColor(AppColors.warning)
-                                    .frame(width: 24)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Auto-Bid")
-                                    Text("Automatically bid up to your limit")
-                                        .font(AppFonts.small)
-                                        .foregroundColor(AppColors.textMuted)
-                                }
-                            }
+                        // Appearance
+                        settingsSection(title: "Appearance") {
+                            SettingsToggle(
+                                icon: "moon.fill",
+                                title: "Dark Mode",
+                                subtitle: "Use dark theme",
+                                isOn: $darkModeEnabled
+                            )
                         }
                         
-                        NavigationLink(destination: Text("Draft Templates")) {
-                            HStack {
-                                Image(systemName: "doc.text.fill")
-                                    .foregroundColor(AppColors.accent)
-                                    .frame(width: 24)
-                                Text("Draft Templates")
-                            }
-                        }
-                    }
-                    
-                    // League Settings
-                    Section("League") {
-                        NavigationLink(destination: Text("Manage Leagues")) {
-                            HStack {
-                                Image(systemName: "person.3.fill")
-                                    .foregroundColor(AppColors.primary)
-                                    .frame(width: 24)
-                                Text("My Leagues")
-                            }
+                        // Data & Privacy
+                        settingsSection(title: "Data & Privacy") {
+                            SettingsRow(icon: "arrow.down.doc", title: "Download My Data", color: AppColors.primary)
+                            SettingsRow(icon: "trash", title: "Delete Account", color: AppColors.error)
                         }
                         
-                        NavigationLink(destination: Text("Create League")) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundColor(AppColors.success)
-                                    .frame(width: 24)
-                                Text("Create League")
-                            }
-                        }
-                    }
-                    
-                    // Support
-                    Section("Support") {
-                        NavigationLink(destination: Text("Help Center")) {
-                            HStack {
-                                Image(systemName: "questionmark.circle.fill")
-                                    .foregroundColor(AppColors.primary)
-                                    .frame(width: 24)
-                                Text("Help Center")
-                            }
+                        // About
+                        settingsSection(title: "About") {
+                            SettingsInfoRow(title: "Version", value: "1.0.0")
+                            SettingsInfoRow(title: "Build", value: "2026.02.20")
+                            SettingsRow(icon: "doc.text", title: "Terms of Service", color: AppColors.textMuted)
+                            SettingsRow(icon: "hand.raised", title: "Privacy Policy", color: AppColors.textMuted)
+                            SettingsRow(icon: "questionmark.circle", title: "Help Center", color: AppColors.textMuted)
                         }
                         
-                        NavigationLink(destination: Text("Feedback")) {
-                            HStack {
-                                Image(systemName: "star.fill")
-                                    .foregroundColor(AppColors.accent)
-                                    .frame(width: 24)
-                                Text("Send Feedback")
-                            }
+                        // Logout
+                        Button(action: { authViewModel.logout() }) {
+                            Text("Log Out")
+                                .font(AppFonts.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(AppColors.error)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, AppSpacing.md)
+                                .background(AppColors.error.opacity(0.1))
+                                .cornerRadius(AppCornerRadius.medium)
                         }
-                        
-                        NavigationLink(destination: Text("About")) {
-                            HStack {
-                                Image(systemName: "info.circle.fill")
-                                    .foregroundColor(AppColors.textMuted)
-                                    .frame(width: 24)
-                                Text("About")
-                            }
-                        }
+                        .padding(.top, AppSpacing.md)
                     }
-                    
-                    // Account
-                    Section {
-                        Button(action: { showingLogoutAlert = true }) {
-                            HStack {
-                                Image(systemName: "rectangle.portrait.and.arrow.right")
-                                    .foregroundColor(AppColors.error)
-                                    .frame(width: 24)
-                                Text("Log Out")
-                                    .foregroundColor(AppColors.error)
-                            }
-                        }
-                    }
+                    .padding(AppSpacing.md)
                 }
-                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
-            .alert("Log Out", isPresented: $showingLogoutAlert) {
-                Button("Cancel", role: .cancel) {}
-                Button("Log Out", role: .destructive) {
-                    authViewModel.logout()
-                }
-            } message: {
-                Text("Are you sure you want to log out?")
-            }
         }
+    }
+    
+    private func settingsSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: AppSpacing.sm) {
+            Text(title)
+                .font(AppFonts.headline)
+                .foregroundColor(AppColors.textPrimary)
+            
+            VStack(spacing: 0) {
+                content()
+            }
+            .background(AppColors.card)
+            .cornerRadius(AppCornerRadius.medium)
+        }
+    }
+}
+
+struct SettingsToggle: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    @Binding var isOn: Bool
+    
+    var body: some View {
+        HStack(spacing: AppSpacing.md) {
+            Image(systemName: icon)
+                .font(.system(size: 18))
+                .foregroundColor(AppColors.primary)
+                .frame(width: 24)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(AppFonts.body)
+                    .foregroundColor(AppColors.textPrimary)
+                
+                Text(subtitle)
+                    .font(AppFonts.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $isOn)
+                .tint(AppColors.primary)
+        }
+        .padding(AppSpacing.md)
+    }
+}
+
+struct SettingsInfoRow: View {
+    let title: String
+    let value: String
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(AppFonts.body)
+                .foregroundColor(AppColors.textPrimary)
+            
+            Spacer()
+            
+            Text(value)
+                .font(AppFonts.body)
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .padding(AppSpacing.md)
     }
 }

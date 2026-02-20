@@ -25,7 +25,7 @@ struct MainTabView: View {
             DashboardView()
                 .tabItem {
                     Image(systemName: "house.fill")
-                    Text("Dashboard")
+                    Text("Home")
                 }
                 .tag(0)
             
@@ -56,13 +56,6 @@ struct MainTabView: View {
                     Text("Standings")
                 }
                 .tag(4)
-            
-            MatchCenterView()
-                .tabItem {
-                    Image(systemName: "sportscourt")
-                    Text("Match")
-                }
-                .tag(5)
         }
         .tint(AppColors.primary)
     }
