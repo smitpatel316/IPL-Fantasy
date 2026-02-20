@@ -10,6 +10,7 @@ const playerRoutes = require('./routes/players');
 const draftRoutes = require('./routes/drafts');
 const teamRoutes = require('./routes/teams');
 const matchRoutes = require('./routes/matches');
+const chatRoutes = require('./routes/chat');
 
 const app = express();
 const server = http.createServer(app);
@@ -34,6 +35,7 @@ app.use('/api/players', playerRoutes);
 app.use('/api/drafts', draftRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/matches', matchRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
