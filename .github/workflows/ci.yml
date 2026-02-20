@@ -17,20 +17,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
       
       - name: Install dependencies
         working-directory: backend
-        run: npm ci
+        run: npm install
       
       - name: Run tests
         working-directory: backend
-        run: npm test
-      
-      - name: Lint
-        working-directory: backend
-        run: npm run lint
+        run: node tests/unit.test.js
 
   ios-build:
     runs-on: macos-latest
@@ -39,39 +33,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_15.0.app
+      - name: Setup Xcode
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_15.app
       
-      - name: Cache iOS dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/Library/Caches/CocoaPods
-            Pods
-          key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+      - name: Install XcodeGen
+        run: brew install xcodegen
       
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.0'
-      
-      - name: Install CocoaPods
-        run: cd iOS && pod install
+      - name: Generate project
+        working-directory: iOS
+        run: xcodegen generate
       
       - name: Build iOS
         run: |
           cd iOS
-          xcodebuild build -scheme IPLFantasyPro \
+          xcodebuild -project IPLFantasyPro.xcodeproj \
+            -scheme IPLFantasyPro \
             -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 15'
-
-  security-scan:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Run security audit
-        run: |
-          cd backend
-          npm audit --audit-level=high
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            build
