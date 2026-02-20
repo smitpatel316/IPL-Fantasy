@@ -20,6 +20,9 @@ packages:
   Kingfisher:
     url: https://github.com/onevcat/Kingfisher
     version: 7.10.0
+  Starscream:
+    url: https://github.com/daltoniam/Starscream
+    version: 4.0.6
 
 targets:
   IPLFantasyPro:
@@ -37,6 +40,7 @@ targets:
     dependencies:
       - package: FirebaseAuth
       - package: Kingfisher
+      - package: Starscream
     info:
       path: Sources/App/Info.plist
       properties:
