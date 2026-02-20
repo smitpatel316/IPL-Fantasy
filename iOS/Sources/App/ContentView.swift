@@ -56,6 +56,13 @@ struct MainTabView: View {
                     Text("Standings")
                 }
                 .tag(4)
+            
+            MatchCenterView()
+                .tabItem {
+                    Image(systemName: "sportscourt")
+                    Text("Match")
+                }
+                .tag(5)
         }
         .tint(AppColors.primary)
     }

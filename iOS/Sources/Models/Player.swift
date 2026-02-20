@@ -12,6 +12,7 @@ struct Player: Identifiable, Codable, Hashable {
     var isSold: Bool
     var ownerId: String?
     var stats: PlayerStats?
+    var totalPoints: Int = 0
     
     enum PlayerRole: String, Codable, CaseIterable {
         case batsman = "BAT"
@@ -38,7 +39,7 @@ struct Player: Identifiable, Codable, Hashable {
         }
     }
     
-    init(id: String = UUID().uuidString, name: String, role: PlayerRole, team: String, basePrice: Double, imageURL: String? = nil) {
+    init(id: String = UUID().uuidString, name: String, role: PlayerRole, team: String, basePrice: Double, imageURL: String? = nil, totalPoints: Int = 0) {
         self.id = id
         self.name = name
         self.role = role
@@ -49,6 +50,7 @@ struct Player: Identifiable, Codable, Hashable {
         self.currentBid = nil
         self.ownerId = nil
         self.stats = nil
+        self.totalPoints = totalPoints
     }
 }
 
