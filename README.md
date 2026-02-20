@@ -129,6 +129,30 @@ open IPLFantasyPro.xcodeproj
 
 MIT
 
+## Testing
+
+### Backend Unit Tests
+
+```bash
+cd backend
+npm test
+```
+
+### E2E Tests
+
+```bash
+cd e2e
+npm install
+npx playwright install chromium
+npx playwright test
+```
+
+### Test Coverage
+
+- **Unit Tests**: Models, Services, ViewModels
+- **API Tests**: Auth, Leagues, Players endpoints
+- **E2E Tests**: Full user flows
+
 ## Author
 
 Smit Patel
