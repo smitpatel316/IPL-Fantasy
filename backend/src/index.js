@@ -16,6 +16,7 @@ const matchRoutes = require('./routes/matches');
 const chatRoutes = require('./routes/chat');
 const tradesRoutes = require('./routes/trades');
 const scoresRoutes = require('./routes/scores');
+const analyticsRoutes = require('./routes/analytics');
 
 const app = express();
 const server = http.createServer(app);
@@ -132,6 +133,7 @@ app.use('/api/matches', matchRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/trades', tradesRoutes);
 app.use('/api/scores', scoresRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // 404 handler
 app.use((req, res) => {
