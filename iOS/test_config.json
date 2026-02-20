@@ -1,0 +1,17 @@
+{
+  "tests": {
+    "bundleTests": "YES",
+    "testExecutable": "$(TEST_HOST)",
+    "testHostApplicationBundleID": "com.tamelabs.IPLFantasyPro"
+  },
+  "targets": {
+    "IPLFantasyPro": {
+      "sources": [
+        "Sources/**"
+      ],
+      "tests": [
+        "Tests/**"
+      ]
+    }
+  }
+}
