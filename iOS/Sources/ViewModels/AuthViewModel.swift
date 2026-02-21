@@ -1,82 +1,97 @@
-import Foundation
+import SwiftUI
 import Combine
 
-// MARK: - Auth View Model
+// MARK: - Auth ViewModel
 @MainActor
 class AuthViewModel: ObservableObject {
-    @Published var currentUser: User?
     @Published var isAuthenticated = false
+    @Published var currentUser: User?
     @Published var isLoading = false
     @Published var errorMessage: String?
-    @Published var email = ""
-    @Published var password = ""
-    @Published var displayName = ""
     
     private let authService = AuthService.shared
     
     init() {
-        checkAuthStatus()
+        // Check for existing session
+        isAuthenticated = authService.isAuthenticated
+        currentUser = authService.currentUser
     }
     
-    func checkAuthStatus() {
-        if let user = authService.getCurrentUser() {
-            currentUser = user
-            isAuthenticated = true
-        }
-    }
+    // MARK: - Email Login/Register
     
-    func login() async {
-        guard !email.isEmpty, !password.isEmpty else {
-            errorMessage = "Please enter email and password"
-            return
-        }
-        
+    func login(email: String, password: String) async throws {
         isLoading = true
         errorMessage = nil
         
         do {
-            let user = try await authService.login(email: email, password: password)
-            currentUser = user
+            try await authService.login(email: email, password: password)
             isAuthenticated = true
-            clearForm()
+            currentUser = authService.currentUser
         } catch {
             errorMessage = error.localizedDescription
+            throw error
         }
         
         isLoading = false
     }
     
-    func register() async {
-        guard !email.isEmpty, !password.isEmpty, !displayName.isEmpty else {
-            errorMessage = "Please fill all fields"
-            return
-        }
-        
+    func register(email: String, password: String, displayName: String) async throws {
         isLoading = true
         errorMessage = nil
         
         do {
-            let user = try await authService.register(email: email, password: password, displayName: displayName)
-            currentUser = user
+            try await authService.register(email: email, password: password, displayName: displayName)
             isAuthenticated = true
-            clearForm()
+            currentUser = authService.currentUser
         } catch {
             errorMessage = error.localizedDescription
+            throw error
         }
         
         isLoading = false
     }
+    
+    // MARK: - Google Sign In
+    
+    func loginWithGoogle(idToken: String) async throws {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            try await authService.loginWithGoogle(idToken: idToken)
+            isAuthenticated = true
+            currentUser = authService.currentUser
+        } catch {
+            errorMessage = error.localizedDescription
+            throw error
+        }
+        
+        isLoading = false
+    }
+    
+    // MARK: - Apple Sign In
+    
+    func loginWithApple(idToken: String, fullName: String?) async throws {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            try await authService.loginWithApple(idToken: idToken, fullName: fullName)
+            isAuthenticated = true
+            currentUser = authService.currentUser
+        } catch {
+            errorMessage = error.localizedDescription
+            throw error
+        }
+        
+        isLoading = false
+    }
+    
+    // MARK: - Logout
     
     func logout() {
         authService.logout()
-        currentUser = nil
         isAuthenticated = false
-        clearForm()
-    }
-    
-    private func clearForm() {
-        email = ""
-        password = ""
-        displayName = ""
+        currentUser = nil
     }
 }

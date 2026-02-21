@@ -150,6 +150,24 @@ struct LoginRequest: Encodable {
     let password: String
 }
 
+struct OAuthRequest: Encodable {
+    let idToken: String
+    
+    enum CodingKeys: String, CodingKey {
+        case idToken = "id_token"
+    }
+}
+
+struct AppleRequest: Encodable {
+    let idToken: String
+    let fullName: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case idToken = "id_token"
+        case fullName
+    }
+}
+
 struct AuthResponse: Decodable {
     let token: String
     let user: User
