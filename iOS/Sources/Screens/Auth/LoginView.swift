@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthenticationServices
+import GoogleSignIn
 
 // MARK: - Login View
 struct LoginView: View {
@@ -183,14 +184,27 @@ struct LoginView: View {
     }
     
     private func signInWithGoogle() {
-        // In production, use GoogleSignIn SDK
-        // For now, simulate with mock token
-        Task {
-            isLoading = true
-            // Would call: GIDSignIn.sharedInstance().signIn()
-            // For demo, use mock token
-            try await authViewModel.loginWithGoogle(idToken: "mock_google_token")
-            isLoading = false
+        // Use Google Sign In SDK
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first,
+              let rootViewController = window.rootViewController else {
+            return
+        }
+        
+        let config = GIDConfiguration(clientID: "YOUR_GOOGLE_CLIENT_ID")
+        GIDSignIn.sharedInstance.configuration = config
+        
+        GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { result, error in
+            guard let idToken = result?.user.idToken?.tokenString else {
+                errorMessage = error?.localizedDescription ?? "Google sign in failed"
+                return
+            }
+            
+            Task {
+                isLoading = true
+                try await authViewModel.loginWithGoogle(idToken: idToken)
+                isLoading = false
+            }
         }
     }
     
