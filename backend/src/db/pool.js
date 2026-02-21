@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-const log = require('./logger');
+const log = require('../middleware/logger');
 
 class Database {
   constructor() {
