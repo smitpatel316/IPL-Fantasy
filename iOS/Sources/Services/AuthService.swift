@@ -1,7 +1,7 @@
 import Foundation
 import Combine
 
-// MARK: - Auth Service
+// MARK: - Auth Service (Simple)
 @MainActor
 class AuthService: ObservableObject {
     static let shared = AuthService()
@@ -10,17 +10,16 @@ class AuthService: ObservableObject {
     @Published private(set) var currentUser: User?
     
     private let api = APIService.shared
-    private var cancellables = Set<AnyCancellable>()
     private let keychain = KeychainHelper.shared
     
     private init() {
         loadStoredSession()
     }
     
-    // MARK: - Session Management
+    // MARK: - Load Session
     
     private func loadStoredSession() {
-        guard let token = keychain.get("access_token"),
+        guard let token = keychain.get("auth_token"),
               let userData = UserDefaults.standard.data(forKey: "current_user"),
               let user = try? JSONDecoder().decode(User.self, from: userData) else {
             return
@@ -38,7 +37,7 @@ class AuthService: ObservableObject {
         
         let response: AuthResponse = try await api.post("/auth/register", body: request)
         
-        try handleAuthResponse(response)
+        handleAuthResponse(response)
     }
     
     // MARK: - Login
@@ -48,74 +47,35 @@ class AuthService: ObservableObject {
         
         let response: AuthResponse = try await api.post("/auth/login", body: request)
         
-        try handleAuthResponse(response)
+        handleAuthResponse(response)
     }
     
     // MARK: - Logout
     
-    func logout() async {
-        do {
-            try await api.post("/auth/logout", body: EmptyRequest())
-        } catch {
-            // Continue even if logout fails
-        }
-        
-        clearSession()
-    }
-    
-    // MARK: - Refresh Token
-    
-    func refreshToken() async throws {
-        guard let refreshToken = keychain.get("refresh_token") else {
-            throw AuthError.noRefreshToken
-        }
-        
-        let request = RefreshRequest(refreshToken: refreshToken)
-        
-        let response: RefreshResponse = try await api.post("/auth/refresh", body: request)
-        
-        try saveTokens(access: response.accessToken, refresh: response.refreshToken)
-    }
-    
-    // MARK: - Change Password
-    
-    func changePassword(current: String, new: String) async throws {
-        let request = ChangePasswordRequest(currentPassword: current, newPassword: new)
-        
-        _ = try await api.post("/auth/change-password", body: request, requiresAuth: true)
-        
-        // After password change, clear session
-        clearSession()
-    }
-    
-    // MARK: - Private Helpers
-    
-    private func handleAuthResponse(_ response: AuthResponse) throws {
-        try saveTokens(access: response.accessToken, refresh: response.refreshToken)
-        
-        currentUser = response.user
-        isAuthenticated = true
-        
-        // Store user data
-        if let data = try? JSONEncoder().encode(response.user) {
-            UserDefaults.standard.set(data, forKey: "current_user")
-        }
-    }
-    
-    private func saveTokens(access: String, refresh: String) throws {
-        keychain.set(access, forKey: "access_token")
-        keychain.set(refresh, forKey: "refresh_token")
-        api.setAuthToken(access)
-    }
-    
-    private func clearSession() {
-        keychain.delete("access_token")
-        keychain.delete("refresh_token")
+    func logout() {
+        keychain.delete("auth_token")
         UserDefaults.standard.removeObject(forKey: "current_user")
         
         api.setAuthToken(nil)
         currentUser = nil
         isAuthenticated = false
+    }
+    
+    // MARK: - Private
+    
+    private func handleAuthResponse(_ response: AuthResponse) {
+        // Save token
+        keychain.set(response.token, forKey: "auth_token")
+        
+        // Save user
+        currentUser = response.user
+        isAuthenticated = true
+        
+        if let data = try? JSONEncoder().encode(response.user) {
+            UserDefaults.standard.set(data, forKey: "current_user")
+        }
+        
+        api.setAuthToken(response.token)
     }
 }
 
@@ -178,22 +138,7 @@ class KeychainHelper {
     }
 }
 
-// MARK: - Auth Errors
-enum AuthError: LocalizedError {
-    case noRefreshToken
-    case sessionExpired
-    case invalidCredentials
-    
-    var errorDescription: String? {
-        switch self {
-        case .noRefreshToken: return "Session expired. Please log in again."
-        case .sessionExpired: return "Your session has expired. Please log in again."
-        case .invalidCredentials: return "Invalid email or password."
-        }
-    }
-}
-
-// MARK: - Request Models
+// MARK: - Models
 struct RegisterRequest: Encodable {
     let email: String
     let password: String
@@ -205,38 +150,9 @@ struct LoginRequest: Encodable {
     let password: String
 }
 
-struct RefreshRequest: Encodable {
-    let refreshToken: String
-}
-
-struct ChangePasswordRequest: Encodable {
-    let currentPassword: String
-    let newPassword: String
-}
-
-struct EmptyRequest: Encodable {}
-
-// MARK: - Response Models
 struct AuthResponse: Decodable {
-    let accessToken: String
-    let refreshToken: String
+    let token: String
     let user: User
-    
-    enum CodingKeys: String, CodingKey {
-        case accessToken = "access_token"
-        case refreshToken = "refresh_token"
-        case user
-    }
-}
-
-struct RefreshResponse: Decodable {
-    let accessToken: String
-    let refreshToken: String
-    
-    enum CodingKeys: String, CodingKey {
-        case accessToken = "access_token"
-        case refreshToken = "refresh_token"
-    }
 }
 
 struct User: Codable {
@@ -244,5 +160,4 @@ struct User: Codable {
     let email: String
     let displayName: String
     let avatarUrl: String?
-    let createdAt: Date?
 }
