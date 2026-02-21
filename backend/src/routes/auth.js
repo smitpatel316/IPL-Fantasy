@@ -24,13 +24,13 @@ const generateTokens = (user) => {
   const accessToken = jwt.sign(
     { id: user.id, email: user.email },
     JWT_SECRET,
-    { expiresIn: '15m' } // Short-lived access token
+    { expiresIn: '1h' } // 1 hour access token
   );
 
   const refreshToken = jwt.sign(
     { id: user.id, type: 'refresh' },
     JWT_REFRESH_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '30d' } // 30 days refresh token
   );
 
   return { accessToken, refreshToken };
