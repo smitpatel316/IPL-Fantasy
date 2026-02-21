@@ -17,12 +17,12 @@ const validate = (req, res, next) => {
   next();
 };
 
-// Generate simple token (30 days)
+// Generate simple token (no expiry - persistent login)
 const generateToken = (user) => {
   return jwt.sign(
     { id: user.id, email: user.email },
-    JWT_SECRET,
-    { expiresIn: '30d' }
+    JWT_SECRET
+    // No expiry - valid until logout
   );
 };
 
