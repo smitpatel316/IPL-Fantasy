@@ -1,0 +1,20 @@
+{
+  "platformName": "iOS",
+  "platformVersion": "17.0",
+  "deviceName": "iPhone 15",
+  "app": "./build/IPLFantasyPro.app",
+  "automationName": "XCUITest",
+  "browserName": "",
+  "udid": "auto",
+  "noReset": false,
+  "fullReset": true,
+  "newCommandTimeout": 300,
+  "connectHardwareKeyboard": true,
+  "shouldWaitForQuiescence": false,
+  "simpleIsVisibleCheck": true,
+  "waitForIdleTimeout": 0,
+  "permissions": "{\"IPL Fantasy Pro\": {\"Notifications\": \"YES\", \"Calendars\": \"YES\"}}",
+  "environment": {
+    "ENV": "test"
+  }
+}

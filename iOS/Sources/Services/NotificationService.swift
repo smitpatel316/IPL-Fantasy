@@ -128,9 +128,9 @@ class NotificationManager {
         )
     }
     
-    func scheduleTradeAcceptedNotification().shared.scheduleLocal(
- {
-        NotificationService            id: NotificationType.tradeAccepted.rawValue,
+    func scheduleTradeAcceptedNotification() {
+        NotificationService.shared.scheduleLocal(
+            id: NotificationType.tradeAccepted.rawValue,
             title: "Trade Accepted!",
             body: "Your trade offer was accepted. Check your team!",
             timeInterval: 1

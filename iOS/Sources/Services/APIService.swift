@@ -196,7 +196,7 @@ struct ErrorResponse: Codable {
     let error: String
 }
 
-struct AuthState {
+enum AuthState {
     case authenticated
     case unauthenticated
     case refreshing

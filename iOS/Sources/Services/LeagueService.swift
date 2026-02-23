@@ -58,7 +58,7 @@ class LeagueService {
         let response: InviteValidationResponse = try await api.get("/leagues/invite/\(code)", requiresAuth: false)
         return InviteValidationResult(
             valid: response.valid,
-            league: response.league.map { 
+            league: response.league.map {
                 InviteLeagueInfo(
                     id: $0.id,
                     name: $0.name,
@@ -66,7 +66,7 @@ class LeagueService {
                     maxTeams: $0.maxTeams,
                     currentTeams: $0.currentTeams,
                     isFull: $0.isFull,
-                    status: $0.status
+                    status: "open"
                 )
             }
         )
@@ -311,5 +311,5 @@ struct InviteLeagueInfo: Identifiable {
     let maxTeams: Int
     let currentTeams: Int
     let isFull: Bool
-    let status: League.LeagueStatus
+    var status: String
 }

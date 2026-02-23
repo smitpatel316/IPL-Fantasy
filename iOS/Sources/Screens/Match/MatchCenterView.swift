@@ -270,13 +270,13 @@ class MatchViewModel: ObservableObject {
         )
         
         categories = [
-            MatchCategory(name: "Total Points", homeValue: 1245, awayValue: 1198, homeWon: true),
-            MatchCategory(name: "Boundaries", homeValue: 45, awayValue: 38, homeWon: true),
-            MatchCategory(name: "Wickets", homeValue: 12, awayValue: 15, homeWon: false),
-            MatchCategory(name: "Milestones", homeValue: 2, awayValue: 1, homeWon: true),
-            MatchCategory(name: "Strike Rate", homeValue: 142, awayValue: 138, homeWon: true),
-            MatchCategory(name: "Economy", homeValue: 7.2, awayValue: 7.8, homeWon: true),
-            MatchCategory(name: "Catches", homeValue: 8, awayValue: 10, homeWon: false),
+            MatchCategory(name: "Total Points", homeValue: 1245, awayValue: 1198),
+            MatchCategory(name: "Boundaries", homeValue: 45, awayValue: 38),
+            MatchCategory(name: "Wickets", homeValue: 12, awayValue: 15),
+            MatchCategory(name: "Milestones", homeValue: 2, awayValue: 1),
+            MatchCategory(name: "Strike Rate", homeValue: 142, awayValue: 138),
+            MatchCategory(name: "Economy", homeValue: 7.2, awayValue: 7.8),
+            MatchCategory(name: "Catches", homeValue: 8, awayValue: 10),
         ]
         
         topPerformers = [

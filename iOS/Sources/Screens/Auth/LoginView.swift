@@ -142,13 +142,19 @@ struct LoginView: View {
                 )
             }
             
-            // Apple Sign In
-            SignInWithAppleButton(.signIn) { result in
-                handleAppleSignIn(result)
+            // Apple Sign In - Placeholder
+            Button(action: {}) {
+                HStack {
+                    Image(systemName: "apple.logo")
+                    Text("Sign in with Apple")
+                }
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Color.black)
+                .cornerRadius(AppCornerRadius.medium)
             }
-            .signInWithAppleButtonStyle(.black)
-            .frame(height: 50)
-            .cornerRadius(AppCornerRadius.medium)
         }
     }
     

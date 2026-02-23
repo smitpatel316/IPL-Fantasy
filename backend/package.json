@@ -6,7 +6,7 @@
   "scripts": {
     "start": "NODE_ENV=production node src/index.js",
     "dev": "NODE_ENV=development nodemon src/index.js",
-    "test": "NODE_ENV=test node tests/unit.test.js",
+    "test": "jest",
     "test:coverage": "jest --coverage",
     "db:init": "node src/db/init.js",
     "db:migrate": "node src/db/migrate.js",

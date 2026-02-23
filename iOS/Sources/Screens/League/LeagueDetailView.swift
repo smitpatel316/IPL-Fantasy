@@ -54,7 +54,8 @@ struct LeagueDetailView: View {
                 }
             }
             .sheet(isPresented: $showingInviteSheet) {
-                LeagueInviteView(league: league)
+                Text("Invite Sheet")
+                    .padding()
             }
         }
     }

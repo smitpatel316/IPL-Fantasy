@@ -399,19 +399,19 @@ struct LiveMatchScore: Identifiable {
     let league: String
     let team1: String
     let team1Abbr: String
-    var team1Score: Int
-    var team1Wickets: Int
-    var team1Overs: Double
+    var team1Score: Int = 0
+    var team1Wickets: Int = 0
+    var team1Overs: Double = 0
     let team2: String
     let team2Abbr: String
-    var team2Score: Int
-    var team2Wickets: Int
-    var team2Overs: Double
+    var team2Score: Int = 0
+    var team2Wickets: Int = 0
+    var team2Overs: Double = 0
     let status: String
     let startTime: String
     var requiredRunRate: Double = 0
     var currentRunRate: Double = 0
-    let lastCommentary: String
+    var lastCommentary: String = ""
     let winner: String
     let result: String
 }

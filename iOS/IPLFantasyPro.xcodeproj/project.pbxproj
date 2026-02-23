@@ -1,0 +1,944 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		046B52163EA7BA0428D8BE67 /* PlayerSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19B0CF70053C9D0018D299E9 /* PlayerSearchView.swift */; };
+		0A6F2D31614D658C6AE8DD88 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87A34412F0F0525524AF29BD /* ContentView.swift */; };
+		11287F2A02E5210D5B809337 /* IPLFantasyProApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0E8C2A60304E96608DD8D5 /* IPLFantasyProApp.swift */; };
+		1477992D0853809440FF824E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ED9AFF4574F0B2B54538984 /* Theme.swift */; };
+		14D852EE0705BB8D12878809 /* AIRecommendationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F929EF8E153E3B3F6388F3B /* AIRecommendationsView.swift */; };
+		14DA9BF71C1F2CEA29CACD42 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EDDE202BF79ED7E66411079 /* LeaderboardView.swift */; };
+		1787D49C7ECDCA5D74096466 /* IPLFantasyWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 502FDDA2C49FB8503CCA79D9 /* IPLFantasyWidget.swift */; };
+		196C4D5ECDBF15B67F788D3E /* manual_home.png in Resources */ = {isa = PBXBuildFile; fileRef = 3A5B1B6C769A9C9BE69B52C8 /* manual_home.png */; };
+		1DD591409A6E3D5E27875B72 /* PlayerCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1030863205AC31CF62A4A15F /* PlayerCard.swift */; };
+		2BB16823BDB98CFD54B4112E /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 64324E431F4D5CE25FBF33D3 /* FirebaseAuth */; };
+		2C46F0AD2233979F12101CAB /* WebSocketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C5092B0C6B772941FC9807A /* WebSocketService.swift */; };
+		2C5616203CC926B7447501D7 /* LeagueSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79618747F458AE725C4447D7 /* LeagueSheets.swift */; };
+		303F643EA59AC7A09C8321C9 /* appium.test.js in Resources */ = {isa = PBXBuildFile; fileRef = E64E0DA70ABA056D0E18EAA6 /* appium.test.js */; };
+		39AF80518E6BD03E6024AFC1 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = F5BF218BD49C7DFC3F5A824F /* GoogleSignIn */; };
+		3AEF7A34D335377C7C5D48FE /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8123F930661836631D1EFF69 /* AnalyticsView.swift */; };
+		3CCD18D651CD8666AB9690C7 /* MatchCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DE1F2145E91D34FF944916 /* MatchCenterView.swift */; };
+		3D5D66630ACB7C66BFC49F48 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC9225BEF97FCBC4E9CC1C3 /* LoginView.swift */; };
+		448D1A9830A77E919B8B87EE /* wdio-video.conf.js in Resources */ = {isa = PBXBuildFile; fileRef = 6681591C9D080151C15AB0B8 /* wdio-video.conf.js */; };
+		45CC57C6F4F55D3384127A0C /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B765F1D21BD5B8DAE46F06 /* ProfileView.swift */; };
+		4B21B354D2CD849BBC1EAAD1 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A96C32BB149E8C68ED0B7B1 /* Player.swift */; };
+		4F4351A86CFDF03918417154 /* caps.json in Resources */ = {isa = PBXBuildFile; fileRef = ED582072D49E246CE7A67DD3 /* caps.json */; };
+		5008ABD8CD36E8226859A172 /* LeagueService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BC60401ED4C08366E88F276 /* LeagueService.swift */; };
+		59E4548B630200C1D03CACAF /* LiveScoresView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAF1AFF001A63785FAA475C /* LiveScoresView.swift */; };
+		59EA98047711ACEC39886566 /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F588E32B541EC46A6CF9D476 /* NotificationsView.swift */; };
+		5D9BBF24B41EFC7070C99F53 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE70ED1E53F073C6E38B87FC /* Helpers.swift */; };
+		5F6594C39BD6418F65BFB78E /* DraftRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33F949127BBA4B04DA511956 /* DraftRoomView.swift */; };
+		5FDCDB79FAF0574CD02F8F5B /* Match.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F578304EA1A3E3CE88A4425 /* Match.swift */; };
+		622595FF1EE5AA90A2954921 /* config.js in Resources */ = {isa = PBXBuildFile; fileRef = E1056353BAA53E8552D4E842 /* config.js */; };
+		62F2189BB07CD417561D0D52 /* package.json in Resources */ = {isa = PBXBuildFile; fileRef = 1A516B5454B38B7B0CF8068C /* package.json */; };
+		6B299330FAA9BF57782332E4 /* InviteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC043182DCC67393B86B8EF7 /* InviteView.swift */; };
+		6EAA6A9A06B841A4B7C73EDA /* wdio.conf.js in Resources */ = {isa = PBXBuildFile; fileRef = 9809107C091A9BDD0F7314B1 /* wdio.conf.js */; };
+		756B73E5F21396280355139D /* StandingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99537F44A81DEFB6E2FB344A /* StandingsView.swift */; };
+		77E79AAA8AACD198790458EA /* DraftService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F8C79A893F712A8E7084928 /* DraftService.swift */; };
+		786227A4DE5DEC1AAAD822A5 /* CompareTeamsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B169C9A770DC6818C51EDAE7 /* CompareTeamsView.swift */; };
+		7AEE999E5BA15F6F4953FB46 /* OfflineManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58FB851B95F458FC6F247239 /* OfflineManager.swift */; };
+		86D7210ED98CA02C6CB37A2D /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA99D90EA08A321634BFD7A /* DashboardView.swift */; };
+		8907B8663D44E682DA68685C /* StatsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89FC4311A3872F977E784A0B /* StatsDetailView.swift */; };
+		9B67D8B17B7CEA8A643FE716 /* LeagueDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A39EC64DC654E21CFDC3C5F /* LeagueDetailView.swift */; };
+		9DDF1A33D511D438FDCDF221 /* TeamViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29FE67DDBC9F75C404FBA0E0 /* TeamViewModel.swift */; };
+		A3BD5AEA087D542966C7B1D6 /* UserLeague.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F1CE3EBEDDBA69EEB0980EB /* UserLeague.swift */; };
+		ABC32B62C75C7C6AA083EEB7 /* IPLFantasyProUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 869B1FACE78B8D6525F4CFF6 /* IPLFantasyProUITests.swift */; };
+		AE59B54291A654C8C8F0019F /* LeagueViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C44782D19D91BCEAADFE107 /* LeagueViewModel.swift */; };
+		AF9F5AE5163EEFD01E50C38B /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9387508F61123C8812E82FD6 /* ThemeManager.swift */; };
+		BAD506E5DB0D3C7F8C470857 /* Buttons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C2A217EE3165EAFF6F5186 /* Buttons.swift */; };
+		C23512D638DA5D6EC87F3940 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4238DE0D608A762BC5105928 /* RegisterView.swift */; };
+		C2C8B6DCC3E1DF9B1D4F6018 /* LeagueListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 050BF05AC218C3C3908E725A /* LeagueListView.swift */; };
+		C576CEB8C63093CF63898BD6 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 455D0E9A1C2906CF51293223 /* AuthViewModel.swift */; };
+		CA9B832D2F4FDB029DEFFD1B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9E5CCBD90CDB611D2907118 /* SettingsView.swift */; };
+		CDAF7EB7CE39506C70162B83 /* DraftViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D14B67E68386AAD04B76D6F /* DraftViewModel.swift */; };
+		D53AFC8C09B5A5123C34C76A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5584AE72ABD10A24CB4CAD /* NotificationService.swift */; };
+		D9CC729E44E5E8CABB99F980 /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = 35582D06091AA36ABA3FFF61 /* Starscream */; };
+		DBD2736E4101F8A5C8923551 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = D3C5A1130B409889B9BE9572 /* Kingfisher */; };
+		DEFAE6EF27B1068AC619F829 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18287E70076DD88CFDC4EF45 /* APIService.swift */; };
+		DF8FBA3092033622D84DADF0 /* UIEnhancements.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E3388032317A4252D2F8169 /* UIEnhancements.swift */; };
+		EEBE10045580E9E696027756 /* LeagueChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C40292FF491E66CC26A27E8E /* LeagueChatView.swift */; };
+		F1631EB40E375342152634A8 /* MyTeamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DC182BEFEAE38EAF24C90F /* MyTeamView.swift */; };
+		F3E7124EE16CA86B28F783EE /* PlayerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F71F03701181DBF36383423 /* PlayerDetailView.swift */; };
+		FCFD7D7B920271FE8053C590 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = C5A9198142335E0F33A67106 /* README.md */; };
+		FF47DC71FBFF72770511F75B /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3516517D0696CBC4C72B6FE /* AuthService.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		765868AC930042FF6748C12C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 23CC804E373581197BB9925E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EBF4737A2D81F81EB577DE95;
+			remoteInfo = IPLFantasyPro;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		050BF05AC218C3C3908E725A /* LeagueListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeagueListView.swift; sourceTree = "<group>"; };
+		0BC60401ED4C08366E88F276 /* LeagueService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeagueService.swift; sourceTree = "<group>"; };
+		0E3388032317A4252D2F8169 /* UIEnhancements.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIEnhancements.swift; sourceTree = "<group>"; };
+		0ED9AFF4574F0B2B54538984 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		1030863205AC31CF62A4A15F /* PlayerCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerCard.swift; sourceTree = "<group>"; };
+		18287E70076DD88CFDC4EF45 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
+		19B0CF70053C9D0018D299E9 /* PlayerSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerSearchView.swift; sourceTree = "<group>"; };
+		1A516B5454B38B7B0CF8068C /* package.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = package.json; sourceTree = "<group>"; };
+		1F8C79A893F712A8E7084928 /* DraftService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftService.swift; sourceTree = "<group>"; };
+		20C2A217EE3165EAFF6F5186 /* Buttons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Buttons.swift; sourceTree = "<group>"; };
+		29FE67DDBC9F75C404FBA0E0 /* TeamViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamViewModel.swift; sourceTree = "<group>"; };
+		2F1CE3EBEDDBA69EEB0980EB /* UserLeague.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserLeague.swift; sourceTree = "<group>"; };
+		33DC182BEFEAE38EAF24C90F /* MyTeamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyTeamView.swift; sourceTree = "<group>"; };
+		33F949127BBA4B04DA511956 /* DraftRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftRoomView.swift; sourceTree = "<group>"; };
+		3A5B1B6C769A9C9BE69B52C8 /* manual_home.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = manual_home.png; sourceTree = "<group>"; };
+		3AA99D90EA08A321634BFD7A /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		3C44782D19D91BCEAADFE107 /* LeagueViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeagueViewModel.swift; sourceTree = "<group>"; };
+		3D14B67E68386AAD04B76D6F /* DraftViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftViewModel.swift; sourceTree = "<group>"; };
+		3EAF1AFF001A63785FAA475C /* LiveScoresView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveScoresView.swift; sourceTree = "<group>"; };
+		4238DE0D608A762BC5105928 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
+		455D0E9A1C2906CF51293223 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
+		502FDDA2C49FB8503CCA79D9 /* IPLFantasyWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPLFantasyWidget.swift; sourceTree = "<group>"; };
+		58FB851B95F458FC6F247239 /* OfflineManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineManager.swift; sourceTree = "<group>"; };
+		60B765F1D21BD5B8DAE46F06 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		6681591C9D080151C15AB0B8 /* wdio-video.conf.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "wdio-video.conf.js"; sourceTree = "<group>"; };
+		6C5092B0C6B772941FC9807A /* WebSocketService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketService.swift; sourceTree = "<group>"; };
+		6F578304EA1A3E3CE88A4425 /* Match.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Match.swift; sourceTree = "<group>"; };
+		7227EBFF104A43A825E57F42 /* IPLFantasyProUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IPLFantasyProUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		79618747F458AE725C4447D7 /* LeagueSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeagueSheets.swift; sourceTree = "<group>"; };
+		7A39EC64DC654E21CFDC3C5F /* LeagueDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeagueDetailView.swift; sourceTree = "<group>"; };
+		7A96C32BB149E8C68ED0B7B1 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
+		8123F930661836631D1EFF69 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
+		869B1FACE78B8D6525F4CFF6 /* IPLFantasyProUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPLFantasyProUITests.swift; sourceTree = "<group>"; };
+		87A34412F0F0525524AF29BD /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		89FC4311A3872F977E784A0B /* StatsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsDetailView.swift; sourceTree = "<group>"; };
+		8CC9225BEF97FCBC4E9CC1C3 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		8D5584AE72ABD10A24CB4CAD /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		8EDDE202BF79ED7E66411079 /* LeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardView.swift; sourceTree = "<group>"; };
+		8F71F03701181DBF36383423 /* PlayerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerDetailView.swift; sourceTree = "<group>"; };
+		8F929EF8E153E3B3F6388F3B /* AIRecommendationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIRecommendationsView.swift; sourceTree = "<group>"; };
+		9387508F61123C8812E82FD6 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
+		9809107C091A9BDD0F7314B1 /* wdio.conf.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = wdio.conf.js; sourceTree = "<group>"; };
+		99537F44A81DEFB6E2FB344A /* StandingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StandingsView.swift; sourceTree = "<group>"; };
+		A24916ADC609630D2167FF6B /* IPLFantasyPro.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = IPLFantasyPro.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A8DE1F2145E91D34FF944916 /* MatchCenterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchCenterView.swift; sourceTree = "<group>"; };
+		AE0E8C2A60304E96608DD8D5 /* IPLFantasyProApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPLFantasyProApp.swift; sourceTree = "<group>"; };
+		B169C9A770DC6818C51EDAE7 /* CompareTeamsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompareTeamsView.swift; sourceTree = "<group>"; };
+		BCAD84D8FCBB0E59BFF6A896 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C40292FF491E66CC26A27E8E /* LeagueChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeagueChatView.swift; sourceTree = "<group>"; };
+		C5A9198142335E0F33A67106 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		D9E5CCBD90CDB611D2907118 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		E1056353BAA53E8552D4E842 /* config.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = config.js; sourceTree = "<group>"; };
+		E64E0DA70ABA056D0E18EAA6 /* appium.test.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = appium.test.js; sourceTree = "<group>"; };
+		ED582072D49E246CE7A67DD3 /* caps.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = caps.json; sourceTree = "<group>"; };
+		EE70ED1E53F073C6E38B87FC /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
+		F3516517D0696CBC4C72B6FE /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		F588E32B541EC46A6CF9D476 /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
+		FC043182DCC67393B86B8EF7 /* InviteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C0D198858BF24C3C5A6F7FBB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2BB16823BDB98CFD54B4112E /* FirebaseAuth in Frameworks */,
+				39AF80518E6BD03E6024AFC1 /* GoogleSignIn in Frameworks */,
+				DBD2736E4101F8A5C8923551 /* Kingfisher in Frameworks */,
+				D9CC729E44E5E8CABB99F980 /* Starscream in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		03DC981B944DC074865E7109 /* Draft */ = {
+			isa = PBXGroup;
+			children = (
+				33F949127BBA4B04DA511956 /* DraftRoomView.swift */,
+			);
+			path = Draft;
+			sourceTree = "<group>";
+		};
+		0A334C9BA7F46A2647634DB7 /* Appium */ = {
+			isa = PBXGroup;
+			children = (
+				E64E0DA70ABA056D0E18EAA6 /* appium.test.js */,
+				ED582072D49E246CE7A67DD3 /* caps.json */,
+				E1056353BAA53E8552D4E842 /* config.js */,
+				1A516B5454B38B7B0CF8068C /* package.json */,
+				C5A9198142335E0F33A67106 /* README.md */,
+				6681591C9D080151C15AB0B8 /* wdio-video.conf.js */,
+				9809107C091A9BDD0F7314B1 /* wdio.conf.js */,
+			);
+			path = Appium;
+			sourceTree = "<group>";
+		};
+		0C1780ECADC63D8BDA455E30 /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				C5D8FE77161F61D1A3565286 /* AI */,
+				F8ED7FEFC9D050369A2B8BFE /* Analytics */,
+				4FDA9B50A57A32953C4B25E0 /* Auth */,
+				A6C1D723EC37AC8BBE1E83F3 /* Chat */,
+				28F0B108432DB303BF07B056 /* Compare */,
+				486A480677B3FDD7EE5D4460 /* Dashboard */,
+				03DC981B944DC074865E7109 /* Draft */,
+				B1803743C1B38E7CE405DBDA /* Leaderboard */,
+				AC61E1A4DB90D49317820BA2 /* League */,
+				8F42EB09291E0056CC2E6F6D /* Match */,
+				2387DAA7B429693A250716D2 /* Notifications */,
+				1027AD0E2542C9FEC8E383ED /* Players */,
+				C942289C6EA680450256A96C /* Profile */,
+				A91D232490E963FE9C91DCF3 /* Scores */,
+				4682F7C7154AF2E413271670 /* Settings */,
+				B9B56B1DE29CBA3D25A61125 /* Standings */,
+				673F50503EA4AAA022977E85 /* Stats */,
+				775E8635641F0E1F201B8FFA /* Team */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
+		1027AD0E2542C9FEC8E383ED /* Players */ = {
+			isa = PBXGroup;
+			children = (
+				8F71F03701181DBF36383423 /* PlayerDetailView.swift */,
+				19B0CF70053C9D0018D299E9 /* PlayerSearchView.swift */,
+			);
+			path = Players;
+			sourceTree = "<group>";
+		};
+		20CE700C33DF98351FE1B791 /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				502FDDA2C49FB8503CCA79D9 /* IPLFantasyWidget.swift */,
+			);
+			path = Widgets;
+			sourceTree = "<group>";
+		};
+		2387DAA7B429693A250716D2 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				F588E32B541EC46A6CF9D476 /* NotificationsView.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
+		28F0B108432DB303BF07B056 /* Compare */ = {
+			isa = PBXGroup;
+			children = (
+				B169C9A770DC6818C51EDAE7 /* CompareTeamsView.swift */,
+			);
+			path = Compare;
+			sourceTree = "<group>";
+		};
+		32FDB7D33F46C95E914B1B4B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A24916ADC609630D2167FF6B /* IPLFantasyPro.app */,
+				7227EBFF104A43A825E57F42 /* IPLFantasyProUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4682F7C7154AF2E413271670 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				D9E5CCBD90CDB611D2907118 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		486A480677B3FDD7EE5D4460 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				3AA99D90EA08A321634BFD7A /* DashboardView.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		4FDA9B50A57A32953C4B25E0 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				8CC9225BEF97FCBC4E9CC1C3 /* LoginView.swift */,
+				4238DE0D608A762BC5105928 /* RegisterView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		60F6C22495FA3926688DE956 /* Screenshots */ = {
+			isa = PBXGroup;
+			children = (
+				3A5B1B6C769A9C9BE69B52C8 /* manual_home.png */,
+			);
+			path = Screenshots;
+			sourceTree = "<group>";
+		};
+		673F50503EA4AAA022977E85 /* Stats */ = {
+			isa = PBXGroup;
+			children = (
+				89FC4311A3872F977E784A0B /* StatsDetailView.swift */,
+			);
+			path = Stats;
+			sourceTree = "<group>";
+		};
+		6C8790922E7A0B453EAAD779 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				455D0E9A1C2906CF51293223 /* AuthViewModel.swift */,
+				3D14B67E68386AAD04B76D6F /* DraftViewModel.swift */,
+				3C44782D19D91BCEAADFE107 /* LeagueViewModel.swift */,
+				29FE67DDBC9F75C404FBA0E0 /* TeamViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		728C4EA26B274174364C2B3D /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				0ED9AFF4574F0B2B54538984 /* Theme.swift */,
+				9387508F61123C8812E82FD6 /* ThemeManager.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		775E8635641F0E1F201B8FFA /* Team */ = {
+			isa = PBXGroup;
+			children = (
+				33DC182BEFEAE38EAF24C90F /* MyTeamView.swift */,
+			);
+			path = Team;
+			sourceTree = "<group>";
+		};
+		80F327F818F791B36212D68A /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				EE70ED1E53F073C6E38B87FC /* Helpers.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		8F42EB09291E0056CC2E6F6D /* Match */ = {
+			isa = PBXGroup;
+			children = (
+				A8DE1F2145E91D34FF944916 /* MatchCenterView.swift */,
+			);
+			path = Match;
+			sourceTree = "<group>";
+		};
+		A6C1D723EC37AC8BBE1E83F3 /* Chat */ = {
+			isa = PBXGroup;
+			children = (
+				C40292FF491E66CC26A27E8E /* LeagueChatView.swift */,
+			);
+			path = Chat;
+			sourceTree = "<group>";
+		};
+		A85E010994B4EB0EC90034EC /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				869B1FACE78B8D6525F4CFF6 /* IPLFantasyProUITests.swift */,
+				0A334C9BA7F46A2647634DB7 /* Appium */,
+				60F6C22495FA3926688DE956 /* Screenshots */,
+			);
+			path = UITests;
+			sourceTree = "<group>";
+		};
+		A91D232490E963FE9C91DCF3 /* Scores */ = {
+			isa = PBXGroup;
+			children = (
+				3EAF1AFF001A63785FAA475C /* LiveScoresView.swift */,
+			);
+			path = Scores;
+			sourceTree = "<group>";
+		};
+		AC61E1A4DB90D49317820BA2 /* League */ = {
+			isa = PBXGroup;
+			children = (
+				FC043182DCC67393B86B8EF7 /* InviteView.swift */,
+				7A39EC64DC654E21CFDC3C5F /* LeagueDetailView.swift */,
+				050BF05AC218C3C3908E725A /* LeagueListView.swift */,
+				79618747F458AE725C4447D7 /* LeagueSheets.swift */,
+			);
+			path = League;
+			sourceTree = "<group>";
+		};
+		B1803743C1B38E7CE405DBDA /* Leaderboard */ = {
+			isa = PBXGroup;
+			children = (
+				8EDDE202BF79ED7E66411079 /* LeaderboardView.swift */,
+			);
+			path = Leaderboard;
+			sourceTree = "<group>";
+		};
+		B9B56B1DE29CBA3D25A61125 /* Standings */ = {
+			isa = PBXGroup;
+			children = (
+				99537F44A81DEFB6E2FB344A /* StandingsView.swift */,
+			);
+			path = Standings;
+			sourceTree = "<group>";
+		};
+		C13FD3C37AA05E2973657C5A /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				6F578304EA1A3E3CE88A4425 /* Match.swift */,
+				7A96C32BB149E8C68ED0B7B1 /* Player.swift */,
+				2F1CE3EBEDDBA69EEB0980EB /* UserLeague.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		C5D8FE77161F61D1A3565286 /* AI */ = {
+			isa = PBXGroup;
+			children = (
+				8F929EF8E153E3B3F6388F3B /* AIRecommendationsView.swift */,
+			);
+			path = AI;
+			sourceTree = "<group>";
+		};
+		C942289C6EA680450256A96C /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				60B765F1D21BD5B8DAE46F06 /* ProfileView.swift */,
+			);
+			path = Profile;
+			sourceTree = "<group>";
+		};
+		F0B39947D82ABD4B51695B3A /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				FC276E0A76B6E34F75A6FF78 /* App */,
+				FDA1E8045436A1D16204F3B9 /* Components */,
+				C13FD3C37AA05E2973657C5A /* Models */,
+				0C1780ECADC63D8BDA455E30 /* Screens */,
+				F135B30B6932889AC2BB6B18 /* Services */,
+				728C4EA26B274174364C2B3D /* Theme */,
+				80F327F818F791B36212D68A /* Utils */,
+				6C8790922E7A0B453EAAD779 /* ViewModels */,
+				20CE700C33DF98351FE1B791 /* Widgets */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		F135B30B6932889AC2BB6B18 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				18287E70076DD88CFDC4EF45 /* APIService.swift */,
+				F3516517D0696CBC4C72B6FE /* AuthService.swift */,
+				1F8C79A893F712A8E7084928 /* DraftService.swift */,
+				0BC60401ED4C08366E88F276 /* LeagueService.swift */,
+				8D5584AE72ABD10A24CB4CAD /* NotificationService.swift */,
+				58FB851B95F458FC6F247239 /* OfflineManager.swift */,
+				6C5092B0C6B772941FC9807A /* WebSocketService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		F191D55E4561DA23FA63D3E0 = {
+			isa = PBXGroup;
+			children = (
+				F0B39947D82ABD4B51695B3A /* Sources */,
+				A85E010994B4EB0EC90034EC /* UITests */,
+				32FDB7D33F46C95E914B1B4B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F8ED7FEFC9D050369A2B8BFE /* Analytics */ = {
+			isa = PBXGroup;
+			children = (
+				8123F930661836631D1EFF69 /* AnalyticsView.swift */,
+			);
+			path = Analytics;
+			sourceTree = "<group>";
+		};
+		FC276E0A76B6E34F75A6FF78 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				87A34412F0F0525524AF29BD /* ContentView.swift */,
+				BCAD84D8FCBB0E59BFF6A896 /* Info.plist */,
+				AE0E8C2A60304E96608DD8D5 /* IPLFantasyProApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		FDA1E8045436A1D16204F3B9 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				20C2A217EE3165EAFF6F5186 /* Buttons.swift */,
+				1030863205AC31CF62A4A15F /* PlayerCard.swift */,
+				0E3388032317A4252D2F8169 /* UIEnhancements.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		65BECDEC58B6C8B1ACC6E25F /* IPLFantasyProUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5BCB6A58ED74DADCA04DB93C /* Build configuration list for PBXNativeTarget "IPLFantasyProUITests" */;
+			buildPhases = (
+				84F5B30DDA9AE01512D2B67F /* Sources */,
+				CF022687B670B39EEDCFB0F0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E69730DBB795A88C72F2812D /* PBXTargetDependency */,
+			);
+			name = IPLFantasyProUITests;
+			packageProductDependencies = (
+			);
+			productName = IPLFantasyProUITests;
+			productReference = 7227EBFF104A43A825E57F42 /* IPLFantasyProUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		EBF4737A2D81F81EB577DE95 /* IPLFantasyPro */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 854EFE46023FD724D8808B4F /* Build configuration list for PBXNativeTarget "IPLFantasyPro" */;
+			buildPhases = (
+				C18F7D7FC7FD57AD789DF989 /* Sources */,
+				C0D198858BF24C3C5A6F7FBB /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = IPLFantasyPro;
+			packageProductDependencies = (
+				64324E431F4D5CE25FBF33D3 /* FirebaseAuth */,
+				F5BF218BD49C7DFC3F5A824F /* GoogleSignIn */,
+				D3C5A1130B409889B9BE9572 /* Kingfisher */,
+				35582D06091AA36ABA3FFF61 /* Starscream */,
+			);
+			productName = IPLFantasyPro;
+			productReference = A24916ADC609630D2167FF6B /* IPLFantasyPro.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		23CC804E373581197BB9925E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					65BECDEC58B6C8B1ACC6E25F = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+						TestTargetID = EBF4737A2D81F81EB577DE95;
+					};
+					EBF4737A2D81F81EB577DE95 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 8521D78525EA719929B822B3 /* Build configuration list for PBXProject "IPLFantasyPro" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = F191D55E4561DA23FA63D3E0;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				83DC561E282A29964B40A019 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				8D4FAB377DF46E631B3AE18A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				745E78A2F9668A5F20632911 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				53145C9651A83A59C1ED57E8 /* XCRemoteSwiftPackageReference "Starscream" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EBF4737A2D81F81EB577DE95 /* IPLFantasyPro */,
+				65BECDEC58B6C8B1ACC6E25F /* IPLFantasyProUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CF022687B670B39EEDCFB0F0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FCFD7D7B920271FE8053C590 /* README.md in Resources */,
+				303F643EA59AC7A09C8321C9 /* appium.test.js in Resources */,
+				4F4351A86CFDF03918417154 /* caps.json in Resources */,
+				622595FF1EE5AA90A2954921 /* config.js in Resources */,
+				196C4D5ECDBF15B67F788D3E /* manual_home.png in Resources */,
+				62F2189BB07CD417561D0D52 /* package.json in Resources */,
+				448D1A9830A77E919B8B87EE /* wdio-video.conf.js in Resources */,
+				6EAA6A9A06B841A4B7C73EDA /* wdio.conf.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		84F5B30DDA9AE01512D2B67F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ABC32B62C75C7C6AA083EEB7 /* IPLFantasyProUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C18F7D7FC7FD57AD789DF989 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				14D852EE0705BB8D12878809 /* AIRecommendationsView.swift in Sources */,
+				DEFAE6EF27B1068AC619F829 /* APIService.swift in Sources */,
+				3AEF7A34D335377C7C5D48FE /* AnalyticsView.swift in Sources */,
+				FF47DC71FBFF72770511F75B /* AuthService.swift in Sources */,
+				C576CEB8C63093CF63898BD6 /* AuthViewModel.swift in Sources */,
+				BAD506E5DB0D3C7F8C470857 /* Buttons.swift in Sources */,
+				786227A4DE5DEC1AAAD822A5 /* CompareTeamsView.swift in Sources */,
+				0A6F2D31614D658C6AE8DD88 /* ContentView.swift in Sources */,
+				86D7210ED98CA02C6CB37A2D /* DashboardView.swift in Sources */,
+				5F6594C39BD6418F65BFB78E /* DraftRoomView.swift in Sources */,
+				77E79AAA8AACD198790458EA /* DraftService.swift in Sources */,
+				CDAF7EB7CE39506C70162B83 /* DraftViewModel.swift in Sources */,
+				5D9BBF24B41EFC7070C99F53 /* Helpers.swift in Sources */,
+				11287F2A02E5210D5B809337 /* IPLFantasyProApp.swift in Sources */,
+				1787D49C7ECDCA5D74096466 /* IPLFantasyWidget.swift in Sources */,
+				6B299330FAA9BF57782332E4 /* InviteView.swift in Sources */,
+				14DA9BF71C1F2CEA29CACD42 /* LeaderboardView.swift in Sources */,
+				EEBE10045580E9E696027756 /* LeagueChatView.swift in Sources */,
+				9B67D8B17B7CEA8A643FE716 /* LeagueDetailView.swift in Sources */,
+				C2C8B6DCC3E1DF9B1D4F6018 /* LeagueListView.swift in Sources */,
+				5008ABD8CD36E8226859A172 /* LeagueService.swift in Sources */,
+				2C5616203CC926B7447501D7 /* LeagueSheets.swift in Sources */,
+				AE59B54291A654C8C8F0019F /* LeagueViewModel.swift in Sources */,
+				59E4548B630200C1D03CACAF /* LiveScoresView.swift in Sources */,
+				3D5D66630ACB7C66BFC49F48 /* LoginView.swift in Sources */,
+				5FDCDB79FAF0574CD02F8F5B /* Match.swift in Sources */,
+				3CCD18D651CD8666AB9690C7 /* MatchCenterView.swift in Sources */,
+				F1631EB40E375342152634A8 /* MyTeamView.swift in Sources */,
+				D53AFC8C09B5A5123C34C76A /* NotificationService.swift in Sources */,
+				59EA98047711ACEC39886566 /* NotificationsView.swift in Sources */,
+				7AEE999E5BA15F6F4953FB46 /* OfflineManager.swift in Sources */,
+				4B21B354D2CD849BBC1EAAD1 /* Player.swift in Sources */,
+				1DD591409A6E3D5E27875B72 /* PlayerCard.swift in Sources */,
+				F3E7124EE16CA86B28F783EE /* PlayerDetailView.swift in Sources */,
+				046B52163EA7BA0428D8BE67 /* PlayerSearchView.swift in Sources */,
+				45CC57C6F4F55D3384127A0C /* ProfileView.swift in Sources */,
+				C23512D638DA5D6EC87F3940 /* RegisterView.swift in Sources */,
+				CA9B832D2F4FDB029DEFFD1B /* SettingsView.swift in Sources */,
+				756B73E5F21396280355139D /* StandingsView.swift in Sources */,
+				8907B8663D44E682DA68685C /* StatsDetailView.swift in Sources */,
+				9DDF1A33D511D438FDCDF221 /* TeamViewModel.swift in Sources */,
+				1477992D0853809440FF824E /* Theme.swift in Sources */,
+				AF9F5AE5163EEFD01E50C38B /* ThemeManager.swift in Sources */,
+				DF8FBA3092033622D84DADF0 /* UIEnhancements.swift in Sources */,
+				A3BD5AEA087D542966C7B1D6 /* UserLeague.swift in Sources */,
+				2C46F0AD2233979F12101CAB /* WebSocketService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E69730DBB795A88C72F2812D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EBF4737A2D81F81EB577DE95 /* IPLFantasyPro */;
+			targetProxy = 765868AC930042FF6748C12C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0660EA1C4D3A764054F67C0A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = Sources/App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.iplfantasy.pro;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		2E7215AB620100EC501AF059 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = Sources/App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.iplfantasy.pro;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3FAA7CE18748E80949D365DE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		5964B30C8C7F836AE016E140 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		5ABF3ECE3C373F0789A7B138 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = Sources/App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.iplfantasy.proUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = IPLFantasyPro;
+			};
+			name = Debug;
+		};
+		9F56820B9F762B6FED390504 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = Sources/App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.iplfantasy.proUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = IPLFantasyPro;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5BCB6A58ED74DADCA04DB93C /* Build configuration list for PBXNativeTarget "IPLFantasyProUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5ABF3ECE3C373F0789A7B138 /* Debug */,
+				9F56820B9F762B6FED390504 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8521D78525EA719929B822B3 /* Build configuration list for PBXProject "IPLFantasyPro" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5964B30C8C7F836AE016E140 /* Debug */,
+				3FAA7CE18748E80949D365DE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		854EFE46023FD724D8808B4F /* Build configuration list for PBXNativeTarget "IPLFantasyPro" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2E7215AB620100EC501AF059 /* Debug */,
+				0660EA1C4D3A764054F67C0A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		53145C9651A83A59C1ED57E8 /* XCRemoteSwiftPackageReference "Starscream" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/daltoniam/Starscream";
+			requirement = {
+				kind = exactVersion;
+				version = 4.0.6;
+			};
+		};
+		745E78A2F9668A5F20632911 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = exactVersion;
+				version = 7.10.0;
+			};
+		};
+		83DC561E282A29964B40A019 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = exactVersion;
+				version = 10.20.0;
+			};
+		};
+		8D4FAB377DF46E631B3AE18A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = exactVersion;
+				version = 7.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		35582D06091AA36ABA3FFF61 /* Starscream */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 53145C9651A83A59C1ED57E8 /* XCRemoteSwiftPackageReference "Starscream" */;
+			productName = Starscream;
+		};
+		64324E431F4D5CE25FBF33D3 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83DC561E282A29964B40A019 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		D3C5A1130B409889B9BE9572 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 745E78A2F9668A5F20632911 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		F5BF218BD49C7DFC3F5A824F /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8D4FAB377DF46E631B3AE18A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 23CC804E373581197BB9925E /* Project object */;
+}

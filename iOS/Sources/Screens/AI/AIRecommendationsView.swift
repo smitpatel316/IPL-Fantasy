@@ -341,8 +341,8 @@ class AIRecommendationsViewModel: ObservableObject {
         ]
         
         avoidPlayers = [
-            AIRecommendedPlayer(id: "6", name: "Rohit Sharma", team: "MI", price: 16, projectedPoints: 35, confidence: 45, reason: "Poor form against left-arm pace"),
-            AIRecommendedPlayer(id: "7", name: "KL Rahul", team: "LSG", price: 14, projectedPoints: 32, confidence: 40, reason: "Batting lower order concerns"),
+            AIRecommendedPlayer(id: "6", name: "Rohit Sharma", team: "MI", price: 16, projectedPoints: 35, confidence: 45, reason: "Poor form against left-arm pace", roi: 45),
+            AIRecommendedPlayer(id: "7", name: "KL Rahul", team: "LSG", price: 14, projectedPoints: 32, confidence: 40, reason: "Batting lower order concerns", roi: 50),
         ]
         
         matchupAnalysis = [

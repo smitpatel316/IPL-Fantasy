@@ -6,7 +6,10 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "test:api": "playwright test auth.spec.js league.spec.js draft.spec.js team.spec.js match.spec.js player.spec.js",
+    "test:ui-only": "playwright test app.spec.js",
+    "test:mobile": "playwright test --project='Mobile Chrome' --project='Mobile Safari'"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0"

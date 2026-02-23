@@ -4,7 +4,7 @@
 
 ```bash
 cd e2e
-npm install @playwright/test
+npm install
 npx playwright install chromium
 ```
 
@@ -12,42 +12,102 @@ npx playwright install chromium
 
 ```bash
 # Run all tests
-npx playwright test
+npm test
 
-# Run with UI
-npx playwright test --ui
+# Run with UI mode
+npm run test:ui
 
-# Run specific test
-npx playwright test login.spec.ts
+# Run with headed browser
+npm run test:headed
+
+# Run specific spec file
+npx playwright test auth.spec.js
+
+# Generate HTML report
+npm run test:report
+```
+
+## Test Structure
+
+```
+e2e/
+├── app.spec.js          # Main UI tests (home, auth, leagues, draft, team, match pages)
+├── auth.spec.js         # Authentication API tests
+├── league.spec.js       # League management API tests
+├── draft.spec.js        # Auction draft API tests
+├── team.spec.js         # Team management API tests
+├── match.spec.js        # Match and scores API tests
+├── player.spec.js       # Players API and health check tests
+├── playwright.config.js # Playwright configuration
+└── package.json
 ```
 
 ## Test Suites
 
-### Auth Tests (auth.spec.ts)
-- User can register with valid email
-- User can login with correct credentials
-- Invalid credentials are rejected
-- Token is stored securely
+### app.spec.js - UI Tests
+- Home page rendering
+- Authentication UI flows
+- League management UI
+- Draft room UI
+- Team management UI
+- Match center UI
+- Responsive design (mobile, tablet, desktop)
+- Accessibility checks
 
-### League Tests (league.spec.ts)
-- User can create a league
-- User can join a league with code
-- League shows correct member count
-- Commissioner can manage league
+### auth.spec.js - Authentication API
+- User registration with validation
+- Login with valid/invalid credentials
+- Token-based authentication
+- Protected route access
 
-### Draft Tests (draft.spec.ts)
-- Draft room displays available players
-- User can place bids
-- Timer counts down correctly
-- Player is sold to highest bidder
+### league.spec.js - League Management API
+- Create/view/update leagues
+- Join league with code
+- League members management
+- Draft status for leagues
 
-### Team Tests (team.spec.ts)
-- User can view their team
-- User can set captain
-- User can set vice-captain
-- Points calculate correctly
+### draft.spec.js - Auction Draft API
+- View available players
+- Place bids with validation
+- View draft teams and sold players
+- Draft clock management
 
-### Match Tests (match.spec.ts)
-- Live match displays scores
-- Category breakdown is accurate
-- Standings update correctly
+### team.spec.js - Team Management API
+- View team details and players
+- Set captain and vice-captain
+- Points calculation
+- Points breakdown by match
+
+### match.spec.js - Match & Scores API
+- List live/upcoming/completed matches
+- Match scores and details
+- Player points for matches
+- Analytics endpoints
+
+### player.spec.js - Players API
+- List/search players
+- Filter by team or role
+- Player statistics
+- Health check endpoint
+
+## Configuration
+
+Set environment variables:
+- `BASE_URL` - Frontend URL (default: http://localhost:3000)
+- `API_URL` - Backend API URL (default: http://localhost:3001)
+
+## Running Tests with Environment
+
+```bash
+# With custom URLs
+BASE_URL=http://localhost:3000 API_URL=http://localhost:3001 npm test
+
+# Run specific browser
+npx playwright test --project=chromium
+
+# Run only API tests
+npx playwright test auth.spec.js league.spec.js draft.spec.js team.spec.js match.spec.js player.spec.js
+
+# Run only UI tests
+npx playwright test app.spec.js
+```

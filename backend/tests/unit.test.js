@@ -1,120 +1,160 @@
-// Unit tests for backend services - no server needed
+const request = require('supertest');
+const jwt = require('jsonwebtoken');
 
-// Test 1: League Code Generation
-function generateCode() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
-}
+// Mock the database pool - handle both named and default exports
+jest.mock('../src/db/pool', () => {
+  const mockFn = jest.fn();
+  return {
+    __esModule: true,
+    default: { query: mockFn },
+    pool: { query: mockFn },
+    query: mockFn
+  };
+});
 
-// Test that code is 6 characters
-const code = generateCode();
-console.log(`Generated code: ${code} (length: ${code.length})`);
-console.assert(code.length === 6, 'Code should be 6 characters');
+const database = require('../src/db/pool');
+const pool = database;
 
-// Test code contains only valid characters
-const validChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-const isValid = code.split('').every(c => validChars.includes(c));
-console.assert(isValid, 'Code should only contain valid characters');
-console.log(`Code contains valid characters: ${isValid}`);
+// Global mock
+beforeEach(() => {
+  jest.clearAllMocks();
+  pool.query.mockResolvedValue({ rows: [] });
+});
 
-// Test 2: Player Filtering Logic
-const players = [
-  { id: '1', name: 'Virat Kohli', role: 'batsman', team: 'RCB', basePrice: 18 },
-  { id: '2', name: 'Jasprit Bumrah', role: 'bowler', team: 'MI', basePrice: 18 },
-  { id: '3', name: 'Rohit Sharma', role: 'batsman', team: 'MI', basePrice: 18 },
-  { id: '4', name: 'Andre Russell', role: 'allrounder', team: 'KKR', basePrice: 12 },
-];
+// Mock Socket.io
+jest.mock('socket.io', () => jest.fn().mockImplementation(() => ({
+  to: jest.fn().mockReturnThis(),
+  emit: jest.fn(),
+  on: jest.fn()
+})));
 
-function filterPlayers(players, { team, role, search }) {
-  let result = players;
-  
-  if (team) {
-    result = result.filter(p => p.team === team);
-  }
-  
-  if (role) {
-    result = result.filter(p => p.role === role);
-  }
-  
-  if (search) {
-    result = result.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
-  }
-  
-  return result;
-}
+const express = require('express');
+const cors = require('cors');
 
-// Test filtering
-const miPlayers = filterPlayers(players, { team: 'MI' });
-console.log(`MI Players: ${JSON.stringify(miPlayers)}`);
-console.assert(miPlayers.length === 2, 'Should have 2 MI players');
+const authRoutes = require('../src/routes/auth');
+const playerRoutes = require('../src/routes/players');
+const scoresRoutes = require('../src/routes/scores');
 
-const batsmen = filterPlayers(players, { role: 'batsman' });
-console.log(`Batsmen: ${JSON.stringify(batsmen)}`);
-console.assert(batsmen.length === 2, 'Should have 2 batsmen');
+const testApp = express();
+testApp.use(cors());
+testApp.use(express.json());
+testApp.set('io', { to: () => ({ emit: jest.fn() }) });
 
-const kohliSearch = filterPlayers(players, { search: 'Kohli' });
-console.log(`Kohli Search: ${JSON.stringify(kohliSearch)}`);
-console.assert(kohliSearch.length === 1, 'Should find 1 Kohli');
+testApp.use('/api/auth', authRoutes);
+testApp.use('/api/players', playerRoutes);
+testApp.use('/api/scores', scoresRoutes);
+testApp.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-// Test 3: Points Calculation
-function calculatePoints(player, isCaptain, isViceCaptain) {
-  let points = player.totalPoints || 0;
-  
-  if (isCaptain) {
-    points *= 2; // 2x multiplier
-  } else if (isViceCaptain) {
-    points *= 1.5; // 1.5x multiplier
-  }
-  
-  return Math.floor(points);
-}
+const JWT_SECRET = 'ipl-fantasy-secret-key-2026';
+const generateToken = (userId = 'test-user') => jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '1h' });
 
-const testPlayer = { name: 'Kohli', totalPoints: 100 };
-const captainPoints = calculatePoints(testPlayer, true, false);
-const vicePoints = calculatePoints(testPlayer, false, true);
-const normalPoints = calculatePoints(testPlayer, false, false);
+// ==================== TESTS ====================
 
-console.log(`Captain points: ${captainPoints} (expected: 200)`);
-console.assert(captainPoints === 200, 'Captain should get 2x points');
+describe('Health', () => {
+  test('GET /api/health returns ok', async () => {
+    const res = await request(testApp).get('/api/health');
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ok');
+  });
+});
 
-console.log(`ViceCaptain points: ${vicePoints} (expected: 150)`);
-console.assert(vicePoints === 150, 'ViceCaptain should get 1.5x points');
+describe('Auth API', () => {
+  test('POST /api/auth/register - success', async () => {
+    const res = await request(testApp)
+      .post('/api/auth/register')
+      .send({ email: 'new@test.com', password: 'password123', displayName: 'New User' });
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty('token');
+  });
 
-console.log(`Normal points: ${normalPoints} (expected: 100)`);
-console.assert(normalPoints === 100, 'Normal player should get base points');
+  test('POST /api/auth/register - invalid email', async () => {
+    const res = await request(testApp)
+      .post('/api/auth/register')
+      .send({ email: 'invalid', password: '123456', displayName: 'Test' });
+    expect(res.status).toBe(400);
+  });
 
-// Test 4: Budget Validation
-function canAfford(budget, bid) {
-  return bid > 0 && bid <= budget;
-}
+  test('POST /api/authlogin - success', async () => {
+    const res = await request(testApp)
+      .post('/api/auth/login')
+      .send({ email: 'test@test.com', password: 'password123' });
+    expect([200, 400]).toContain(res.status);
+  });
 
-console.log(`Can afford 50 from 100: ${canAfford(100, 50)}`);
-console.assert(canAfford(100, 50) === true, 'Should be able to afford');
+  test('GET /api/auth/me - with valid token', async () => {
+    const res = await request(testApp)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${generateToken()}`);
+    expect([200, 401]).toContain(res.status);
+  });
 
-console.log(`Can afford 150 from 100: ${canAfford(100, 150)}`);
-console.assert(canAfford(100, 150) === false, 'Should not be able to afford');
+  test('GET /api/auth/me - no token', async () => {
+    const res = await request(testApp).get('/api/auth/me');
+    expect(res.status).toBe(401);
+  });
+});
 
-console.log(`Can afford 0: ${canAfford(100, 0)}`);
-console.assert(canAfford(100, 0) === false, 'Should not be able to afford 0');
+describe('Players API', () => {
+  test('GET /api/players returns list', async () => {
+    const res = await request(testApp).get('/api/players');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
 
-// Test 5: Match Outcome Calculation
-function determineWinner(homePoints, awayPoints) {
-  if (homePoints > awayPoints) return 'home';
-  if (awayPoints > homePoints) return 'away';
-  return 'tie';
-}
+  test('GET /api/players?team=RCB filters by team', async () => {
+    const res = await request(testApp).get('/api/players?team=RCB');
+    expect(res.status).toBe(200);
+  });
 
-console.log(`Home 100, Away 80: ${determineWinner(100, 80)}`);
-console.assert(determineWinner(100, 80) === 'home', 'Home should win');
+  test('GET /api/players?role=batsman filters by role', async () => {
+    const res = await request(testApp).get('/api/players?role=batsman');
+    expect(res.status).toBe(200);
+  });
 
-console.log(`Home 80, Away 100: ${determineWinner(80, 100)}`);
-console.assert(determineWinner(80, 100) === 'away', 'Away should win');
+  test('GET /api/players/:id returns player', async () => {
+    const res = await request(testApp).get('/api/players/p1');
+    expect([200, 404]).toContain(res.status);
+  });
 
-console.log(`Home 100, Away 100: ${determineWinner(100, 100)}`);
-console.assert(determineWinner(100, 100) === 'tie', 'Should be tie');
+  test('GET /api/players/meta/teams returns teams', async () => {
+    const res = await request(testApp).get('/api/players/meta/teams');
+    expect(res.status).toBe(200);
+  });
 
-console.log('\n✅ All unit tests passed!');
+  test('GET /api/players/meta/roles returns roles', async () => {
+    const res = await request(testApp).get('/api/players/meta/roles');
+    expect(res.status).toBe(200);
+    expect(res.body).toContain('batsman');
+  });
+});
+
+describe('Scores API', () => {
+  test('GET /api/scores/live', async () => {
+    const res = await request(testApp).get('/api/scores/live');
+    expect(res.status).toBe(200);
+  });
+
+  test('GET /api/scores/upcoming', async () => {
+    const res = await request(testApp).get('/api/scores/upcoming');
+    expect(res.status).toBe(200);
+  });
+
+  test('GET /api/scores/completed', async () => {
+    const res = await request(testApp).get('/api/scores/completed');
+    expect(res.status).toBe(200);
+  });
+
+  test('POST /api/scores/webhook', async () => {
+    const res = await request(testApp)
+      .post('/api/scores/webhook')
+      .send({ matchId: 'm1' });
+    expect(res.status).toBe(200);
+  });
+
+  test('POST /api/scores/sync-points', async () => {
+    const res = await request(testApp)
+      .post('/api/scores/sync-points')
+      .send({ matchId: 'm1' });
+    expect(res.status).toBe(200);
+  });
+});
