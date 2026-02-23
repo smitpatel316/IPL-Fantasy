@@ -439,13 +439,15 @@ struct SnakePick: Codable, Identifiable {
 
 // MARK: - Auto Pick Settings
 struct AutoPickSettings: Codable {
+    var leagueId: String = ""
     var isEnabled: Bool
     var preferredRoles: [String]
     var maxPrice: Double
     var minProjectedPoints: Int
     var priorityStrategy: String
 
-    init() {
+    init(leagueId: String = "") {
+        self.leagueId = leagueId
         self.isEnabled = false
         self.preferredRoles = []
         self.maxPrice = 10.0

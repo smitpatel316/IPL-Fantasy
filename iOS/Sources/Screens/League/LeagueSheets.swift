@@ -95,9 +95,9 @@ struct CreateLeagueSheet: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             let newLeague = League(
                 name: leagueName,
+                commissionerId: "currentUser",
                 maxTeams: maxTeams,
-                auctionBudget: auctionBudget,
-                commissionerId: "currentUser"
+                auctionBudget: auctionBudget
             )
             viewModel.leagues.append(newLeague)
             isLoading = false

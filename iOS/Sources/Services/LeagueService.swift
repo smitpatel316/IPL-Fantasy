@@ -105,22 +105,22 @@ class LeagueService {
     }
     
     func joinLeague(code: String, user: User, teamName: String) throws -> League? {
-        guard let league = leagues.first(where: { $0.code == code }) else {
+        guard let index = leagues.firstIndex(where: { $0.code == code }) else {
             throw LeagueError.leagueNotFound
         }
-        
-        guard league.members.count < league.maxTeams else {
+
+        guard leagues[index].members.count < leagues[index].maxTeams else {
             throw LeagueError.leagueFull
         }
-        
-        guard !league.members.contains(where: { $0.userId == user.id }) else {
+
+        guard !leagues[index].members.contains(where: { $0.userId == user.id }) else {
             throw LeagueError.alreadyJoined
         }
-        
-        let member = LeagueMember(userId: user.id, user: user, teamName: teamName, budgetRemaining: league.auctionBudget)
-        league.members.append(member)
-        
-        return league
+
+        let member = LeagueMember(userId: user.id, user: user, teamName: teamName, budgetRemaining: leagues[index].auctionBudget)
+        leagues[index].members.append(member)
+
+        return leagues[index]
     }
     
     func leaveLeague(leagueId: String, userId: String) {
@@ -183,7 +183,6 @@ struct LeagueResponse: Decodable {
         return League(
             id: id,
             name: name,
-            code: code,
             commissionerId: commissionerId,
             maxTeams: maxTeams,
             auctionBudget: auctionBudget,
@@ -228,7 +227,6 @@ struct LeagueDetailResponse: Decodable {
         return League(
             id: id,
             name: name,
-            code: code,
             commissionerId: commissionerId,
             maxTeams: maxTeams,
             auctionBudget: auctionBudget,
