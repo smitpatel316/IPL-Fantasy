@@ -105,6 +105,94 @@ const migrate = async () => {
         console.log('Applied: add_audit_log');
       }
     }
+
+    // Migration: Add league chat messages
+    if (!appliedMigrations.has('add_league_chat')) {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS league_chat_messages (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          league_id UUID REFERENCES leagues(id) ON DELETE CASCADE,
+          user_id UUID REFERENCES users(id),
+          message TEXT NOT NULL,
+          message_type VARCHAR(20) DEFAULT 'text',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX idx_league_chat_league ON league_chat_messages(league_id);
+        CREATE INDEX idx_league_chat_created ON league_chat_messages(created_at DESC);
+        INSERT INTO migrations (name) VALUES ('add_league_chat');
+        console.log('Applied: add_league_chat');
+      }
+    }
+
+    // Migration: Add chat message reactions
+    if (!appliedMigrations.has('add_chat_reactions')) {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS chat_reactions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          message_id UUID REFERENCES league_chat_messages(id) ON DELETE CASCADE,
+          user_id UUID REFERENCES users(id),
+          emoji VARCHAR(10) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(message_id, user_id, emoji)
+        );
+        CREATE INDEX idx_chat_reactions_message ON chat_reactions(message_id);
+        INSERT INTO migrations (name) VALUES ('add_chat_reactions');
+        console.log('Applied: add_chat_reactions');
+      }
+    }
+    
+    // Migration: Add snake draft support
+    if (!appliedMigrations.has('add_snake_draft')) {
+      await client.query(`
+        ALTER TABLE auction_drafts ADD COLUMN IF NOT EXISTS draft_type VARCHAR(20) DEFAULT 'auction';
+        ALTER TABLE auction_drafts ADD COLUMN IF NOT EXISTS current_pick_number INTEGER DEFAULT 0;
+        
+        CREATE TABLE IF NOT EXISTS snake_picks (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          draft_id UUID REFERENCES auction_drafts(id) ON DELETE CASCADE,
+          pick_number INTEGER NOT NULL,
+          round INTEGER NOT NULL,
+          team_position INTEGER NOT NULL,
+          league_member_id UUID REFERENCES league_members(id),
+          player_id UUID REFERENCES players(id),
+          is_drafting BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(draft_id, pick_number)
+        );
+        
+        CREATE INDEX idx_snake_picks_draft ON snake_picks(draft_id);
+        CREATE INDEX idx_snake_picks_member ON snake_picks(league_member_id);
+        
+        INSERT INTO migrations (name) VALUES ('add_snake_draft');
+        console.log('Applied: add_snake_draft');
+      }
+    }
+    
+    // Migration: Add auto-pick settings
+    if (!appliedMigrations.has('add_auto_pick')) {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS auto_pick_settings (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+          league_id UUID REFERENCES leagues(id) ON DELETE CASCADE,
+          is_enabled BOOLEAN DEFAULT FALSE,
+          favorite_players UUID[] DEFAULT '{}',
+          preferred_roles VARCHAR(20)[] DEFAULT '{}',
+          max_price DECIMAL(10,2) DEFAULT 100.00,
+          auto_bid_enabled BOOLEAN DEFAULT FALSE,
+          auto_bid_increment DECIMAL(10,2) DEFAULT 1.00,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, league_id)
+        );
+        
+        CREATE INDEX idx_auto_pick_user_league ON auto_pick_settings(user_id, league_id);
+        
+        INSERT INTO migrations (name) VALUES ('add_auto_pick');
+        console.log('Applied: add_auto_pick');
+      }
+    }
     
     await client.query('COMMIT');
     console.log('All migrations applied successfully!');

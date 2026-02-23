@@ -15,6 +15,7 @@ const authRoutes = require('./routes/auth');
 const leagueRoutes = require('./routes/leagues');
 const playerRoutes = require('./routes/players');
 const draftRoutes = require('./routes/drafts');
+const autoPickRoutes = require('./routes/autoPick');
 const teamRoutes = require('./routes/teams');
 const matchRoutes = require('./routes/matches');
 const chatRoutes = require('./routes/chat');
@@ -105,30 +106,88 @@ io.use((socket, next) => {
   }
 });
 
+// Track online users per league
+const leagueUsers = new Map(); // leagueId -> Set of userIds
+
 io.on('connection', (socket) => {
   log.info(`User connected: ${socket.user.id}`);
   
+  // Join league room (for chat, draft, etc.)
   socket.on('join:league', (data) => {
     const { leagueId } = data;
     socket.join(`league-${leagueId}`);
+    
+    // Track online user
+    if (!leagueUsers.has(leagueId)) {
+      leagueUsers.set(leagueId, new Set());
+    }
+    leagueUsers.get(leagueId).add(socket.user.id);
+    
+    // Notify others in the league
+    socket.to(`league-${leagueId}`).emit('chat:user_joined', {
+      userId: socket.user.id,
+      onlineUsers: Array.from(leagueUsers.get(leagueId))
+    });
+    
     log.info(`User ${socket.user.id} joined league ${leagueId}`);
   });
   
+  // Leave league room
   socket.on('leave:league', (data) => {
     const { leagueId } = data;
     socket.leave(`league-${leagueId}`);
+    
+    // Remove from online users
+    if (leagueUsers.has(leagueId)) {
+      leagueUsers.get(leagueId).delete(socket.user.id);
+      
+      // Notify others
+      socket.to(`league-${leagueId}`).emit('chat:user_left', {
+        userId: socket.user.id,
+        onlineUsers: Array.from(leagueUsers.get(leagueId))
+      });
+    }
+  });
+  
+  // Typing indicator
+  socket.on('chat:typing', (data) => {
+    const { leagueId } = data;
+    socket.to(`league-${leagueId}`).emit('chat:typing', {
+      userId: socket.user.id,
+      leagueId
+    });
+  });
+  
+  // Stop typing indicator
+  socket.on('chat:stop_typing', (data) => {
+    const { leagueId } = data;
+    socket.to(`league-${leagueId}`).emit('chat:stop_typing', {
+      userId: socket.user.id,
+      leagueId
+    });
   });
   
   socket.on('disconnect', () => {
+    // Remove user from all league rooms they were in
+    for (const [leagueId, users] of leagueUsers.entries()) {
+      if (users.has(socket.user.id)) {
+        users.delete(socket.user.id);
+        io.to(`league-${leagueId}`).emit('chat:user_left', {
+          userId: socket.user.id,
+          onlineUsers: Array.from(users)
+        });
+      }
+    }
     log.info(`User disconnected: ${socket.user.id}`);
   });
 });
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/leagues', authenticate, leagueRoutes);
+app.use('/api/leagues', leagueRoutes);
 app.use('/api/players', optionalAuth, playerRoutes);
 app.use('/api/drafts', authenticate, draftRoutes);
+app.use('/api/auto-pick', authenticate, autoPickRoutes);
 app.use('/api/teams', authenticate, teamRoutes);
 app.use('/api/matches', authenticate, matchRoutes);
 app.use('/api/chat', authenticate, chatRoutes);

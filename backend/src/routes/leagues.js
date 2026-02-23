@@ -30,6 +30,109 @@ const generateCode = () => {
   return code;
 };
 
+// Validate invite code (public endpoint - no auth required)
+router.get('/invite/:code', async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    // Find league by code
+    const leagueResult = await pool.query(
+      'SELECT id, name, code, max_teams, auction_budget, status FROM leagues WHERE code = $1',
+      [code.toUpperCase()]
+    );
+
+    if (leagueResult.rows.length === 0) {
+      return res.status(404).json({ error: 'League not found' });
+    }
+
+    const league = leagueResult.rows[0];
+
+    // Get current member count
+    const memberCount = await pool.query(
+      'SELECT COUNT(*) FROM league_members WHERE league_id = $1',
+      [league.id]
+    );
+
+    const isFull = parseInt(memberCount.rows[0].count) >= league.max_teams;
+
+    res.json({
+      valid: true,
+      league: {
+        id: league.id,
+        name: league.name,
+        code: league.code,
+        maxTeams: league.max_teams,
+        currentTeams: parseInt(memberCount.rows[0].count),
+        isFull,
+        status: league.status
+      }
+    });
+  } catch (error) {
+    console.error('Validate invite error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Regenerate invite code (commissioner only)
+router.post('/:id/invite/regenerate', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if commissioner
+    const leagueResult = await pool.query(
+      'SELECT * FROM leagues WHERE id = $1 AND commissioner_id = $2',
+      [id, req.userId]
+    );
+
+    if (leagueResult.rows.length === 0) {
+      return res.status(403).json({ error: 'Only commissioner can regenerate invite code' });
+    }
+
+    const newCode = generateCode();
+
+    await pool.query(
+      'UPDATE leagues SET code = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [newCode, id]
+    );
+
+    res.json({
+      message: 'Invite code regenerated',
+      code: newCode
+    });
+  } catch (error) {
+    console.error('Regenerate invite error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get shareable invite link
+router.get('/:id/invite', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const leagueResult = await pool.query(
+      'SELECT code, name FROM leagues WHERE id = $1',
+      [id]
+    );
+
+    if (leagueResult.rows.length === 0) {
+      return res.status(404).json({ error: 'League not found' });
+    }
+
+    const league = leagueResult.rows[0];
+
+    res.json({
+      leagueId: id,
+      leagueName: league.name,
+      code: league.code,
+      inviteUrl: `${process.env.FRONTEND_URL || 'iplfantasy://'}/join/${league.code}`
+    });
+  } catch (error) {
+    console.error('Get invite error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get all leagues for user
 router.get('/', auth, async (req, res) => {
   try {

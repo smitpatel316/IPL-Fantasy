@@ -36,16 +36,16 @@ struct League: Identifiable, Codable {
         case completed
     }
     
-    init(id: String = UUID().uuidString, name: String, commissionerId: String, maxTeams: Int = 10, auctionBudget: Double = 100.0) {
+    init(id: String = UUID().uuidString, name: String, commissionerId: String, maxTeams: Int = 10, auctionBudget: Double = 100.0, createdAt: Date = Date(), status: LeagueStatus = .open, members: [LeagueMember] = []) {
         self.id = id
         self.name = name
         self.code = League.generateCode()
         self.commissionerId = commissionerId
         self.maxTeams = maxTeams
         self.auctionBudget = auctionBudget
-        self.createdAt = Date()
-        self.status = .open
-        self.members = []
+        self.createdAt = createdAt
+        self.status = status
+        self.members = members
     }
     
     private static func generateCode() -> String {
@@ -64,12 +64,13 @@ struct LeagueMember: Identifiable, Codable {
     var isCommissioner: Bool
     var joinedAt: Date
     
-    init(id: String = UUID().uuidString, userId: String, teamName: String, isCommissioner: Bool = false, budgetRemaining: Double = 100.0) {
+    init(id: String = UUID().uuidString, userId: String, user: User? = nil, teamName: String, isCommissioner: Bool = false, budgetRemaining: Double = 100.0, joinedAt: Date = Date()) {
         self.id = id
         self.userId = userId
+        self.user = user
         self.teamName = teamName
         self.isCommissioner = isCommissioner
         self.budgetRemaining = budgetRemaining
-        self.joinedAt = Date()
+        self.joinedAt = joinedAt
     }
 }

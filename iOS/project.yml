@@ -48,6 +48,11 @@ targets:
         CFBundleName: IPLFantasyPro
         CFBundleShortVersionString: "1.0.0"
         CFBundleVersion: "1"
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Editor
+            CFBundleURLName: com.iplfantasy.pro
+            CFBundleURLSchemes:
+              - iplfantasy
         UILaunchScreen:
           UIColorName: AccentColor
         UISupportedInterfaceOrientations:

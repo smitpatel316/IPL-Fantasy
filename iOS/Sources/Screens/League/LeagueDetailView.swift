@@ -4,6 +4,7 @@ import SwiftUI
 struct LeagueDetailView: View {
     let league: League
     @State private var selectedTab = 0
+    @State private var showingInviteSheet = false
     
     var body: some View {
         NavigationStack {
@@ -40,8 +41,8 @@ struct LeagueDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
-                        Button(action: {}) {
-                            Label("Invite", systemImage: "person.badge.plus")
+                        Button(action: { showingInviteSheet = true }) {
+                            Label("Invite Players", systemImage: "person.badge.plus")
                         }
                         Button(action: {}) {
                             Label("Leave League", systemImage: "arrow.right.square")
@@ -51,6 +52,9 @@ struct LeagueDetailView: View {
                             .foregroundColor(AppColors.primary)
                     }
                 }
+            }
+            .sheet(isPresented: $showingInviteSheet) {
+                LeagueInviteView(league: league)
             }
         }
     }
@@ -146,6 +150,11 @@ struct LeagueDetailView: View {
         ["Overview", "Teams", "Schedule", "Settings"].firstIndex(of: tab) ?? 0
     }
     
+    private func copyLeagueCode() {
+        UIPasteboard.general.string = league.code
+        // Could show a toast notification here
+    }
+    
     private var statusColor: Color {
         switch league.status {
         case .open: return AppColors.success
@@ -158,27 +167,30 @@ struct LeagueDetailView: View {
     private var overviewTab: some View {
         ScrollView {
             VStack(spacing: AppSpacing.md) {
-                // League Code
-                HStack {
-                    Text("League Code:")
-                        .font(AppFonts.subheadline)
-                        .foregroundColor(AppColors.textSecondary)
-                    
-                    Spacer()
-                    
-                    Text(league.code)
-                        .font(AppFonts.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(AppColors.accent)
-                    
-                    Button(action: {}) {
+                // League Code - Tap to copy
+                Button(action: copyLeagueCode) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("League Code:")
+                                .font(AppFonts.caption)
+                                .foregroundColor(AppColors.textSecondary)
+                            
+                            Text(league.code)
+                                .font(AppFonts.headline)
+                                .fontWeight(.bold)
+                                .foregroundColor(AppColors.accent)
+                        }
+                        
+                        Spacer()
+                        
                         Image(systemName: "doc.on.doc")
                             .foregroundColor(AppColors.primary)
                     }
+                    .padding(AppSpacing.md)
+                    .background(AppColors.card)
+                    .cornerRadius(AppCornerRadius.medium)
                 }
-                .padding(AppSpacing.md)
-                .background(AppColors.card)
-                .cornerRadius(AppCornerRadius.medium)
+                .buttonStyle(PlainButtonStyle())
                 
                 // Commissioner
                 HStack {

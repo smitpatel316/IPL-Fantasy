@@ -92,18 +92,37 @@ const initDB = async () => {
       )
     `);
 
-    // Auction drafts table
+    // Auction drafts table (now supports both auction and snake drafts)
     await client.query(`
       CREATE TABLE IF NOT EXISTS auction_drafts (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         league_id UUID REFERENCES leagues(id) ON DELETE CASCADE,
+        draft_type VARCHAR(20) DEFAULT 'auction',
         status VARCHAR(20) DEFAULT 'pending',
         current_player_id UUID REFERENCES players(id),
         current_bid DECIMAL(10,2) DEFAULT 0,
         current_bidder_id UUID REFERENCES league_members(id),
+        current_pick_number INTEGER DEFAULT 0,
         timer_seconds INTEGER DEFAULT 60,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Snake draft picks table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS snake_picks (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        draft_id UUID REFERENCES auction_drafts(id) ON DELETE CASCADE,
+        pick_number INTEGER NOT NULL,
+        round INTEGER NOT NULL,
+        team_position INTEGER NOT NULL,
+        league_member_id UUID REFERENCES league_members(id),
+        player_id UUID REFERENCES players(id),
+        is_drafting BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(draft_id, pick_number)
       )
     `);
 
@@ -166,6 +185,35 @@ const initDB = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // League chat messages
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS league_chat_messages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        league_id UUID REFERENCES leagues(id) ON DELETE CASCADE,
+        user_id UUID REFERENCES users(id),
+        message TEXT NOT NULL,
+        message_type VARCHAR(20) DEFAULT 'text',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Chat message reactions
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS chat_reactions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        message_id UUID REFERENCES league_chat_messages(id) ON DELETE CASCADE,
+        user_id UUID REFERENCES users(id),
+        emoji VARCHAR(10) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(message_id, user_id, emoji)
+      )
+    `);
+
+    // Create indexes for chat
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_league_chat_league ON league_chat_messages(league_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_league_chat_created ON league_chat_messages(created_at DESC)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_chat_reactions_message ON chat_reactions(message_id)`);
 
     await client.query('COMMIT');
     console.log('Database tables created successfully!');

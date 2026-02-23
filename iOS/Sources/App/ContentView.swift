@@ -19,6 +19,9 @@ struct ContentView: View {
 // MARK: - Main Tab View
 struct MainTabView: View {
     @State private var selectedTab = 0
+    @State private var showingJoinSheet = false
+    @State private var joinCode = ""
+    @StateObject private var leagueViewModel = LeagueViewModel()
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -36,7 +39,7 @@ struct MainTabView: View {
                 }
                 .tag(1)
             
-            DraftRoomView()
+            DraftRoomView(leagueId: "")
                 .tabItem {
                     Image(systemName: "hammer.fill")
                     Text("Draft")
@@ -58,5 +61,14 @@ struct MainTabView: View {
                 .tag(4)
         }
         .tint(AppColors.primary)
+        .onReceive(NotificationCenter.default.publisher(for: .showJoinLeague)) { notification in
+            if let code = notification.userInfo?["code"] as? String {
+                joinCode = code
+                showingJoinSheet = true
+            }
+        }
+        .sheet(isPresented: $showingJoinSheet) {
+            JoinLeagueFromLinkView(inviteCode: joinCode)
+        }
     }
 }

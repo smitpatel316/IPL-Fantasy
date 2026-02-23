@@ -27,32 +27,59 @@ class LeagueViewModel: ObservableObject {
             .assign(to: &$leagues)
     }
     
-    func loadLeagues() {
-        leagues = leagueService.getLeagues()
+    func loadLeagues() async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            let fetchedLeagues = try await leagueService.fetchLeagues()
+            leagues = fetchedLeagues
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        
+        isLoading = false
     }
     
-    func createLeague(commissionerId: String) {
+    func loadLeagueDetails(id: String) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            currentLeague = try await leagueService.getLeagueDetails(id: id)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        
+        isLoading = false
+    }
+    
+    func createLeague() async {
         guard !newLeagueName.isEmpty else {
             errorMessage = "Please enter league name"
             return
         }
         
         isLoading = true
+        errorMessage = nil
         
-        let league = leagueService.createLeague(
-            name: newLeagueName,
-            commissionerId: commissionerId,
-            maxTeams: newLeagueMaxTeams,
-            budget: newLeagueBudget
-        )
+        do {
+            let league = try await leagueService.createLeague(
+                name: newLeagueName,
+                maxTeams: newLeagueMaxTeams,
+                budget: newLeagueBudget
+            )
+            currentLeague = league
+            showCreateLeague = false
+            clearCreateForm()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
         
-        currentLeague = league
-        showCreateLeague = false
-        clearCreateForm()
         isLoading = false
     }
     
-    func joinLeague(user: User) {
+    func joinLeague() async {
         guard !joinCode.isEmpty, !teamName.isEmpty else {
             errorMessage = "Please enter code and team name"
             return
@@ -62,9 +89,8 @@ class LeagueViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            if let league = try leagueService.joinLeague(code: joinCode, user: user, teamName: teamName) {
-                currentLeague = league
-            }
+            let league = try await leagueService.joinLeague(code: joinCode, teamName: teamName)
+            currentLeague = league
             showJoinLeague = false
             clearJoinForm()
         } catch {
@@ -76,6 +102,20 @@ class LeagueViewModel: ObservableObject {
     
     func selectLeague(_ league: League) {
         currentLeague = league
+    }
+    
+    // MARK: - Invite Methods
+    
+    func validateInviteCode(_ code: String) async throws -> InviteValidationResult {
+        try await leagueService.validateInviteCode(code)
+    }
+    
+    func getInviteLink(leagueId: String) async throws -> InviteLink {
+        try await leagueService.getInviteLink(leagueId: leagueId)
+    }
+    
+    func regenerateInviteCode(leagueId: String) async throws -> String {
+        try await leagueService.regenerateInviteCode(leagueId: leagueId)
     }
     
     private func clearCreateForm() {

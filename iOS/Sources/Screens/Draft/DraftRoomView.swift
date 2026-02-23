@@ -5,6 +5,13 @@ struct DraftRoomView: View {
     @StateObject private var viewModel = DraftViewModel()
     @State private var showingBidSheet = false
     @State private var bidAmount: Double = 0
+    @State private var selectedDraftType: DraftType = .auction
+    @State private var showingDraftTypePicker = false
+    let leagueId: String
+    
+    init(leagueId: String = "") {
+        self.leagueId = leagueId
+    }
     
     var body: some View {
         NavigationStack {
@@ -13,39 +20,102 @@ struct DraftRoomView: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Current Player Auction
-                    if let player = viewModel.currentPlayer {
-                        AuctionPlayerCard(
-                            player: player,
-                            currentBid: viewModel.currentBid,
-                            currentBidder: viewModel.currentBidder?.teamName,
-                            timer: viewModel.draftTimer
-                        )
-                        .padding(AppSpacing.md)
-                        
-                        // Bid Controls
-                        bidControls
-                    } else {
-                        // No Active Draft
-                        noActiveDraft
-                    }
+                    // Draft Type Selector
+                    draftTypeSelector
                     
-                    // Bid History
-                    bidHistorySection
+                    // Show appropriate draft view based on type
+                    if viewModel.isSnakeDraft() {
+                        SnakeDraftContent(viewModel: viewModel, leagueId: leagueId, bidAmount: $bidAmount, showingBidSheet: $showingBidSheet)
+                    } else {
+                        AuctionDraftContent(viewModel: viewModel, bidAmount: $bidAmount, showingBidSheet: $showingBidSheet)
+                    }
                 }
             }
-            .navigationTitle("Auction Draft")
+            .navigationTitle("Draft Room")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if viewModel.isDraftActive {
-                        Button("End Draft") {
-                            viewModel.stopDraft()
+                    Menu {
+                        Button("Auction Draft") {
+                            viewModel.startDraft(members: [], type: .auction, leagueId: leagueId)
                         }
-                        .foregroundColor(AppColors.error)
+                        Button("Snake Draft") {
+                            viewModel.startDraft(members: [], type: .snake, leagueId: leagueId)
+                        }
+                        Divider()
+                        if viewModel.isDraftActive {
+                            Button("End Draft", role: .destructive) {
+                                viewModel.stopDraft()
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
                     }
                 }
             }
+            .sheet(isPresented: $showingBidSheet) {
+                BidSheet(amount: $bidAmount) {
+                    // Place bid logic
+                }
+            }
+        }
+    }
+    
+    // MARK: - Draft Type Selector
+    
+    private var draftTypeSelector: some View {
+        HStack(spacing: 0) {
+            draftTypeButton(type: .auction, title: "Auction")
+            draftTypeButton(type: .snake, title: "Snake")
+        }
+        .padding(AppSpacing.xs)
+        .background(AppColors.surface)
+    }
+    
+    private func draftTypeButton(type: DraftType, title: String) -> some View {
+        Button(action: {
+            showingDraftTypePicker = true
+        }) {
+            Text(title)
+                .font(AppFonts.subheadline)
+                .fontWeight(viewModel.draftType == type ? .semibold : .regular)
+                .foregroundColor(viewModel.draftType == type ? AppColors.primary : AppColors.textMuted)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, AppSpacing.sm)
+                .background(viewModel.draftType == type ? AppColors.primary.opacity(0.1) : Color.clear)
+                .cornerRadius(AppCornerRadius.small)
+        }
+    }
+}
+
+// MARK: - Auction Draft Content
+
+struct AuctionDraftContent: View {
+    @ObservedObject var viewModel: DraftViewModel
+    @Binding var bidAmount: Double
+    @Binding var showingBidSheet: Bool
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Current Player Auction
+            if let player = viewModel.currentPlayer {
+                AuctionPlayerCard(
+                    player: player,
+                    currentBid: viewModel.currentBid,
+                    currentBidder: viewModel.currentBidder?.teamName,
+                    timer: viewModel.draftTimer
+                )
+                .padding(AppSpacing.md)
+                
+                // Bid Controls
+                bidControls
+            } else {
+                // No Active Draft
+                noActiveDraft
+            }
+            
+            // Bid History
+            bidHistorySection
         }
     }
     
@@ -55,7 +125,7 @@ struct DraftRoomView: View {
             HStack(spacing: AppSpacing.sm) {
                 ForEach([0.5, 1.0, 2.0], id: \.self) { increment in
                     Button(action: {
-                        viewModel.placeBid(amount: viewModel.currentBid + increment)
+                        // Place bid logic
                     }) {
                         Text("+₹\(Int(increment))Cr")
                             .font(AppFonts.caption)
@@ -77,7 +147,7 @@ struct DraftRoomView: View {
                     .frame(width: 100)
                 
                 Button("Place Bid") {
-                    viewModel.placeBid(amount: bidAmount)
+                    showingBidSheet = true
                 }
                 .buttonStyle(PrimaryButtonStyle())
             }
@@ -123,13 +193,13 @@ struct DraftRoomView: View {
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.textPrimary)
             
-            Text("Start a draft from your league to begin bidding on players")
+            Text("Start an auction draft from your league to begin bidding on players")
                 .font(AppFonts.body)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
             
-            Button(action: { viewModel.startDraft(members: []) }) {
-                Text("Start Demo Draft")
+            Button(action: { viewModel.startDraft(members: [], type: .auction, leagueId: leagueId) }) {
+                Text("Start Auction Draft")
                     .font(AppFonts.subheadline)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
@@ -171,6 +241,58 @@ struct DraftRoomView: View {
     }
 }
 
+// MARK: - Snake Draft Content
+
+struct SnakeDraftContent: View {
+    @ObservedObject var viewModel: DraftViewModel
+    let leagueId: String
+    @Binding var bidAmount: Double
+    @Binding var showingBidSheet: Bool
+    
+    var body: some View {
+        SnakeDraftView(viewModel: viewModel, leagueId: leagueId)
+    }
+}
+
+// MARK: - Bid Sheet
+
+struct BidSheet: View {
+    @Binding var amount: Double
+    let onSubmit: () -> Void
+    
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: AppSpacing.lg) {
+                TextField("Enter bid amount", value: $amount, format: .number)
+                    .keyboardType(.decimalPad)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(AppSpacing.md)
+                
+                Button("Place Bid") {
+                    onSubmit()
+                    dismiss()
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                
+                Spacer()
+            }
+            .navigationTitle("Place Bid")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Bid History Row
+
 struct BidHistoryRow: View {
     let entry: BidHistoryEntry
     
@@ -201,6 +323,7 @@ struct BidHistoryRow: View {
 }
 
 // MARK: - Primary Button Style
+
 struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
