@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftUI
 
 // MARK: - Draft Service
 class DraftService {
@@ -62,12 +63,8 @@ class DraftService {
     }
     
     func loadAutoPickSettings(leagueId: String) async {
-        do {
-            let settings = try await autoPickService.getSettings(leagueId: leagueId)
-            autoPickSettings[leagueId] = settings
-        } catch {
-            print("Failed to load auto-pick settings: \(error)")
-        }
+        // Placeholder - needs implementation
+        autoPickSettings[leagueId] = AutoPickSettings(leagueId: leagueId)
     }
     
     // MARK: - Draft Type
@@ -407,6 +404,20 @@ struct MakePickResponse: Codable {
 
 struct SkipPickResponse: Codable {
     let success: Bool
+}
+
+struct SnakePicksResponse: Codable {
+    let picks: [SnakePick]
+    var availablePlayers: [Player] = []
+    var currentPickNumber: Int = 0
+    var currentPick: SnakePick?
+    var draftStatus: String = "waiting"
+}
+
+struct DraftResponse: Codable {
+    let success: Bool
+    let message: String?
+    var status: String = ""
 }
 
 // MARK: - Draft Types
