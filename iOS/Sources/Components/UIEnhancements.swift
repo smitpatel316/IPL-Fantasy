@@ -33,9 +33,7 @@ struct LoadingOverlay: View {
                 .ignoresSafeArea()
 
             VStack(spacing: AppSpacing.md) {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    .scaleEffect(1.5)
+                CricketBallLoader()
 
                 Text(message)
                     .font(AppFonts.body)
@@ -44,6 +42,33 @@ struct LoadingOverlay: View {
             .padding(AppSpacing.xl)
             .background(AppColors.card)
             .cornerRadius(AppCornerRadius.card)
+        }
+    }
+}
+
+// MARK: - Cricket Ball Loader
+struct CricketBallLoader: View {
+    @State private var isAnimating = false
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<3) { index in
+                Circle()
+                    .stroke(AppColors.primary.opacity(0.3), lineWidth: 2)
+                    .frame(width: CGFloat(index * 20 + 20), height: CGFloat(index * 20 + 20))
+            }
+
+            Image(systemName: "cricket.bat.ball")
+                .font(.system(size: 30))
+                .foregroundColor(AppColors.primary)
+                .rotationEffect(.degrees(isAnimating ? 360 : 0))
+                .animation(
+                    .linear(duration: 1).repeatForever(autoreverses: false),
+                    value: isAnimating
+                )
+        }
+        .onAppear {
+            isAnimating = true
         }
     }
 }
