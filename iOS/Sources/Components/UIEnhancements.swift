@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Error Alert Modifier
 struct ErrorAlert: ViewModifier {
     @Binding var error: String?
-    
+
     func body(content: Content) -> some View {
         content
             .alert("Error", isPresented: Binding(
@@ -26,17 +26,17 @@ extension View {
 // MARK: - Loading Overlay
 struct LoadingOverlay: View {
     let message: String
-    
+
     var body: some View {
         ZStack {
             Color.black.opacity(0.5)
                 .ignoresSafeArea()
-            
+
             VStack(spacing: AppSpacing.md) {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .scaleEffect(1.5)
-                
+
                 Text(message)
                     .font(AppFonts.body)
                     .foregroundColor(.white)
@@ -48,14 +48,107 @@ struct LoadingOverlay: View {
     }
 }
 
+// MARK: - Glow Effect
+struct GlowEffect: ViewModifier {
+    let color: Color
+    let radius: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .shadow(color: color.opacity(0.6), radius: radius, x: 0, y: 0)
+            .shadow(color: color.opacity(0.3), radius: radius * 2, x: 0, y: 0)
+    }
+}
+
+extension View {
+    func glow(color: Color = AppColors.primary, radius: CGFloat = 10) -> some View {
+        modifier(GlowEffect(color: color, radius: radius))
+    }
+}
+
+// MARK: - Shimmer Effect
+struct ShimmerModifier: ViewModifier {
+    @State private var phase: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                LinearGradient(
+                    colors: [
+                        .clear,
+                        Color.white.opacity(0.3),
+                        .clear
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .offset(x: phase)
+            )
+            .onAppear {
+                withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                    phase = 400
+                }
+            }
+            .mask(content)
+    }
+}
+
+extension View {
+    func shimmer() -> some View {
+        modifier(ShimmerModifier())
+    }
+}
+
+// MARK: - Pulsing Animation
+struct PulsingModifier: ViewModifier {
+    @State private var isPulsing = false
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(isPulsing ? 1.05 : 1.0)
+            .opacity(isPulsing ? 0.8 : 1.0)
+            .animation(
+                .easeInOut(duration: 0.8).repeatForever(autoreverses: true),
+                value: isPulsing
+            )
+            .onAppear {
+                isPulsing = true
+            }
+    }
+}
+
+extension View {
+    func pulsing() -> some View {
+        modifier(PulsingModifier())
+    }
+}
+
+// MARK: - Card Style with Gradient
+struct GradientCardStyle: ViewModifier {
+    let gradient: LinearGradient
+
+    func body(content: Content) -> some View {
+        content
+            .background(gradient)
+            .cornerRadius(AppCornerRadius.card)
+            .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
+    }
+}
+
+extension View {
+    func gradientCard(_ gradient: LinearGradient = AppColors.cardGradient) -> some View {
+        modifier(GradientCardStyle(gradient: gradient))
+    }
+}
+
 // MARK: - Toast View
 struct ToastView: View {
     let message: String
     let type: ToastType
-    
+
     enum ToastType {
         case success, error, info
-        
+
         var color: Color {
             switch self {
             case .success: return AppColors.success
@@ -63,7 +156,7 @@ struct ToastView: View {
             case .info: return AppColors.primary
             }
         }
-        
+
         var icon: String {
             switch self {
             case .success: return "checkmark.circle.fill"
@@ -72,12 +165,12 @@ struct ToastView: View {
             }
         }
     }
-    
+
     var body: some View {
         HStack(spacing: AppSpacing.md) {
             Image(systemName: type.icon)
                 .foregroundColor(type.color)
-            
+
             Text(message)
                 .font(AppFonts.body)
                 .foregroundColor(AppColors.textPrimary)
@@ -87,39 +180,6 @@ struct ToastView: View {
         .background(AppColors.card)
         .cornerRadius(AppCornerRadius.medium)
         .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
-    }
-}
-
-// MARK: - Shimmer Effect
-struct ShimmerModifier: ViewModifier {
-    @State private var phase: CGFloat = 0
-    
-    func body(content: Content) -> some View {
-        content
-            .overlay(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.clear,
-                        Color.white.opacity(0.3),
-                        Color.clear
-                    ]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .offset(x: phase)
-                .onAppear {
-                    withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
-                        phase = 400
-                    }
-                }
-            )
-            .clipped()
-    }
-}
-
-extension View {
-    func shimmer() -> some View {
-        modifier(ShimmerModifier())
     }
 }
 
@@ -133,19 +193,19 @@ struct SkeletonLoader: View {
                         .fill(AppColors.surface)
                         .frame(width: 50, height: 50)
                         .shimmer()
-                    
+
                     VStack(alignment: .leading, spacing: AppSpacing.xs) {
                         RoundedRectangle(cornerRadius: 4)
                             .fill(AppColors.surface)
                             .frame(width: 150, height: 16)
                             .shimmer()
-                        
+
                         RoundedRectangle(cornerRadius: 4)
                             .fill(AppColors.surface)
                             .frame(width: 100, height: 12)
                             .shimmer()
                     }
-                    
+
                     Spacer()
                 }
                 .padding(AppSpacing.md)

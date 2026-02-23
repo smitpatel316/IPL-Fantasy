@@ -50,7 +50,9 @@ struct LeagueListView: View {
                 JoinLeagueSheet(viewModel: viewModel)
             }
             .onAppear {
-                viewModel.loadLeagues()
+                Task {
+                    await viewModel.loadLeagues()
+                }
             }
         }
     }

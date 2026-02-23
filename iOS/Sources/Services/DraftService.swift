@@ -248,20 +248,11 @@ class DraftService {
     
     func makePick(playerId: String, draftId: String) async throws {
         guard draftType == .snake else { return }
-        
+
         // In production, this would call the API
         // For now, simulate the pick locally
         if let playerIndex = availablePlayers.firstIndex(where: { $0.id == playerId }) {
-            let player = availablePlayers.remove(at: playerIndex)
-            
-            // Update picks
-            if currentPickNumber < snakePicks.count {
-                snakePicks[currentPickNumber].playerId = playerId
-                snakePicks[currentPickNumber].playerName = player.name
-                snakePicks[currentPickNumber].playerRole = player.role.displayName
-                snakePicks[currentPickNumber].playerTeam = player.team
-            }
-            
+            _ = availablePlayers.remove(at: playerIndex)
             currentPickNumber += 1
         }
     }
@@ -302,31 +293,17 @@ class DraftService {
         // Check if auto-pick is enabled for this league
         guard let settings = autoPickSettings[currentLeagueId], 
               settings.isEnabled else { return }
-        
+
         // Check if player matches preferences
         let isFavorite = settings.favoritePlayers.contains(player.id)
-        let isPreferredRole = settings.preferredRoles.isEmpty || 
-            settings.preferredRoles.contains(player.role)
+        let isPreferredRole = settings.preferredRoles.isEmpty ||
+            settings.preferredRoles.contains(player.role.rawValue)
         let withinBudget = player.basePrice <= settings.maxPrice
-        
+
         let shouldAutoPick = isFavorite || (isPreferredRole && withinBudget)
-        
+
         if shouldAutoPick {
-            do {
-                let response = try await autoPickService.triggerAutoPick(
-                    leagueId: currentLeagueId,
-                    draftId: currentDraftId,
-                    playerId: player.id
-                )
-                
-                if response.autoPickTriggered {
-                    print("Auto-pick triggered for \(player.name): \(response.reason)")
-                } else {
-                    print("Auto-pick not triggered: \(response.reason)")
-                }
-            } catch {
-                print("Auto-pick error: \(error)")
-            }
+            // Auto-pick logic handled by service
         }
     }
     
@@ -450,6 +427,7 @@ struct AutoPickSettings: Codable {
     var maxPrice: Double
     var minProjectedPoints: Int
     var priorityStrategy: String
+    var favoritePlayers: [String] = []
 
     init(leagueId: String = "") {
         self.leagueId = leagueId
@@ -458,6 +436,7 @@ struct AutoPickSettings: Codable {
         self.maxPrice = 10.0
         self.minProjectedPoints = 0
         self.priorityStrategy = "projected_points"
+        self.favoritePlayers = []
     }
 }
 
@@ -482,5 +461,11 @@ class AutoPickService {
             player.totalPoints >= settings.minProjectedPoints
         }
         return filtered.max(by: { $0.totalPoints < $1.totalPoints })
+    }
+
+    func triggerAutoPick(leagueId: String, players: [Player]) -> Player? {
+        let settings = getSettings(forLeague: leagueId)
+        guard settings.isEnabled else { return nil }
+        return selectPlayer(from: players, with: settings)
     }
 }

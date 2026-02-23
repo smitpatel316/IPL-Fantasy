@@ -40,14 +40,14 @@ struct Player: Identifiable, Codable, Hashable {
         }
     }
     
-    init(id: String = UUID().uuidString, name: String, role: PlayerRole, team: String, basePrice: Double, imageURL: String? = nil, totalPoints: Int = 0, isOverseas: Bool = false) {
+    init(id: String = UUID().uuidString, name: String, role: PlayerRole, team: String, basePrice: Double, imageURL: String? = nil, totalPoints: Int = 0, isOverseas: Bool = false, isSold: Bool = false) {
         self.id = id
         self.name = name
         self.role = role
         self.team = team
         self.basePrice = basePrice
         self.imageURL = imageURL
-        self.isSold = false
+        self.isSold = isSold
         self.isOverseas = isOverseas
         self.currentBid = nil
         self.ownerId = nil

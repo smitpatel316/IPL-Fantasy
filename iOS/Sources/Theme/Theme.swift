@@ -6,27 +6,52 @@ struct AppColors {
     static let primary = Color(hex: "E31E24")  // IPL Red
     static let secondary = Color(hex: "1E3A5F")  // Deep Blue
     static let accent = Color(hex: "FFB81C")  // Gold/Yellow
-    
+
     // Backgrounds
     static let background = Color(hex: "121212")
     static let surface = Color(hex: "1E1E1E")
     static let card = Color(hex: "2C2C2C")
-    
+
     // Text
     static let textPrimary = Color.white
     static let textSecondary = Color.gray
     static let textMuted = Color(hex: "888888")
-    
+
     // Status
     static let success = Color.green
     static let warning = Color.orange
     static let error = Color.red
-    
+
     // Player Roles
     static let batsman = Color(hex: "4CAF50")
     static let bowler = Color(hex: "F44336")
     static let allRounder = Color(hex: "9C27B0")
     static let wicketKeeper = Color(hex: "2196F3")
+
+    // Gradients
+    static let primaryGradient = LinearGradient(
+        colors: [Color(hex: "E31E24"), Color(hex: "FF4D4D")],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let accentGradient = LinearGradient(
+        colors: [Color(hex: "FFB81C"), Color(hex: "FFD54F")],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
+
+    static let cardGradient = LinearGradient(
+        colors: [Color(hex: "2C2C2C"), Color(hex: "3D3D3D")],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
+    static let liveGradient = LinearGradient(
+        colors: [Color(hex: "E31E24"), Color(hex: "FF6B6B")],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
 }
 
 // MARK: - Theme Spacing
