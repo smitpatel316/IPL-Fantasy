@@ -4,28 +4,32 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var leagueViewModel = LeagueViewModel()
-    
+    @State private var isRefreshing = false
+
     var body: some View {
         NavigationStack {
             ZStack {
                 AppColors.background
                     .ignoresSafeArea()
-                
+
                 ScrollView {
                     VStack(spacing: AppSpacing.lg) {
                         // Welcome Header
                         welcomeHeader
-                        
+
                         // Quick Stats
                         quickStats
-                        
+
                         // Active Matches
                         activeMatchesSection
-                        
+
                         // Your Leagues
                         yourLeaguesSection
                     }
                     .padding(AppSpacing.md)
+                    .refreshable {
+                        await leagueViewModel.loadLeagues()
+                    }
                 }
             }
             .navigationTitle("Dashboard")
