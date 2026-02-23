@@ -5,7 +5,7 @@ import Combine
 @MainActor
 class AuthViewModel: ObservableObject {
     @Published var isAuthenticated = false
-    @Published var currentUser: User?
+    @Published var currentUser: AppUser?
     @Published var isLoading = false
     @Published var errorMessage: String?
     

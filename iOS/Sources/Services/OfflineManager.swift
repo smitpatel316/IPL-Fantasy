@@ -4,14 +4,14 @@ import Combine
 // MARK: - Cache Manager
 class CacheManager {
     static let shared = CacheManager()
-    
-    private let cache = NSCache<NSString, CachedResponse>()
+
+    private let cache = NSCache<NSString, NSData>()
     private let userDefaults = UserDefaults.standard
-    
+
     private init() {
         cache.countLimit = 100
     }
-    
+
     // MARK: - Cache Keys
     enum CacheKey: String {
         case leagues = "cached_leagues"
@@ -20,7 +20,7 @@ class CacheManager {
         case team = "cached_team"
         case lastSync = "last_sync_timestamp"
     }
-    
+
     // MARK: - Save to Cache
     func save<T: Encodable>(_ object: T, forKey key: CacheKey) {
         do {
@@ -31,13 +31,13 @@ class CacheManager {
             print("Cache save error: \(error)")
         }
     }
-    
+
     // MARK: - Load from Cache
     func load<T: Decodable>(_ type: T.Type, forKey key: CacheKey) -> T? {
         guard let data = userDefaults.data(forKey: key.rawValue) else { return nil }
-        
+
         do {
-            return try JSONDecoder().decode(type, forKey: key)
+            return try JSONDecoder().decode(type, from: data)
         } catch {
             print("Cache load error: \(error)")
             return nil

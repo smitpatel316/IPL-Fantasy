@@ -13,7 +13,7 @@ final class WebSocketService: WebSocketDelegate {
     // Event handlers
     var onBidUpdate: ((BidUpdate) -> Void)?
     var onDraftSold: ((DraftSold) -> Void)?
-    var onChatMessage: ((ChatMessage) -> Void)?
+    var onWebSocketChatMessage: ((WebSocketChatMessage) -> Void)?
     var onTradeUpdate: ((TradeUpdate) -> Void)?
     var onMatchUpdate: ((MatchUpdate) -> Void)?
     var onConnectionStatus: ((Bool) -> Void)?
@@ -126,8 +126,8 @@ final class WebSocketService: WebSocketDelegate {
             
         case "chat:message":
             if let chatData = try? JSONSerialization.data(withJSONObject: payload),
-               let chat = try? JSONDecoder().decode(ChatMessage.self, from: chatData) {
-                onChatMessage?(chat)
+               let chat = try? JSONDecoder().decode(WebSocketChatMessage.self, from: chatData) {
+                onWebSocketChatMessage?(chat)
             }
             
         case "trade:update":
@@ -192,7 +192,7 @@ struct DraftSold: Codable {
     }
 }
 
-struct ChatMessage: Codable {
+struct WebSocketChatMessage: Codable {
     let id: String
     let leagueId: String
     let userId: String

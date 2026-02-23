@@ -184,7 +184,7 @@ struct CompareTeamsView: View {
             }
             
             // Winner
-            let.totalPoints > team winner = team12.totalPoints ? team1.name : team2.name
+            let winner = team1.totalPoints > team2.totalPoints ? team1.name : team2.name
             let diff = abs(team1.totalPoints - team2.totalPoints)
             
             HStack {

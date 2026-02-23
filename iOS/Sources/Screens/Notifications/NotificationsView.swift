@@ -71,12 +71,12 @@ struct NotificationRow: View {
                 // Icon
                 ZStack {
                     Circle()
-                        .fill(notification.color.opacity(0.2))
+                        .fill(notification.type.color.opacity(0.2))
                         .frame(width: 44, height: 44)
-                    
-                    Image(systemName: notification.icon)
+
+                    Image(systemName: notification.type.icon)
                         .font(.system(size: 18))
-                        .foregroundColor(notification.color)
+                        .foregroundColor(notification.type.color)
                 }
                 
                 // Content

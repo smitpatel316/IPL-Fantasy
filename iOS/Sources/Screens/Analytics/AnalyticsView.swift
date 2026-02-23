@@ -78,10 +78,10 @@ struct AnalyticsView: View {
                 .foregroundColor(AppColors.textPrimary)
             
             VStack(spacing: AppSpacing.sm) {
-                PointsBar(category: "Batting", points: viewModel.battingPoints, total: viewModel.totalPoints, color: AppColors.success)
-                PointsBar(category: "Bowling", points: viewModel.bowlingPoints, total: viewModel.totalPoints, color: AppColors.error)
-                PointsBar(category: "Fielding", points: viewModel.fieldingPoints, total: viewModel.totalPoints, color: AppColors.primary)
-                PointsBar(category: "Milestones", points: viewModel.milestonePoints, total: viewModel.totalPoints, color: AppColors.accent)
+                AnalyticsPointsBar(label: "Batting", points: viewModel.battingPoints, total: viewModel.totalPoints, color: AppColors.success)
+                AnalyticsPointsBar(label: "Bowling", points: viewModel.bowlingPoints, total: viewModel.totalPoints, color: AppColors.error)
+                AnalyticsPointsBar(label: "Fielding", points: viewModel.fieldingPoints, total: viewModel.totalPoints, color: AppColors.primary)
+                AnalyticsPointsBar(label: "Milestones", points: viewModel.milestonePoints, total: viewModel.totalPoints, color: AppColors.accent)
             }
         }
         .padding(AppSpacing.md)
@@ -205,17 +205,17 @@ struct AnalyticsCard: View {
     }
 }
 
-// MARK: - Points Bar
-struct PointsBar: View {
-    let category: String
+// MARK: - Analytics Points Bar
+struct AnalyticsPointsBar: View {
+    let label: String
     let points: Int
     let total: Int
     let color: Color
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.xs) {
             HStack {
-                Text(category)
+                Text(label)
                     .font(AppFonts.caption)
                     .foregroundColor(AppColors.textSecondary)
                 

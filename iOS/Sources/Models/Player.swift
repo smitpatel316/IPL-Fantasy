@@ -10,6 +10,7 @@ struct Player: Identifiable, Codable, Hashable {
     var basePrice: Double
     var currentBid: Double?
     var isSold: Bool
+    var isOverseas: Bool
     var ownerId: String?
     var stats: PlayerStats?
     var totalPoints: Int = 0
@@ -39,7 +40,7 @@ struct Player: Identifiable, Codable, Hashable {
         }
     }
     
-    init(id: String = UUID().uuidString, name: String, role: PlayerRole, team: String, basePrice: Double, imageURL: String? = nil, totalPoints: Int = 0) {
+    init(id: String = UUID().uuidString, name: String, role: PlayerRole, team: String, basePrice: Double, imageURL: String? = nil, totalPoints: Int = 0, isOverseas: Bool = false) {
         self.id = id
         self.name = name
         self.role = role
@@ -47,6 +48,7 @@ struct Player: Identifiable, Codable, Hashable {
         self.basePrice = basePrice
         self.imageURL = imageURL
         self.isSold = false
+        self.isOverseas = isOverseas
         self.currentBid = nil
         self.ownerId = nil
         self.stats = nil

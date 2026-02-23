@@ -21,17 +21,8 @@ struct SettingsView: View {
                     VStack(spacing: AppSpacing.lg) {
                         // Auto-Pick Section
                         settingsSection(title: "Draft Settings") {
-                            NavigationLink {
-                                LeagueAutoPickListView(
-                                    onSelectLeague: { leagueId, leagueName in
-                                        selectedLeagueId = leagueId
-                                        selectedLeagueName = leagueName
-                                    }
-                                )
-                            } label: {
-                                SettingsRow(icon: "bolt.fill", title: "Auto-Pick Settings", color: AppColors.primary)
-                            }
-                            
+                            SettingsRow(icon: "bolt.fill", title: "Auto-Pick Settings", color: AppColors.primary)
+
                             SettingsInfoRow(title: "Auto-Pick Status", value: "Configure per league")
                         }
                         

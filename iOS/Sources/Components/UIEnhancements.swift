@@ -14,7 +14,6 @@ struct ErrorAlert: ViewModifier {
             } message: {
                 Text(error ?? "Something went wrong")
             }
-        }
     }
 }
 

@@ -25,7 +25,7 @@ struct CreateLeagueSheet: View {
                                 .foregroundColor(AppColors.textSecondary)
                             
                             TextField("Enter league name", text: $leagueName)
-                                .textFieldStyle(CustomTextFieldStyle())
+                                .textFieldStyle(LeagueTextFieldStyle())
                         }
                         
                         // Max Teams
@@ -146,7 +146,7 @@ struct JoinLeagueSheet: View {
                             .foregroundColor(AppColors.textSecondary)
                         
                         TextField("Enter code", text: $leagueCode)
-                            .textFieldStyle(CustomTextFieldStyle())
+                            .textFieldStyle(LeagueTextFieldStyle())
                             .textInputAutocapitalization(.characters)
                             .autocorrectionDisabled()
                     }
@@ -212,8 +212,8 @@ struct JoinLeagueSheet: View {
     }
 }
 
-// MARK: - Custom Text Field Style
-struct CustomTextFieldStyle: TextFieldStyle {
+// MARK: - League Text Field Style
+struct LeagueTextFieldStyle: TextFieldStyle {
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration
             .padding(AppSpacing.md)

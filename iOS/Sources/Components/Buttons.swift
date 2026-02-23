@@ -91,22 +91,22 @@ struct AppTextField: View {
 }
 
 // MARK: - Card View
-struct CardView: View {
+struct CardView<Content: View>: View {
     var backgroundColor: Color = AppColors.card
     var padding: CGFloat = AppSpacing.md
-    
+    @ViewBuilder let content: () -> Content
+
+    init(@ViewBuilder content: @escaping () -> Content) {
+        self.content = content
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.sm) {
-            content
+            content()
         }
         .padding(padding)
         .background(backgroundColor)
         .cornerRadius(AppCornerRadius.card)
-    }
-    
-    @ViewBuilder
-    var content: some View {
-        EmptyView()
     }
 }
 

@@ -302,3 +302,14 @@ struct RegenerateInviteResponse: Decodable {
     let message: String
     let code: String
 }
+
+// MARK: - Invite League Info
+struct InviteLeagueInfo: Identifiable {
+    let id: String
+    let name: String
+    let code: String
+    let maxTeams: Int
+    let currentTeams: Int
+    let isFull: Bool
+    let status: League.LeagueStatus
+}

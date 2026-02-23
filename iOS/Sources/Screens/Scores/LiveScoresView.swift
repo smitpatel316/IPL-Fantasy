@@ -96,7 +96,7 @@ struct LiveScoresView: View {
 
 // MARK: - Live Match Card
 struct LiveMatchCard: View {
-    let match: LiveMatch
+    let match: LiveMatchScore
     
     var body: some View {
         VStack(spacing: AppSpacing.md) {
@@ -163,10 +163,9 @@ struct LiveMatchCard: View {
                     Text("\(String(format: "%.2f", match.requiredRunRate))")
                         .font(AppFonts.caption)
                         .fontWeight(.bold)
-                        .foregroundColor(AppColors.warning                    Spacer()
-)
-                    
-                    
+                        .foregroundColor(AppColors.warning)
+                    Spacer()
+
                     Text("CRR:")
                         .font(AppFonts.caption)
                         .foregroundColor(AppColors.textMuted)
@@ -224,7 +223,7 @@ struct TeamLogo: View {
 }
 
 struct UpcomingMatchCard: View {
-    let match: LiveMatch
+    let match: LiveMatchScore
     
     var body: some View {
         HStack(spacing: AppSpacing.md) {
@@ -255,7 +254,7 @@ struct UpcomingMatchCard: View {
 }
 
 struct CompletedMatchCard: View {
-    let match: LiveMatch
+    let match: LiveMatchScore
     
     var body: some View {
         HStack(spacing: AppSpacing.md) {
@@ -291,9 +290,9 @@ struct CompletedMatchCard: View {
 // MARK: - Live Scores View Model
 @MainActor
 class LiveScoresViewModel: ObservableObject {
-    @Published var liveMatches: [LiveMatch] = []
-    @Published var upcomingMatches: [LiveMatch] = []
-    @Published var completedMatches: [LiveMatch] = []
+    @Published var liveMatches: [LiveMatchScore] = []
+    @Published var upcomingMatches: [LiveMatchScore] = []
+    @Published var completedMatches: [LiveMatchScore] = []
     
     private var timer: Timer?
     
@@ -322,7 +321,7 @@ class LiveScoresViewModel: ObservableObject {
     
     private func loadMockData() {
         liveMatches = [
-            LiveMatch(
+            LiveMatchScore(
                 id: "1",
                 league: "IPL 2026",
                 team1: "Mumbai Indians",
@@ -346,7 +345,7 @@ class LiveScoresViewModel: ObservableObject {
         ]
         
         upcomingMatches = [
-            LiveMatch(
+            LiveMatchScore(
                 id: "2",
                 league: "IPL 2026",
                 team1: "Royal Challengers Bangalore",
@@ -358,7 +357,7 @@ class LiveScoresViewModel: ObservableObject {
                 winner: "",
                 result: ""
             ),
-            LiveMatch(
+            LiveMatchScore(
                 id: "3",
                 league: "IPL 2026",
                 team1: "Delhi Capitals",
@@ -373,7 +372,7 @@ class LiveScoresViewModel: ObservableObject {
         ]
         
         completedMatches = [
-            LiveMatch(
+            LiveMatchScore(
                 id: "4",
                 league: "IPL 2026",
                 team1: "Gujarat Titans",
@@ -395,7 +394,7 @@ class LiveScoresViewModel: ObservableObject {
     }
 }
 
-struct LiveMatch: Identifiable {
+struct LiveMatchScore: Identifiable {
     let id: String
     let league: String
     let team1: String

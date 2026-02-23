@@ -8,9 +8,13 @@ struct DraftRoomView: View {
     @State private var selectedDraftType: DraftType = .auction
     @State private var showingDraftTypePicker = false
     let leagueId: String
-    
+
     init(leagueId: String = "") {
         self.leagueId = leagueId
+    }
+
+    init() {
+        self.leagueId = ""
     }
     
     var body: some View {
@@ -198,7 +202,7 @@ struct AuctionDraftContent: View {
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
             
-            Button(action: { viewModel.startDraft(members: [], type: .auction, leagueId: leagueId) }) {
+            Button(action: { viewModel.startDraft(members: [], type: .auction, leagueId: "") }) {
                 Text("Start Auction Draft")
                     .font(AppFonts.subheadline)
                     .fontWeight(.semibold)
@@ -248,9 +252,14 @@ struct SnakeDraftContent: View {
     let leagueId: String
     @Binding var bidAmount: Double
     @Binding var showingBidSheet: Bool
-    
+
     var body: some View {
-        SnakeDraftView(viewModel: viewModel, leagueId: leagueId)
+        VStack {
+            Text("Snake Draft")
+                .font(AppFonts.headline)
+            Text("Draft in progress...")
+                .font(AppFonts.body)
+        }
     }
 }
 

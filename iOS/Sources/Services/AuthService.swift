@@ -7,7 +7,7 @@ class AuthService: ObservableObject {
     static let shared = AuthService()
     
     @Published private(set) var isAuthenticated = false
-    @Published private(set) var currentUser: User?
+    @Published private(set) var currentUser: AppUser?
     
     private let api = APIService.shared
     private let keychain = KeychainHelper.shared
@@ -21,7 +21,7 @@ class AuthService: ObservableObject {
     private func loadStoredSession() {
         guard let token = keychain.get("auth_token"),
               let userData = UserDefaults.standard.data(forKey: "current_user"),
-              let user = try? JSONDecoder().decode(User.self, from: userData) else {
+              let user = try? JSONDecoder().decode(AppUser.self, from: userData) else {
             return
         }
         
@@ -55,10 +55,41 @@ class AuthService: ObservableObject {
     func logout() {
         keychain.delete("auth_token")
         UserDefaults.standard.removeObject(forKey: "current_user")
-        
+
         api.setAuthToken(nil)
         currentUser = nil
         isAuthenticated = false
+    }
+
+    // MARK: - Social Login
+
+    func loginWithGoogle(idToken: String) async throws {
+        // Mock implementation for Google Sign-In
+        let mockToken = "google_mock_token_\(UUID().uuidString)"
+        let mockUser = AppUser(id: UUID().uuidString, email: "google_user@gmail.com", displayName: "Google User", avatarUrl: nil)
+        keychain.set(mockToken, forKey: "auth_token")
+        currentUser = mockUser
+        isAuthenticated = true
+        api.setAuthToken(mockToken)
+
+        if let data = try? JSONEncoder().encode(mockUser) {
+            UserDefaults.standard.set(data, forKey: "current_user")
+        }
+    }
+
+    func loginWithApple(idToken: String, fullName: String?) async throws {
+        // Mock implementation for Apple Sign-In
+        let mockToken = "apple_mock_token_\(UUID().uuidString)"
+        let displayName = fullName ?? "Apple User"
+        let mockUser = AppUser(id: UUID().uuidString, email: "apple_user@icloud.com", displayName: displayName, avatarUrl: nil)
+        keychain.set(mockToken, forKey: "auth_token")
+        currentUser = mockUser
+        isAuthenticated = true
+        api.setAuthToken(mockToken)
+
+        if let data = try? JSONEncoder().encode(mockUser) {
+            UserDefaults.standard.set(data, forKey: "current_user")
+        }
     }
     
     // MARK: - Private
@@ -170,10 +201,10 @@ struct AppleRequest: Encodable {
 
 struct AuthResponse: Decodable {
     let token: String
-    let user: User
+    let user: AppUser
 }
 
-struct User: Codable {
+struct AppUser: Codable {
     let id: String
     let email: String
     let displayName: String

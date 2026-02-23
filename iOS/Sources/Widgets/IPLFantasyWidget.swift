@@ -272,7 +272,6 @@ struct LargeWidgetView: View {
 }
 
 // MARK: - Widget Configuration
-@main
 struct IPLFantasyWidget: Widget {
     let kind: String = "IPLFantasyWidget"
     

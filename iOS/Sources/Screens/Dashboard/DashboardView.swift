@@ -138,8 +138,8 @@ struct DashboardView: View {
     }
 }
 
-// MARK: - Stat Card
-struct StatCard: View {
+// MARK: - Dashboard Stat Card
+struct DashboardStatCard: View {
     let title: String
     let value: String
     let icon: String

@@ -109,12 +109,12 @@ struct PlayerDetailView: View {
                 .foregroundColor(AppColors.textPrimary)
             
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: AppSpacing.md) {
-                StatBox(title: "Matches", value: "15")
-                StatBox(title: "Points", value: "312")
-                StatBox(title: "Runs", value: "456")
-                StatBox(title: "Wickets", value: "0")
-                StatBox(title: "Avg Points", value: "20.8")
-                StatBox(title: "Form", value: "🔥🔥🔥", isEmoji: true)
+                PlayerStatBox(title: "Matches", value: "15")
+                PlayerStatBox(title: "Points", value: "312")
+                PlayerStatBox(title: "Runs", value: "456")
+                PlayerStatBox(title: "Wickets", value: "0")
+                PlayerStatBox(title: "Avg Points", value: "20.8")
+                PlayerStatBox(title: "Form", value: "🔥🔥🔥", isEmoji: true)
             }
         }
         .padding(AppSpacing.md)
@@ -201,8 +201,8 @@ struct PlayerDetailView: View {
     }
 }
 
-// MARK: - Stat Box
-struct StatBox: View {
+// MARK: - Player Stat Box
+struct PlayerStatBox: View {
     let title: String
     let value: String
     var isEmoji: Bool = false

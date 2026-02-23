@@ -68,7 +68,8 @@ struct MainTabView: View {
             }
         }
         .sheet(isPresented: $showingJoinSheet) {
-            JoinLeagueFromLinkView(inviteCode: joinCode)
+            Text("Join League: \(joinCode)")
+                .padding()
         }
     }
 }

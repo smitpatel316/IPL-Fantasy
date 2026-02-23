@@ -408,3 +408,72 @@ struct MakePickResponse: Codable {
 struct SkipPickResponse: Codable {
     let success: Bool
 }
+
+// MARK: - Draft Types
+enum DraftType: String, Codable {
+    case auction
+    case snake
+    case linear
+}
+
+// MARK: - Snake Pick
+struct SnakePick: Codable, Identifiable {
+    let id: String
+    let pickNumber: Int
+    let teamId: String
+    let teamName: String
+    let playerId: String?
+    let playerName: String?
+    let isCompleted: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case pickNumber = "pick_number"
+        case teamId = "team_id"
+        case teamName = "team_name"
+        case playerId = "player_id"
+        case playerName = "player_name"
+        case isCompleted = "is_completed"
+    }
+}
+
+// MARK: - Auto Pick Settings
+struct AutoPickSettings: Codable {
+    var isEnabled: Bool
+    var preferredRoles: [String]
+    var maxPrice: Double
+    var minProjectedPoints: Int
+    var priorityStrategy: String
+
+    init() {
+        self.isEnabled = false
+        self.preferredRoles = []
+        self.maxPrice = 10.0
+        self.minProjectedPoints = 0
+        self.priorityStrategy = "projected_points"
+    }
+}
+
+// MARK: - Auto Pick Service
+class AutoPickService {
+    static let shared = AutoPickService()
+    private var settings: [String: AutoPickSettings] = [:]
+
+    private init() {}
+
+    func getSettings(forLeague leagueId: String) -> AutoPickSettings {
+        return settings[leagueId] ?? AutoPickSettings()
+    }
+
+    func saveSettings(_ settings: AutoPickSettings, forLeague leagueId: String) {
+        self.settings[leagueId] = settings
+    }
+
+    func selectPlayer(from players: [Player], with settings: AutoPickSettings) -> Player? {
+        let filtered = players.filter { player in
+            player.basePrice <= settings.maxPrice &&
+            player.totalPoints >= settings.minProjectedPoints
+        }
+        return filtered.max(by: { $0.totalPoints < $1.totalPoints })
+    }
+}
