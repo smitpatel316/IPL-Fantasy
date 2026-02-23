@@ -168,13 +168,13 @@ class DraftService {
         
         self.snakePicks = response.picks
         self.availablePlayers = response.availablePlayers
-        self.currentPickNumber = response.currentPickNumber ?? 0
-        
+        self.currentPickNumber = response.currentPickNumber
+
         if let currentPick = response.currentPick {
             self.currentPickTeamName = currentPick.teamName
-            self.currentPickDisplayName = currentPick.displayName
+            self.currentPickDisplayName = currentPick.playerName ?? ""
         }
-        
+
         self.isDraftActive = response.draftStatus == "active"
     }
     
@@ -236,17 +236,11 @@ class DraftService {
                 snakePicks.append(SnakePick(
                     id: UUID().uuidString,
                     pickNumber: pickNumber,
-                    round: round,
-                    teamPosition: teamPosition,
-                    leagueMemberId: nil,
-                    playerId: nil,
+                    teamId: teams[teamPosition],
                     teamName: teams[teamPosition],
-                    displayName: nil,
+                    playerId: nil,
                     playerName: nil,
-                    playerRole: nil,
-                    playerTeam: nil,
-                    isDrafting: pickNumber == 1,
-                    isSkipped: false
+                    isCompleted: pickNumber < currentPickNumber
                 ))
             }
         }
