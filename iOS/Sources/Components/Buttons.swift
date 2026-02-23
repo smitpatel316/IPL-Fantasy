@@ -1,5 +1,17 @@
 import SwiftUI
 
+// MARK: - Conditional View Modifier
+extension View {
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
+    }
+}
+
 // MARK: - Primary Button
 struct PrimaryButton: View {
     let title: String
@@ -166,7 +178,8 @@ struct EmptyStateView: View {
 struct BadgeView: View {
     let text: String
     var color: Color = AppColors.primary
-    
+    var isPulsing: Bool = false
+
     var body: some View {
         Text(text)
             .font(AppFonts.small)
@@ -175,5 +188,77 @@ struct BadgeView: View {
             .padding(.vertical, AppSpacing.xs)
             .background(color)
             .cornerRadius(AppCornerRadius.small)
+            .if(isPulsing) { view in
+                view.pulsing()
+            }
+    }
+}
+
+// MARK: - Animated Progress Bar
+struct AnimatedProgressBar: View {
+    let progress: Double
+    var color: Color = AppColors.primary
+    var height: CGFloat = 8
+
+    @State private var animatedProgress: Double = 0
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: height / 2)
+                    .fill(AppColors.surface)
+                    .frame(height: height)
+
+                RoundedRectangle(cornerRadius: height / 2)
+                    .fill(color)
+                    .frame(width: geometry.size.width * animatedProgress, height: height)
+                    .shadow(color: color.opacity(0.5), radius: 4, y: 2)
+            }
+        }
+        .frame(height: height)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8)) {
+                animatedProgress = progress
+            }
+        }
+        .onChange(of: progress) { _, newValue in
+            withAnimation(.easeOut(duration: 0.5)) {
+                animatedProgress = newValue
+            }
+        }
+    }
+}
+
+// MARK: - Team Logo View
+struct TeamLogoView: View {
+    let teamCode: String
+    var size: CGFloat = 50
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(teamColor.opacity(0.2))
+                .frame(width: size, height: size)
+
+            Text(teamCode.prefix(2))
+                .font(.system(size: size * 0.35, weight: .bold))
+                .foregroundColor(teamColor)
+        }
+    }
+
+    private var teamColor: Color {
+        switch teamCode.uppercased() {
+        case "MI": return Color(hex: "00A8E1")
+        case "CSK": return Color(hex: "FDB913")
+        case "RCB": return Color(hex: "D1C265")
+        case "DC": return Color(hex: "0078BC")
+        case "KKR": return Color(hex: "3A225D")
+        case "RR": return Color(hex: "E5386B")
+        case "PBKS": return Color(hex: "DA291C")
+        case "SRH": return Color(hex: "FF662F")
+        case "GT": return Color(hex: "1C1C1C")
+        case "LSG": return Color(hex: "0D5D2E")
+        default: return AppColors.primary
+        }
     }
 }
