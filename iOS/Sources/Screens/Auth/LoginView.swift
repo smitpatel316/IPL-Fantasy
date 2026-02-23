@@ -44,15 +44,22 @@ struct LoginView: View {
     
     private var logoSection: some View {
         VStack(spacing: AppSpacing.md) {
-            Image(systemName: "cricket.bat.ball")
-                .font(.system(size: 60))
-                .foregroundColor(AppColors.primary)
-            
+            ZStack {
+                Circle()
+                    .fill(AppColors.primaryGradient)
+                    .frame(width: 100, height: 100)
+                    .shadow(color: AppColors.primary.opacity(0.5), radius: 20, y: 10)
+
+                Image(systemName: "cricket.bat.ball")
+                    .font(.system(size: 50))
+                    .foregroundColor(.white)
+            }
+
             Text("IPL Fantasy Pro")
                 .font(AppFonts.title)
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.textPrimary)
-            
+
             Text("Create your dream team")
                 .font(AppFonts.body)
                 .foregroundColor(AppColors.textSecondary)
