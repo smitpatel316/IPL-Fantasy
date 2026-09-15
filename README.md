@@ -1,158 +1,59 @@
-# IPL Fantasy Pro 🏏
+# IPL Fantasy 🏏
 
-A full-stack fantasy cricket application with league management, auction drafting, and real-time scoring.
+Season-long IPL fantasy for friends — Yahoo-style: **snake draft, weekly head-to-head,
+FAAB waivers, trades, playoffs**. We are the league server; there is no Yahoo for IPL.
 
-## Features
+> **Stack (D1, locked 2026-09-15):** Next.js + FastAPI, Pi-hosted.
+> The February 2026 Express/React scaffold was replaced in P2-W1; its docs are kept
+> under the repo root as design input (see "Feb docs" below).
 
-### Core Features
-- **User Authentication** - Register, login, JWT-based auth
-- **League Management** - Create, join, invite friends
-- **Auction Draft** - Real-time bidding with timer
-- **Team Management** - Set captain, vice-captain, lineup
-- **Live Scoring** - Real-time match updates
-- **Standings** - Weekly head-to-head rankings
+## Product (D1–D11, locked)
+- Snake draft, 15 rounds · Dream11-official T20 scoring, no C/VC multipliers
+- Weekly H2H, Mon–Sun · weekly lineup lock (no 7am alarms)
+- Weekly blind FAAB ($100/season) · 15-man rosters (WK×1/BAT×3/AR×2/BOWL×3/UTIL×1/BN×4/IL×1)
+- Max 4 overseas starters · top-4 playoffs, fantasy weeks 7–8
+- End-of-match batch scoring (live scoring later)
 
-### Additional Features
-- **Player Search** - Filter by team, role, price
-- **League Chat** - Real-time messaging
-- **Notifications** - Match updates, trade offers
-- **Compare Teams** - Side-by-side analysis
-- **Profile & Stats** - Lifetime achievements
-- **Settings** - Notifications, preferences
-
-## Tech Stack
-
-### iOS App
-- **SwiftUI** - Native iOS UI
-- **MVVM** - Architecture
-- **Combine** - Reactive programming
-- **WebSocket** - Real-time updates
-
-### Backend
-- **Node.js** - Runtime
-- **Express** - Web framework
-- **PostgreSQL** - Database
-- **Socket.io** - Real-time communication
-- **JWT** - Authentication
-
-## Project Structure
-
+## Project structure
 ```
-IPL-Fantasy/
-├── iOS/                    # SwiftUI app
-│   └── Sources/
-│       ├── App/           # App entry, ContentView
-│       ├── Components/    # Reusable UI components
-│       ├── Models/        # Data models
-│       ├── Screens/       # All app screens
-│       ├── Services/      # API services
-│       ├── Theme/         # Colors, fonts, spacing
-│       └── ViewModels/    # MVVM view models
-│
-├── backend/               # Node.js API
-│   └── src/
-│       ├── db/           # Database config & init
-│       └── routes/       # API routes
-│
-└── docs/                 # Planning documents
+api/                 FastAPI backend (blueprint §7 surface; see api/README.md)
+  routers/           leagues, drafts, players, lineups, waivers, trades, matchups, admin
+  validation.py      pure D7/D8 lineup validation (no DB)
+  sandbox.py         deterministic mock league for dev (SANDBOX_MODE)
+web/                 Next.js 15 frontend (blueprint §8 pages)
+  app/               /, league/[id], draft-room/[id], lineup, players,
+                     waivers, trades, matchup, playoffs
+  lib/api.ts         typed API client (mirrors api/schemas.py)
+*.md                 Feb 2026 design docs — kept as input, not spec
 ```
 
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 14+
-- Xcode 15+ (for iOS)
-
-### Backend Setup
-
+## Dev quickstart
 ```bash
-cd backend
-npm install
 cp .env.example .env
-# Edit .env with your database credentials
-npm run db:init
-npm run dev
+./start-dev.sh --install   # api :8014, web :3014
+./start-dev.sh             # afterwards
 ```
+- API docs: http://127.0.0.1:8014/api/docs
+- Web: http://127.0.0.1:3014
+- Sandbox mode seeds a demo league (ID 1) on first boot — explore freely.
+- **Ports 8000/3000 are never used here** (NBA production). Dev = 8014/3014.
 
-### iOS Setup
+## API contract
+Full endpoint table: [api/README.md](api/README.md). Engine endpoints
+(draft pick, waiver run, trades, scoring) return `501 {detail, track}` until the
+league-core track wires them — the contract is final, the track tag says who owns it.
 
-```bash
-cd iOS
-xcodegen generate
-open IPLFantasyPro.xcodeproj
-```
+## Feb docs (design input, not spec)
+Per the blueprint's reconciliation (§11): `AUCTION-DRAFT-LOGIC.md` /
+`AUCTION-STRATEGY.md` (auction = second draft mode, deferred), `UI-DESIGN.md`
+(dark theme + palette — applied to `web/`), `WEEKLY-H2H.md`, `TRADES.md`,
+`PLAYOFFS.md` (validate against the Yahoo mechanics reference).
+Superseded: `ARCHITECTURE.md` (Express/Postgres/Redis), `SCORING-SYSTEM.md`
+(custom table → Dream11-official), `FEATURE-BACKLOG.md` (→ phased plan).
 
-## API Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `/api/auth` | Authentication |
-| `/api/leagues` | League CRUD |
-| `/api/players` | Player database |
-| `/api/drafts` | Auction draft |
-| `/api/teams` | Team management |
-| `/api/matches` | Scores & standings |
-| `/api/chat` | League chat |
-| `/api/trades` | Player trades |
-
-## WebSocket Events
-
-- `draft:started` - Auction started
-- `draft:bid` - New bid placed
-- `draft:sold` - Player sold
-- `chat:message` - New chat message
-- `trade:proposed` - Trade offer
-
-## Database Schema
-
-- `users` - User accounts
-- `leagues` - League definitions
-- `league_members` - League participants
-- `players` - IPL player database
-- `teams` - Fantasy teams
-- `team_players` - Players in teams
-- `auction_drafts` - Draft state
-- `matchups` - Weekly matchups
-
-## Planning Documents
-
-- SPEC.md - Product specification
-- ARCHITECTURE.md - Technical architecture
-- UI-DESIGN.md - Wireframes
-- PLAYER-DATABASE.md - Player data
-- SCORING-SYSTEM.md - Points calculation
-- WEEKLY-H2H.md - Match format
-- PLAYOFFS.md - Championship structure
-
-## License
-
-MIT
-
-## Testing
-
-### Backend Unit Tests
-
-```bash
-cd backend
-npm test
-```
-
-### E2E Tests
-
-```bash
-cd e2e
-npm install
-npx playwright install chromium
-npx playwright test
-```
-
-### Test Coverage
-
-- **Unit Tests**: Models, Services, ViewModels
-- **API Tests**: Auth, Leagues, Players endpoints
-- **E2E Tests**: Full user flows
+## Constitution
+`~/workspace/ipl-fantasy/DECISIONS.md` (D1–D11) · `~/workspace/ipl-fantasy/IMPLEMENTATION-BLUEPRINT.md` (build spec).
+No PR, merge, or deploy without Smit's explicit word.
 
 ## Author
-
-Smit Patel
+Smit Patel · MIT

@@ -1,0 +1,150 @@
+/* TS mirrors of api/schemas.py. Field renames are breaking — keep in sync. */
+
+export interface HealthOut {
+  status: string;
+  version: string;
+  sandbox: boolean;
+  scoring_table: string;
+}
+
+export interface NotImplementedOut {
+  detail: string;
+  track: string; // e.g. "P2-L1"
+}
+
+export interface LeagueSettings {
+  draft_type: string;
+  rounds: number;
+  roster_slots: Record<string, number>;
+  faab_budget: number;
+  scoring_table_version: string;
+  overseas_cap: number;
+  playoff_teams: number;
+  trade_deadline_week: number;
+  waiver_run_weekday: string;
+}
+
+export interface LeagueOut {
+  id: number;
+  name: string;
+  invite_code: string;
+  season: string;
+  status: string;
+  settings: LeagueSettings;
+}
+
+export interface TeamStandingOut {
+  team_id: number;
+  team_name: string;
+  owner_name: string | null;
+  wins: number;
+  losses: number;
+  ties: number;
+  points_for: number;
+  faab_remaining: number;
+}
+
+export interface LeagueDetailOut extends LeagueOut {
+  standings: TeamStandingOut[];
+}
+
+export interface TeamOut {
+  id: number;
+  league_id: number;
+  name: string;
+  owner_name: string | null;
+  faab_remaining: number;
+}
+
+export type PlayerRole = "WK" | "BAT" | "AR" | "BOWL";
+
+export interface PlayerOut {
+  id: number;
+  name: string;
+  season: string;
+  role: PlayerRole | null;
+  is_overseas: boolean;
+  ipl_team_code: string | null;
+  preseason_rank: number | null;
+  owned_by_team_id: number | null;
+}
+
+export interface DraftOut {
+  id: number;
+  league_id: number;
+  rounds: number;
+  status: string;
+  current_pick_no: number;
+  draft_order: number[];
+}
+
+export interface DraftPickOut {
+  pick_no: number;
+  round_no: number;
+  team_id: number;
+  player_id: number | null;
+  is_auto: boolean;
+}
+
+export interface LineupOut {
+  team_id: number;
+  week_no: number;
+  slots: Record<string, number[]>;
+  overseas_starters: number;
+  valid: boolean;
+}
+
+export interface WaiverClaimOut {
+  id: number;
+  week_no: number;
+  team_id: number;
+  add_player_id: number;
+  drop_player_id: number | null;
+  bid: number;
+  status: string;
+}
+
+export interface TradeOut {
+  id: number;
+  league_id: number;
+  from_team_id: number;
+  to_team_id: number;
+  gives: number[];
+  receives: number[];
+  status: string;
+  review_deadline: string | null;
+}
+
+export interface MatchupOut {
+  id: number;
+  week_no: number;
+  team_a_id: number;
+  team_b_id: number;
+  team_a_name: string;
+  team_b_name: string;
+  score_a: number;
+  score_b: number;
+  status: string;
+}
+
+export interface PlayerScoreOut {
+  player_name: string;
+  fantasy_points: number;
+  breakdown: Record<string, unknown>;
+}
+
+export interface ScoreboardOut {
+  match_id: number;
+  status: string;
+  scores: PlayerScoreOut[];
+}
+
+export class ApiError extends Error {
+  status: number;
+  track?: string;
+  constructor(status: number, message: string, track?: string) {
+    super(message);
+    this.status = status;
+    this.track = track;
+  }
+}

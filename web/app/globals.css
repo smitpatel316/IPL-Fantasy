@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+/* Feb UI-DESIGN.md palette (kept per blueprint §11): dark theme first. */
+@theme {
+  --color-ipl-blue: #1e3a8a;
+  --color-ipl-blue-bright: #3b82f6;
+  --color-trophy-gold: #f59e0b;
+  --color-pitch-green: #10b981;
+  --color-brick-red: #ef4444;
+  --color-midnight: #0f172a;
+  --color-midnight-soft: #1e293b;
+  --color-midnight-softer: #334155;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-midnight);
+  color: #f1f5f9;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Thin scrollbars for data-dense tables */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-midnight-softer) transparent;
+}

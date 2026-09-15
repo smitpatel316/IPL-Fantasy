@@ -1,0 +1,5 @@
+# IPL Fantasy API — minimal production requirements
+fastapi>=0.120
+uvicorn[standard]>=0.38
+pydantic>=2.12
+python-dotenv>=1.0

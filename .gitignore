@@ -42,3 +42,18 @@ coverage/
 
 # OS
 Thumbs.db
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Next.js
+.next/
+out/
+
+# Local dev databases (sqlite)
+data/
+*.db
+*.db-wal
+*.db-shm
