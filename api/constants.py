@@ -36,8 +36,9 @@ OVERSEAS_STARTER_CAP = 4
 # D6 — weekly blind FAAB, $100 season budget.
 FAAB_BUDGET = 100
 
-# D2/D7 — snake draft, 15 rounds (one per roster spot).
-DRAFT_ROUNDS = 15
+# D2/D7 — snake draft, 14 rounds (one per draft-fillable roster spot; IL slot is
+# not draft-filled — it opens on injury, Yahoo-style). Chair ruling 2026-09-15.
+DRAFT_ROUNDS = 14
 
 # D4/D9 — fantasy weeks 1–6 regular season, 7–8 playoffs (top 4).
 REGULAR_SEASON_WEEKS = [1, 2, 3, 4, 5, 6]

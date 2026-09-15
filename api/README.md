@@ -35,7 +35,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 
 ## Pure helpers (importable, no DB)
 - `api/validation.py::validate_lineup(lineup, roles)` → raises `LineupError`; used by PUT lineup and P2-L2.
-- `api/constants.py` — `ROSTER_SLOTS`, `SLOT_ELIGIBILITY`, `OVERSEAS_STARTER_CAP=4`, `FAAB_BUDGET=100`, `DRAFT_ROUNDS=15`, weeks, `SCORING_TABLE_VERSION`.
+- `api/constants.py` — `ROSTER_SLOTS`, `SLOT_ELIGIBILITY`, `OVERSEAS_STARTER_CAP=4`, `FAAB_BUDGET=100`, `DRAFT_ROUNDS=14`, weeks, `SCORING_TABLE_VERSION`.
 
 ## Integrity rules (blueprint §5)
 - One player → one team per league (exclusive ownership; `owned_map` in routers).
