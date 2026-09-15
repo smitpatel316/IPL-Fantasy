@@ -40,7 +40,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 ## Integrity rules (blueprint §5)
 - One player → one team per league (exclusive ownership; `owned_map` in routers).
 - Lineup: slot eligibility per `SLOT_ELIGIBILITY`; max 4 overseas starters (D8).
-- **D7 arithmetic open question**: `ROSTER_SLOTS` totals 10 starters; DECISIONS.md prose says 11. Do not invent the 11th — chair decision pending.
+- **D7 resolved (chair ruling 2026-09-15)**: `ROSTER_SLOTS` = 11 starters (WK×1, BAT×3, AR×2, BOWL×3, UTIL×2), BN×3, IL×1 = 15 total. IL is not draft-filled (opens for injured players, Yahoo-style).
 
 ## Sandbox
 `SANDBOX_MODE=true` (default) seeds one demo league (8 teams, 48 mock players across 4 mock franchises, week-1 matchups) on first boot. Deterministic. Real season data (Phase 3) replaces the seed; never mix.

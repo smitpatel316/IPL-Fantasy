@@ -1,16 +1,16 @@
 """League-wide constants. D1–D11 are the constitution (DECISIONS.md, locked 2026-09-15);
 these values encode them. Changing any of them needs Smit (chair)."""
 
-# D7 — roster slots. NOTE: the slot list below totals 10 starters; DECISIONS.md
-# prose says "11 starters". Do NOT silently invent the missing slot — open
-# question for the chair. STARTER_SLOTS drives validation until resolved.
+# D7 — roster slots. Chair ruling 2026-09-15: 11 starters via a second UTIL slot
+# (WK×1, BAT×3, AR×2, BOWL×3, UTIL×2; BN×3, IL×1 = 15 total). STARTER_SLOTS
+# drives validation.
 ROSTER_SLOTS: dict[str, int] = {
     "WK": 1,
     "BAT": 3,
     "AR": 2,
     "BOWL": 3,
-    "UTIL": 1,
-    "BN": 4,
+    "UTIL": 2,
+    "BN": 3,
     "IL": 1,
 }
 STARTER_SLOTS = ["WK", "BAT", "AR", "BOWL", "UTIL"]

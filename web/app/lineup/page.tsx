@@ -7,7 +7,7 @@ import { PageHeader, ErrorBox, EngineStub } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 const SLOTS = ["WK", "BAT", "AR", "BOWL", "UTIL", "BN", "IL"] as const;
-const SLOT_MAX: Record<string, number> = { WK: 1, BAT: 3, AR: 2, BOWL: 3, UTIL: 1, BN: 4, IL: 1 };
+const SLOT_MAX: Record<string, number> = { WK: 1, BAT: 3, AR: 2, BOWL: 3, UTIL: 2, BN: 3, IL: 1 };
 
 export default function LineupPage() {
   const [teams, setTeams] = useState<TeamOut[]>([]);

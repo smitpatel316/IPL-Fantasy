@@ -25,13 +25,14 @@ def _default_settings() -> dict:
         DRAFT_ROUNDS,
         OVERSEAS_STARTER_CAP,
         PLAYOFF_TEAMS,
+        ROSTER_SLOTS,
         SCORING_TABLE_VERSION,
     )
 
     return {
         "draft_type": "snake",
         "rounds": DRAFT_ROUNDS,
-        "roster_slots": {"WK": 1, "BAT": 3, "AR": 2, "BOWL": 3, "UTIL": 1, "BN": 4, "IL": 1},
+        "roster_slots": dict(ROSTER_SLOTS),
         "faab_budget": FAAB_BUDGET,
         "scoring_table_version": SCORING_TABLE_VERSION,
         "overseas_cap": OVERSEAS_STARTER_CAP,
