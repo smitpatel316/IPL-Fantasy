@@ -107,7 +107,7 @@ export default function Home() {
       </section>
 
       <p className="mt-10 text-center text-xs text-slate-600">
-        Sandbox mode — explore with the demo league (ID 1). Scoring: Dream11-official T20 table.
+        Sandbox mode — explore with the demo league (ID 1). Scoring: standard T20 fantasy table.
       </p>
     </div>
   );

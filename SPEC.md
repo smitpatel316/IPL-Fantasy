@@ -387,7 +387,7 @@ Performance {
 
 ## 10. Differentiation from Existing Apps
 
-| Feature | Our App | ESPN/Yahoo | Dream11 |
+| Feature | Our App | ESPN/Yahoo | DFS apps |
 |---------|---------|-------------|---------|
 | Auction Draft | ✅ Full | ❌ | Limited |
 | Snake Draft | ✅ | ✅ | ❌ |

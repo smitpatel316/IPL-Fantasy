@@ -8,7 +8,7 @@ FAAB waivers, trades, playoffs**. We are the league server; there is no Yahoo fo
 > under the repo root as design input (see "Feb docs" below).
 
 ## Product (D1–D11, locked)
-- Snake draft, 15 rounds · Dream11-official T20 scoring, no C/VC multipliers
+- Snake draft, 15 rounds · standard T20 fantasy scoring, no C/VC multipliers
 - Weekly H2H, Mon–Sun · weekly lineup lock (no 7am alarms)
 - Weekly blind FAAB ($100/season) · 15-man rosters (WK×1/BAT×3/AR×2/BOWL×3/UTIL×1/BN×4/IL×1)
 - Max 4 overseas starters · top-4 playoffs, fantasy weeks 7–8
@@ -49,7 +49,7 @@ Per the blueprint's reconciliation (§11): `AUCTION-DRAFT-LOGIC.md` /
 (dark theme + palette — applied to `web/`), `WEEKLY-H2H.md`, `TRADES.md`,
 `PLAYOFFS.md` (validate against the Yahoo mechanics reference).
 Superseded: `ARCHITECTURE.md` (Express/Postgres/Redis), `SCORING-SYSTEM.md`
-(custom table → Dream11-official), `FEATURE-BACKLOG.md` (→ phased plan).
+(custom table → standard fantasy), `FEATURE-BACKLOG.md` (→ phased plan).
 
 ## Constitution
 `~/workspace/ipl-fantasy/DECISIONS.md` (D1–D11) · `~/workspace/ipl-fantasy/IMPLEMENTATION-BLUEPRINT.md` (build spec).

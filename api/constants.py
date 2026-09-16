@@ -46,9 +46,9 @@ PLAYOFF_WEEKS = [7, 8]
 PLAYOFF_TEAMS = 4
 TOTAL_WEEKS = 8
 
-# D3 — Dream11-official T20 table, no captain/VC multipliers.
-# Versioned: if Dream11 tweaks the table for 2027, bump and keep history.
-SCORING_TABLE_VERSION = "dream11-t20-2026-v1"
+# D3 — standard T20 fantasy table, no captain/VC multipliers.
+# Versioned: if the standard table is tweaked for 2027, bump and keep history.
+SCORING_TABLE_VERSION = "t20-fantasy-2026-v1"
 
 # Draft universe roles (season-scoped via player_roles).
 PLAYER_ROLES = ["WK", "BAT", "AR", "BOWL"]

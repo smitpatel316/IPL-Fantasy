@@ -1,5 +1,5 @@
 """Admin: scoring trigger. The scorer itself is the data track's phase1/scorer.py
-(Dream11-official §3, QA-cleared); this endpoint is the idempotent trigger seam.
+(standard fantasy §3, QA-cleared); this endpoint is the idempotent trigger seam.
 
 SEAM (data track, Phase 3): wire score-match to the scorecard poller — fetch the
 completed match's ball-by-ball, run score_player_match per player, upsert into

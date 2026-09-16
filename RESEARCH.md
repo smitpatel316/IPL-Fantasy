@@ -17,7 +17,7 @@ This research covers the fantasy sports landscape, IPL ecosystem, and user needs
 
 | App | Strengths | Weaknesses |
 |-----|-----------|------------|
-| Dream11 | Large user base, good UX | Expensive, limited customization |
+| Leading DFS apps | Large user base, good UX | Expensive, limited customization |
 | MPL | Games variety, wallet | Complex, too many ads |
 | ESPN | Brand trust, stats | No auction mode |
 | Yahoo | Snake drafts | Limited cricket support |
@@ -30,7 +30,7 @@ This research covers the fantasy sports landscape, IPL ecosystem, and user needs
 ### Target Personas
 
 #### 1. The Fantasy Veteran (Age 25-40)
-- Has played Dream11/ESPN for years
+- Has played fantasy cricket for years
 - Wants better customization
 - Frustrated with one-size-fits-all
 - **Needs:** Flexible scoring, custom leagues, better analytics
@@ -140,7 +140,7 @@ Providers:
 ## 6. Competitive Analysis
 
 ### What Works
-1. **Simple onboarding** - Dream11 does this well
+1. **Simple onboarding** - Leading fantasy apps do this well
 2. **Quick drafts** - No one wants 4 hour auctions
 3. **Social proof** - League friends feature
 4. **Instant feedback** - Points update quickly
