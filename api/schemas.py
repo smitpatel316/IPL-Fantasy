@@ -100,6 +100,17 @@ class PickCreate(BaseModel):
     player_id: int
 
 
+class DndIn(BaseModel):
+    team_id: int
+    player_id: int
+
+
+class DndOut(BaseModel):
+    draft_id: int
+    team_id: int
+    dnd: list[int]
+
+
 # ---------- lineups ----------
 class LineupSet(BaseModel):
     week_no: int = Field(ge=1, le=8)

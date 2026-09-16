@@ -39,6 +39,7 @@ def _default_settings() -> dict:
         "playoff_teams": PLAYOFF_TEAMS,
         "trade_deadline_week": 6,
         "waiver_run_weekday": "wednesday",
+        "pick_clock_secs": 90,
     }
 
 
@@ -135,6 +136,21 @@ def start_draft(league_id: int, con: sqlite3.Connection = Depends(get_db)):
     POST /api/leagues/{id}/draft/start (was /api/drafts/leagues/...)."""
     get_league(con, league_id)  # 404 if missing
     d = services.start_draft(con, league_id)
+    return schemas.DraftOut(
+        id=d["id"], league_id=d["league_id"], rounds=d["rounds"],
+        status=d["status"], current_pick_no=d["current_pick_no"],
+        draft_order=d["draft_order"],
+        on_clock_team_id=d.get("on_clock_team_id"),
+    )
+
+
+@router.get("/{league_id}/draft", response_model=schemas.DraftOut)
+def get_league_draft(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+    """The league's most recent draft (for the draft room); 404 if none."""
+    get_league(con, league_id)  # 404 if missing
+    d = services.get_league_draft(con, league_id)
+    if d is None:
+        raise HTTPException(404, f"league {league_id} has no draft yet")
     return schemas.DraftOut(
         id=d["id"], league_id=d["league_id"], rounds=d["rounds"],
         status=d["status"], current_pick_no=d["current_pick_no"],

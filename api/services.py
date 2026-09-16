@@ -18,6 +18,7 @@ here for persistence quirks).
 import json
 import logging
 import sqlite3
+import threading
 import time
 
 from fastapi import HTTPException
@@ -72,6 +73,17 @@ def ensure_engine_tables(con: sqlite3.Connection) -> None:
 
 
 _registry: dict[tuple[str, int], object] = {}
+
+# Per-draft mutexes: the draft-room WebSocket clock sweeper and the HTTP pick
+# endpoints share the engine cache across threads; pick recording (clock
+# expiry + manual picks) must be serialized per draft.
+_draft_locks: dict[int, threading.Lock] = {}
+_draft_locks_guard = threading.Lock()
+
+
+def _draft_lock(draft_id: int) -> threading.Lock:
+    with _draft_locks_guard:
+        return _draft_locks.setdefault(draft_id, threading.Lock())
 
 
 def _save(con: sqlite3.Connection, scope: str, scope_id: int, state: dict) -> None:
@@ -196,10 +208,11 @@ def _build_draft(con: sqlite3.Connection, league_id: int) -> Draft:
     }
     pool = _pool_ranked(con, league_id, season)
     ranks = {t["id"]: _team_ranks(con, t["id"]) for t in teams}
+    settings = league.get("settings") or {}
     cfg = DraftConfig(
         teams=tuple((t["id"], t["name"]) for t in teams),
         rounds=constants.DRAFT_ROUNDS,
-        pick_clock_secs=90,
+        pick_clock_secs=int(settings.get("pick_clock_secs", 90)),
         seed=42,
     )
     draft = Draft(cfg, pool, roles=roles, ranks=ranks)
@@ -235,6 +248,11 @@ def _revive_draft(con: sqlite3.Connection, draft_id: int) -> Draft:
     draft = Draft.from_dict(state, pool, roles=roles)
     draft.rosters = {int(k): v for k, v in draft.rosters.items()}
     draft.dnd = {int(k): set(v) for k, v in draft.dnd.items()}
+    # from_dict() drops custom ranks (advisory only per its contract); re-supply
+    # them so clock-expiry auto-picks respect each team's pre-draft board.
+    league_id_int = league_id["league_id"]
+    teams = _teams(con, league_id_int)
+    draft.ranks = {t["id"]: _team_ranks(con, t["id"]) for t in teams}
     _registry[("draft", draft_id)] = draft
     return draft
 
@@ -301,18 +319,19 @@ def _draft_row(con: sqlite3.Connection, draft_id: int) -> dict:
     }
 
 
-def make_pick(con: sqlite3.Connection, draft_id: int, team_id: int,
-              player_id: int) -> dict:
-    draft = _revive_draft(con, draft_id)
-    fired: dict | None = None
-    try:
-        # Auto-fire the clock before validating the manual pick.
-        if draft.status == Draft.STATUS_LIVE and draft.pick_deadline is not None \
-                and time.time() >= draft.pick_deadline:
-            fired = draft.expire_pick()
-        pick = draft.manual_pick(team_id, player_id)
-    except DraftError as e:
-        raise _draft_error_to_http(e)
+def _pick_out(pick: dict) -> dict:
+    return {
+        "pick_no": pick["pick_no"], "round_no": pick["round_no"],
+        "team_id": pick["team_id"], "player_id": pick["player_id"],
+        "is_auto": pick["is_auto"],
+    }
+
+
+def _commit_pick(con: sqlite3.Connection, draft_id: int, draft: Draft,
+                 pick: dict, fired: dict | None = None) -> None:
+    """Persist one recorded pick (plus an optional clock-fired auto-pick that
+    preceded it) and run draft-completion side effects. Shared by make_pick
+    (HTTP/WS manual picks) and expire_pick (clock sweeper)."""
     with con:
         if fired:
             _persist_pick(con, draft_id, fired)
@@ -342,11 +361,90 @@ def make_pick(con: sqlite3.Connection, draft_id: int, team_id: int,
                 (draft.current_pick_no, draft.status, draft.pick_deadline, draft_id),
             )
     _put_cached("draft", draft_id, draft, con)
-    return {
-        "pick_no": pick["pick_no"], "round_no": pick["round_no"],
-        "team_id": pick["team_id"], "player_id": pick["player_id"],
-        "is_auto": pick["is_auto"],
-    }
+
+
+def make_pick(con: sqlite3.Connection, draft_id: int, team_id: int,
+              player_id: int) -> dict:
+    with _draft_lock(draft_id):
+        draft = _revive_draft(con, draft_id)
+        fired: dict | None = None
+        try:
+            # Auto-fire the clock before validating the manual pick.
+            if draft.status == Draft.STATUS_LIVE and draft.pick_deadline is not None \
+                    and time.time() >= draft.pick_deadline:
+                fired = draft.expire_pick()
+            pick = draft.manual_pick(team_id, player_id)
+        except DraftError as e:
+            raise _draft_error_to_http(e)
+        _commit_pick(con, draft_id, draft, pick, fired)
+        return _pick_out(pick)
+
+
+def expire_pick(con: sqlite3.Connection, draft_id: int) -> dict | None:
+    """Fire the pick clock for a live draft whose deadline has passed (called
+    by the draft-room WebSocket clock sweeper). Returns the auto-pick, or None
+    when the draft isn't live or the clock hasn't expired yet."""
+    with _draft_lock(draft_id):
+        draft = _revive_draft(con, draft_id)
+        if draft.status != Draft.STATUS_LIVE or draft.pick_deadline is None:
+            return None
+        try:
+            pick = draft.expire_pick()
+        except ClockNotExpired:
+            return None
+        except DraftError as e:
+            raise _draft_error_to_http(e)
+        _commit_pick(con, draft_id, draft, pick)
+        return _pick_out(pick)
+
+
+def get_league_draft(con: sqlite3.Connection, league_id: int) -> dict | None:
+    """The league's most recent draft row (for the draft room), or None."""
+    row = con.execute(
+        "SELECT id FROM drafts WHERE league_id = ? ORDER BY id DESC LIMIT 1",
+        (league_id,),
+    ).fetchone()
+    if not row:
+        return None
+    return _draft_row(con, row["id"])
+
+
+def draft_snapshot(con: sqlite3.Connection, draft_id: int) -> dict:
+    """Full draft-room state: draft row + live engine snapshot (picks,
+    rosters, DND, on-clock team, deadline). Drives the WebSocket room."""
+    row = _draft_row(con, draft_id)
+    eng = _revive_draft(con, draft_id)
+    snap = eng.to_dict()
+    snap["draft"]["id"] = row["id"]
+    snap["draft"]["league_id"] = row["league_id"]
+    return snap
+
+
+def set_dnd(con: sqlite3.Connection, draft_id: int, team_id: int,
+            player_id: int, blocked: bool = True) -> dict:
+    """Add/remove a player on a team's do-not-draft list during a live draft.
+    Auto-pick skips DND players; manual picks of them are rejected."""
+    with _draft_lock(draft_id):
+        draft = _revive_draft(con, draft_id)
+        if draft.status != Draft.STATUS_LIVE:
+            raise HTTPException(
+                409, f"draft is {draft.status}; DND changes need a live draft")
+        league_id = con.execute(
+            "SELECT league_id FROM drafts WHERE id = ?", (draft_id,)
+        ).fetchone()["league_id"]
+        team_ids = {t["id"] for t in _teams(con, league_id)}
+        if team_id not in team_ids:
+            raise HTTPException(404, f"team {team_id} not in this draft")
+        if not con.execute(
+                "SELECT 1 FROM players WHERE id = ?", (player_id,)).fetchone():
+            raise HTTPException(404, f"player {player_id} not found")
+        dnd = draft.dnd.setdefault(team_id, set())
+        if blocked:
+            dnd.add(player_id)
+        else:
+            dnd.discard(player_id)
+        _put_cached("draft", draft_id, draft, con)
+        return {"draft_id": draft_id, "team_id": team_id, "dnd": sorted(dnd)}
 
 
 def _week1_slot(con: sqlite3.Connection, team_id: int, player_id: int) -> str | None:

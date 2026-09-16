@@ -15,11 +15,11 @@ from dotenv import load_dotenv
 # CRITICAL: load env before importing modules that read it.
 load_dotenv()
 
-from fastapi import FastAPI, Request  # noqa: E402
+from fastapi import FastAPI, Request, WebSocket  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.responses import JSONResponse  # noqa: E402
 
-from api import schemas  # noqa: E402
+from api import draft_ws, schemas  # noqa: E402
 from api.constants import SANDBOX_LEAGUE_NAME, SCORING_TABLE_VERSION  # noqa: E402
 from api.database import init_db  # noqa: E402
 from api.routers import admin, drafts, leagues, lineups, matchups, players, trades, waivers  # noqa: E402
@@ -47,7 +47,9 @@ async def lifespan(app: FastAPI):
         with connect() as con:
             seed_if_empty(con)
     log.info(f"IPL Fantasy API {APP_VERSION} started sandbox={_sandbox_mode()}")
+    sweeper = draft_ws.start_sweeper()
     yield
+    sweeper.cancel()
 
 
 app = FastAPI(
@@ -107,3 +109,8 @@ app.include_router(waivers.router, prefix="/api/waivers", tags=["waivers"])
 app.include_router(trades.router, prefix="/api/trades", tags=["trades"])
 app.include_router(matchups.router, prefix="/api/matchups", tags=["matchups"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+
+
+@app.websocket("/api/drafts/{draft_id}/ws")
+async def _draft_room_ws(websocket: WebSocket, draft_id: int):
+    await draft_ws.draft_room_ws(websocket, draft_id)

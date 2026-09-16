@@ -3,7 +3,9 @@
 The draft state machine (snake order, 14 rounds per D7, pick clock + auto-pick,
 DND, starters-before-bench, D8 guardrail) lives in api/engine/draft_engine.py;
 api/services.py persists it in the engine_state table and projects picks into
-draft_picks / roster_slots. Clock expiry auto-fires on the next pick request."""
+draft_picks / roster_slots. Clock expiry auto-fires on the next pick request;
+the draft-room WebSocket (api/draft_ws.py) also runs a 1s sweeper that fires
+expired clocks and broadcasts to the room."""
 
 import json
 import sqlite3
@@ -53,3 +55,23 @@ def make_pick(draft_id: int, body: schemas.PickCreate,
         raise HTTPException(404, f"draft {draft_id} not found")
     p = services.make_pick(con, draft_id, body.team_id, body.player_id)
     return schemas.DraftPickOut(**p)
+
+
+@router.post("/{draft_id}/dnd", response_model=schemas.DndOut)
+def add_dnd(draft_id: int, body: schemas.DndIn,
+            con: sqlite3.Connection = Depends(get_db)):
+    """Add a player to a team's do-not-draft list (live draft only)."""
+    if not con.execute("SELECT 1 FROM drafts WHERE id = ?", (draft_id,)).fetchone():
+        raise HTTPException(404, f"draft {draft_id} not found")
+    return schemas.DndOut(**services.set_dnd(
+        con, draft_id, body.team_id, body.player_id, blocked=True))
+
+
+@router.delete("/{draft_id}/dnd", response_model=schemas.DndOut)
+def remove_dnd(draft_id: int, body: schemas.DndIn,
+               con: sqlite3.Connection = Depends(get_db)):
+    """Remove a player from a team's do-not-draft list (live draft only)."""
+    if not con.execute("SELECT 1 FROM drafts WHERE id = ?", (draft_id,)).fetchone():
+        raise HTTPException(404, f"draft {draft_id} not found")
+    return schemas.DndOut(**services.set_dnd(
+        con, draft_id, body.team_id, body.player_id, blocked=False))

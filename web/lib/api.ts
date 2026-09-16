@@ -6,6 +6,7 @@
 
 import { ApiError } from "./types";
 import type {
+  DndOut,
   DraftOut,
   DraftPickOut,
   HealthOut,
@@ -23,6 +24,14 @@ import type {
 
 const BASE =
   process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8014/api";
+
+/** WebSocket URL for a draft room (P3-A3). Derives ws(s)://host from the API base. */
+export function draftWsUrl(draftId: number | string, teamId: number | string): string {
+  const u = new URL(BASE);
+  u.protocol = u.protocol === "https:" ? "wss:" : "ws:";
+  const basePath = u.pathname.replace(/\/api\/?$/, "");
+  return `${u.protocol}//${u.host}${basePath}/api/drafts/${draftId}/ws?team_id=${teamId}`;
+}
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -67,12 +76,27 @@ export const api = {
 
   // drafts
   getDraft: (id: number | string) => req<DraftOut>(`/drafts/${id}`),
+  getLeagueDraft: (leagueId: number | string) =>
+    req<DraftOut>(`/leagues/${leagueId}/draft`).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    }),
   listPicks: (id: number | string) => req<DraftPickOut[]>(`/drafts/${id}/picks`),
   startDraft: (leagueId: number | string) =>
     req<DraftOut>(`/leagues/${leagueId}/draft/start`, { method: "POST" }),
   makePick: (draftId: number | string, team_id: number, player_id: number) =>
     req<DraftPickOut>(`/drafts/${draftId}/pick`, {
       method: "POST",
+      body: JSON.stringify({ team_id, player_id }),
+    }),
+  addDnd: (draftId: number | string, team_id: number, player_id: number) =>
+    req<DndOut>(`/drafts/${draftId}/dnd`, {
+      method: "POST",
+      body: JSON.stringify({ team_id, player_id }),
+    }),
+  removeDnd: (draftId: number | string, team_id: number, player_id: number) =>
+    req<DndOut>(`/drafts/${draftId}/dnd`, {
+      method: "DELETE",
       body: JSON.stringify({ team_id, player_id }),
     }),
 

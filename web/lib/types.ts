@@ -79,6 +79,51 @@ export interface DraftOut {
   on_clock_team_id: number | null;
 }
 
+export interface DndOut {
+  draft_id: number;
+  team_id: number;
+  dnd: number[];
+}
+
+export interface DraftRoomTeam {
+  id: number;
+  name: string;
+}
+
+export interface DraftRoomPick {
+  pick_no: number;
+  round_no: number;
+  team_id: number;
+  player_id: number | null;
+  is_auto: boolean;
+  slot?: string;
+}
+
+/** Full draft-room snapshot broadcast over the WebSocket (P3-A3). */
+export interface DraftRoomState {
+  type: "state";
+  event?: "pick" | "clock_expired" | "dnd_updated";
+  pick?: DraftRoomPick;
+  dnd_updated?: DndOut;
+  draft: {
+    id: number;
+    league_id: number;
+    status: string;
+    rounds: number;
+    teams: DraftRoomTeam[];
+    draft_order: number[];
+    seed: number | null;
+    pick_clock_secs: number;
+  };
+  current_pick_no: number;
+  total_picks: number;
+  on_clock_team_id: number | null;
+  pick_deadline: number | null; // epoch seconds
+  picks: DraftRoomPick[];
+  rosters: Record<string, Record<string, number[]>>;
+  dnd: Record<string, number[]>;
+}
+
 export interface DraftPickOut {
   pick_no: number;
   round_no: number;
