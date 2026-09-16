@@ -12,7 +12,6 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from .. import schemas, services
 from ..database import get_db
-from . import get_league, row_dict
 
 router = APIRouter()
 
@@ -22,23 +21,14 @@ def _draft_out(d: dict) -> schemas.DraftOut:
         id=d["id"], league_id=d["league_id"], rounds=d["rounds"],
         status=d["status"], current_pick_no=d["current_pick_no"],
         draft_order=d["draft_order"],
+        on_clock_team_id=d.get("on_clock_team_id"),
     )
-
-
-@router.post("/leagues/{league_id}/draft/start", response_model=schemas.DraftOut)
-def start_draft(league_id: int, con: sqlite3.Connection = Depends(get_db)):
-    get_league(con, league_id)
-    return _draft_out(services.start_draft(con, league_id))
 
 
 @router.get("/{draft_id}", response_model=schemas.DraftOut)
 def get_draft(draft_id: int, con: sqlite3.Connection = Depends(get_db)):
-    row = con.execute("SELECT * FROM drafts WHERE id = ?", (draft_id,)).fetchone()
-    if not row:
-        raise HTTPException(404, f"draft {draft_id} not found")
-    d = row_dict(row)
-    d["draft_order"] = json.loads(d["draft_order"] or "[]")
-    return _draft_out(d)
+    # services._draft_row computes on_clock_team_id (1-indexed pick_no).
+    return _draft_out(services._draft_row(con, draft_id))
 
 
 @router.get("/{draft_id}/picks", response_model=list[schemas.DraftPickOut])

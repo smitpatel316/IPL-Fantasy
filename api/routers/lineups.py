@@ -6,7 +6,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, HTTPException
 
 from .. import schemas
-from ..constants import TOTAL_WEEKS
+from ..constants import STARTER_SLOTS, TOTAL_WEEKS
 from ..database import get_db
 from ..validation import LineupError, validate_lineup
 from . import get_team, player_roles_map
@@ -69,8 +69,9 @@ def get_lineup(team_id: int, week_no: int, con: sqlite3.Connection = Depends(get
     ):
         slots.setdefault(r["slot"], []).append(r["player_id"])
     roles = player_roles_map(con)
+    # D8 caps overseas STARTERS at 4; bench/IL don't count.
     overseas = sum(
-        1 for pids in slots.values() for pid in pids
+        1 for slot, pids in slots.items() if slot in STARTER_SLOTS for pid in pids
         if roles.get(pid, {}).get("is_overseas")
     )
     return schemas.LineupOut(

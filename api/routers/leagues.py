@@ -7,7 +7,7 @@ import string
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from .. import schemas
+from .. import schemas, services
 from ..constants import FAAB_BUDGET
 from ..database import get_db
 from . import get_league, get_team, row_dict
@@ -126,3 +126,18 @@ def list_teams(league_id: int, con: sqlite3.Connection = Depends(get_db)):
             owner_name=t["owner_name"], faab_remaining=t["faab_remaining"],
         ))
     return out
+
+
+@router.post("/{league_id}/draft/start", response_model=schemas.DraftOut)
+def start_draft(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+    """Start the snake draft (P3-A2: engine-backed). Moved here from the
+    drafts router so the path matches the README contract
+    POST /api/leagues/{id}/draft/start (was /api/drafts/leagues/...)."""
+    get_league(con, league_id)  # 404 if missing
+    d = services.start_draft(con, league_id)
+    return schemas.DraftOut(
+        id=d["id"], league_id=d["league_id"], rounds=d["rounds"],
+        status=d["status"], current_pick_no=d["current_pick_no"],
+        draft_order=d["draft_order"],
+        on_clock_team_id=d.get("on_clock_team_id"),
+    )

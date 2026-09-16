@@ -82,8 +82,9 @@ class DraftOut(BaseModel):
     league_id: int
     rounds: int
     status: str  # scheduled | live | complete
-    current_pick_no: int
+    current_pick_no: int  # 1-indexed pick number (engine convention)
     draft_order: list[int]
+    on_clock_team_id: Optional[int] = None  # None when draft complete
 
 
 class DraftPickOut(BaseModel):

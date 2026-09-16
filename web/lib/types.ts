@@ -74,8 +74,9 @@ export interface DraftOut {
   league_id: number;
   rounds: number;
   status: string;
-  current_pick_no: number;
+  current_pick_no: number; // 1-indexed (engine convention)
   draft_order: number[];
+  on_clock_team_id: number | null;
 }
 
 export interface DraftPickOut {

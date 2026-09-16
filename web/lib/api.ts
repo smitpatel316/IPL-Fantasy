@@ -69,9 +69,9 @@ export const api = {
   getDraft: (id: number | string) => req<DraftOut>(`/drafts/${id}`),
   listPicks: (id: number | string) => req<DraftPickOut[]>(`/drafts/${id}/picks`),
   startDraft: (leagueId: number | string) =>
-    req<NotImplementedOut>(`/drafts/leagues/${leagueId}/draft/start`, { method: "POST" }),
+    req<DraftOut>(`/leagues/${leagueId}/draft/start`, { method: "POST" }),
   makePick: (draftId: number | string, team_id: number, player_id: number) =>
-    req<NotImplementedOut>(`/drafts/${draftId}/pick`, {
+    req<DraftPickOut>(`/drafts/${draftId}/pick`, {
       method: "POST",
       body: JSON.stringify({ team_id, player_id }),
     }),

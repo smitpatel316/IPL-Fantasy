@@ -35,6 +35,11 @@ from api.engine.draft_engine import (
     RosterFull,
     UnfieldableRoster,
 )
+# P2-L7 exact best-ADP D8-legal-11 solver (lives in sandbox_season; pure function).
+from api.engine.sandbox_season import solve_best_d8_lineup
+from api.engine.matchup_scheduler import (
+    ScheduleConfig, ScheduleError, generate_schedule,
+)
 from api.engine.trade_engine import TradeEngine, TradeError
 from api.engine.waiver_engine import WaiverEngine, WaiverError
 
@@ -280,10 +285,19 @@ def _draft_row(con: sqlite3.Connection, draft_id: int) -> dict:
     if not row:
         raise HTTPException(404, f"draft {draft_id} not found")
     d = dict(row)
+    order = json.loads(d["draft_order"] or "[]")
+    # On-clock team comes from the live engine (snake math lives there);
+    # never derive it from the round-1 order with index arithmetic.
+    try:
+        eng = _revive_draft(con, draft_id)
+        on_clock = eng.on_clock_team_id if eng.status == Draft.STATUS_LIVE else None
+    except HTTPException:
+        on_clock = None
     return {
         "id": d["id"], "league_id": d["league_id"], "rounds": d["rounds"],
         "status": d["status"], "current_pick_no": d["current_pick_no"],
-        "draft_order": json.loads(d["draft_order"] or "[]"),
+        "draft_order": order,
+        "on_clock_team_id": on_clock,
     }
 
 
@@ -315,6 +329,12 @@ def make_pick(con: sqlite3.Connection, draft_id: int, team_id: int,
             con.execute(
                 "UPDATE leagues SET status = 'in_season' WHERE id = ?", (league_id,)
             )
+            # Yahoo-style default: every team opens week 1 with its best-ADP
+            # D8-legal 11 (BNx3, IL empty); managers adjust before the D5 lock.
+            _auto_set_week1_lineups(
+                con, league_id, get_league(con, league_id)["season"])
+            # Weeks 1-6 H2H schedule (D4); byes for odd team counts.
+            _generate_schedule(con, league_id)
         else:
             con.execute(
                 "UPDATE drafts SET current_pick_no = ?, status = ?,"
@@ -327,6 +347,135 @@ def make_pick(con: sqlite3.Connection, draft_id: int, team_id: int,
         "team_id": pick["team_id"], "player_id": pick["player_id"],
         "is_auto": pick["is_auto"],
     }
+
+
+def _week1_slot(con: sqlite3.Connection, team_id: int, player_id: int) -> str | None:
+    """The player's week-1 lineup slot, or None if not in it."""
+    row = con.execute(
+        "SELECT slot FROM roster_slots WHERE team_id = ? AND player_id = ?"
+        " AND week_no = 1",
+        (team_id, player_id),
+    ).fetchone()
+    return row["slot"] if row else None
+
+
+def _move_into_week1_slot(con: sqlite3.Connection, team_id: int,
+                          drop_pid: int, add_pid: int) -> None:
+    """Move add_pid into drop_pid's vacated week-1 lineup slot (same team).
+
+    Used by waiver wins. If the added player isn't role-eligible for that
+    slot the lineup reads valid=False until the manager fixes it via
+    PUT /teams/{id}/lineup (same honesty as Yahoo's post-waiver state).
+    """
+    slot = _week1_slot(con, team_id, drop_pid)
+    if slot is None:
+        return
+    con.execute(
+        "DELETE FROM roster_slots WHERE team_id = ? AND player_id = ?"
+        " AND week_no = 1",
+        (team_id, drop_pid),
+    )
+    con.execute(
+        "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
+        " VALUES (?, ?, ?, 1)",
+        (team_id, add_pid, slot),
+    )
+
+
+def _swap_week1_slots(con: sqlite3.Connection, team_a: int, team_b: int,
+                      pids_a: list[int], pids_b: list[int]) -> None:
+    """Paired week-1 slot swap for an executed N-for-N trade.
+
+    pids_a[i] (moving A->B) takes pids_b[i]'s vacated week-1 slot on team B
+    and vice versa — the Yahoo convention that keeps both lineups' slot
+    counts intact. The trade engine guarantees balanced counts.
+    """
+    slots_a = {pid: _week1_slot(con, team_a, pid) for pid in pids_a}
+    slots_b = {pid: _week1_slot(con, team_b, pid) for pid in pids_b}
+    for pa, pb in zip(pids_a, pids_b):
+        sa, sb = slots_a[pa], slots_b[pb]
+        for pid, slot in ((pa, sa), (pb, sb)):
+            if slot is not None:
+                con.execute(
+                    "DELETE FROM roster_slots WHERE team_id = ? AND player_id = ?"
+                    " AND week_no = 1",
+                    (team_a if pid == pa else team_b, pid),
+                )
+        # pa -> team B in pb's old slot; pb -> team A in pa's old slot.
+        if sb is not None:
+            con.execute(
+                "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
+                " VALUES (?, ?, ?, 1)",
+                (team_b, pa, sb),
+            )
+        if sa is not None:
+            con.execute(
+                "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
+                " VALUES (?, ?, ?, 1)",
+                (team_a, pb, sa),
+            )
+
+
+def _generate_schedule(con: sqlite3.Connection, league_id: int) -> None:
+    """Write the weeks 1–6 H2H schedule at draft completion (P2-L5 engine).
+
+    Odd team counts get a bye: a BYE sentinel rounds the circle-method
+    input up to even, and pairings against it are skipped (no matchup row).
+    """
+    teams = [(t["id"], t["name"]) for t in _teams(con, league_id)]
+    BYE = -1
+    if len(teams) % 2 == 1:
+        teams.append((BYE, "BYE"))
+    try:
+        sched = generate_schedule(
+            ScheduleConfig(teams=tuple(teams), seed=league_id))
+    except ScheduleError as e:
+        raise HTTPException(500, f"schedule generation failed: {e}")
+    for week_no, pairs in sched.items():
+        for a, b in pairs:
+            if a == BYE or b == BYE:
+                continue  # bye week — no matchup row
+            con.execute(
+                "INSERT INTO matchups (league_id, week_no, team_a_id,"
+                " team_b_id, status) VALUES (?, ?, ?, ?, 'scheduled')",
+                (league_id, week_no, a, b),
+            )
+
+
+def _auto_set_week1_lineups(con: sqlite3.Connection, league_id: int, season: str) -> None:
+    """Set each team's week-1 lineup to its best-ADP D8-legal 11 (BN×3, IL empty).
+
+    Yahoo-style default: managers get a legal starting lineup the moment the
+    draft completes and can adjust before the weekly lock (D5).
+    """
+    rows = con.execute(
+        """SELECT dp.team_id, dp.player_id FROM draft_picks dp
+           JOIN drafts d ON d.id = dp.draft_id
+           WHERE d.league_id = ?""",
+        (league_id,),
+    ).fetchall()
+    by_team: dict[int, list[int]] = {}
+    for r in rows:
+        by_team.setdefault(r["team_id"], []).append(r["player_id"])
+    roles = player_roles_map(con, season)
+    adp = {
+        r["player_id"]: r["r"]
+        for r in con.execute(
+            "SELECT player_id, MIN(rank) AS r FROM pre_draft_ranks GROUP BY player_id"
+        ).fetchall()
+    }
+    for team_id, pids in by_team.items():
+        if len(pids) != constants.DRAFT_ROUNDS:
+            raise HTTPException(
+                500, f"team {team_id} drafted {len(pids)} players, "
+                     f"expected {constants.DRAFT_ROUNDS}")
+        adp_index = {pid: adp.get(pid, 10 ** 9) for pid in pids}
+        assignment = solve_best_d8_lineup(pids, roles, adp_index)
+        con.executemany(
+            "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
+            " VALUES (?, ?, ?, 1)",
+            [(team_id, pid, slot) for pid, slot in assignment.items()],
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -433,6 +582,9 @@ def run_waivers(con: sqlite3.Connection, league_id: int, week_no: int) -> list[d
                     " VALUES (?, ?, ?, NULL)",
                     (winner, r["player_id"], slot_name),
                 )
+                # Keep the week-1 lineup consistent: the add takes the drop's
+                # vacated week-1 slot.
+                _move_into_week1_slot(con, winner, r["drop"], r["player_id"])
                 con.execute(
                     "UPDATE teams SET faab_remaining = ? WHERE id = ?",
                     (eng.remaining[winner], winner),
@@ -515,11 +667,16 @@ _TRADE_STATUS_MAP = {
 }
 
 
-def _trade_to_out(trade: dict) -> dict:
+def _trade_to_out(trade: dict, db_id: int) -> dict:
+    """Project an engine trade to the API contract.
+
+    db_id is the trades-table id — the only id the API ever exposes.
+    The engine-internal id never leaves the service layer.
+    """
     proposer, offeree = trade["parties"][0], trade["parties"][1]
     gives = trade["gives"]
     return {
-        "id": trade["id"],
+        "id": db_id,
         "league_id": None,  # filled by caller
         "from_team_id": proposer,
         "to_team_id": offeree,
@@ -533,27 +690,49 @@ def _trade_to_out(trade: dict) -> dict:
     }
 
 
-def _sync_trade_row(con: sqlite3.Connection, league_id: int, trade: dict) -> None:
-    """Mirror engine trade into the trades table (read projection)."""
+def _db_id_for_engine(con: sqlite3.Connection, league_id: int, engine_id: int) -> int:
+    """trades-table id for an engine trade id (must exist after sync)."""
+    row = con.execute(
+        "SELECT id FROM trades WHERE league_id = ? AND engine_id = ?",
+        (league_id, engine_id),
+    ).fetchone()
+    if not row:
+        raise HTTPException(500, f"trade engine_id {engine_id} has no DB row")
+    return row["id"]
+
+
+def _sync_trade_row(con: sqlite3.Connection, league_id: int, trade: dict) -> int:
+    """Mirror engine trade into the trades table (read projection).
+
+    Returns the trades-table id — the only trade id the API exposes.
+    """
     row = con.execute(
         "SELECT id FROM trades WHERE league_id = ? AND engine_id = ?",
         (league_id, trade["id"]),
     ).fetchone()
-    out = _trade_to_out(trade)
     if row:
-        con.execute(
-            "UPDATE trades SET status = ?, review_deadline = ? WHERE id = ?",
-            (out["status"], out["review_deadline"], row["id"]),
-        )
+        db_id = row["id"]
     else:
-        con.execute(
+        # Insert first so _trade_to_out can carry the real DB id.
+        cur = con.execute(
             "INSERT INTO trades (league_id, from_team_id, to_team_id, gives,"
             " receives, status, review_deadline, engine_id)"
             " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (league_id, out["from_team_id"], out["to_team_id"],
-             json.dumps(out["gives"]), json.dumps(out["receives"]),
-             out["status"], out["review_deadline"], trade["id"]),
+            (league_id, trade["parties"][0], trade["parties"][1],
+             json.dumps(list(trade["gives"].get(trade["parties"][0], []))),
+             json.dumps(list(trade["gives"].get(trade["parties"][1], []))),
+             _TRADE_STATUS_MAP[trade["status"]],
+             (time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(trade["review_until"]))
+              if trade.get("review_until") else None),
+             trade["id"]),
         )
+        db_id = cur.lastrowid
+    out = _trade_to_out(trade, db_id)
+    con.execute(
+        "UPDATE trades SET status = ?, review_deadline = ? WHERE id = ?",
+        (out["status"], out["review_deadline"], db_id),
+    )
+    return db_id
 
 
 def _settle_trades(con: sqlite3.Connection, league_id: int) -> None:
@@ -576,6 +755,9 @@ def _settle_trades(con: sqlite3.Connection, league_id: int) -> None:
                     con.execute(
                         "UPDATE roster_slots SET team_id = ? WHERE team_id = ?"
                         " AND player_id = ? AND week_no IS NULL", (a, b, pid))
+                # Week-1 lineups: paired slot swap so both XIs keep their
+                # D7 slot counts (Yahoo convention).
+                _swap_week1_slots(con, a, b, gives[a], gives[b])
             changed.append(tid)
     with con:
         for tid in eng._trades:
@@ -597,7 +779,7 @@ def propose_trade(con: sqlite3.Connection, league_id: int, from_team_id: int,
     with con:
         _sync_trade_row(con, league_id, trade)
     _put_cached("trade", league_id, eng, con)
-    out = _trade_to_out(trade)
+    out = _trade_to_out(trade, _db_id_for_engine(con, league_id, trade["id"]))
     out["league_id"] = league_id
     return out
 
@@ -640,7 +822,7 @@ def respond_trade(con: sqlite3.Connection, league_id: int, trade_id: int,
     with con:
         _sync_trade_row(con, league_id, trade)
     _put_cached("trade", league_id, eng, con)
-    out = _trade_to_out(trade)
+    out = _trade_to_out(trade, _db_id_for_engine(con, league_id, trade["id"]))
     out["league_id"] = league_id
     return out
 

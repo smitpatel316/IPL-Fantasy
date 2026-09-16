@@ -1,5 +1,9 @@
-"""SQLite dev database. Per-request connections (open/close) — no cross-thread
-sharing issues under uvicorn. DATABASE_URL env override; default data/ipl_fantasy.db.
+"""SQLite dev database. Per-request connections (open/close).
+check_same_thread=False: FastAPI runs sync generator dependencies and sync
+endpoints in anyio's worker threadpool, and setup/endpoint/teardown may land
+on different threads within one request. Each request still gets its own
+connection (no cross-request sharing); threads within a request use it
+sequentially. DATABASE_URL env override; default data/ipl_fantasy.db.
 Postgres migration is a Phase-4 decision, not this scaffold's."""
 
 import logging
@@ -26,7 +30,8 @@ def db_path() -> Path:
 def connect() -> sqlite3.Connection:
     path = db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(str(path))
+    # check_same_thread=False: see module docstring (anyio worker threads).
+    con = sqlite3.connect(str(path), check_same_thread=False)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA foreign_keys = ON")
     return con
