@@ -132,6 +132,14 @@ class WaiverClaimOut(BaseModel):
     status: str  # pending | won | lost
 
 
+class WaiverRunResultOut(BaseModel):
+    player_id: int
+    winner_team_id: Optional[int]
+    amount: Optional[int]
+    drop_player_id: Optional[int]
+    forfeited_by: list[int] = []
+
+
 # ---------- trades ----------
 class TradeCreate(BaseModel):
     league_id: int

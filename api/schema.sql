@@ -144,7 +144,18 @@ CREATE TABLE IF NOT EXISTS trades (
     receives        TEXT NOT NULL DEFAULT '[]',  -- JSON [player_id...]
     status          TEXT NOT NULL DEFAULT 'proposed',
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-    review_deadline TEXT
+    review_deadline TEXT,
+    engine_id       INTEGER  -- api.engine.trade_engine trade id (Phase 3)
+);
+
+-- Phase 3: persisted engine snapshots (api/services.py).
+-- scope ∈ {draft, waiver, trade}; scope_id = drafts.id / leagues.id.
+CREATE TABLE IF NOT EXISTS engine_state (
+    scope      TEXT NOT NULL,
+    scope_id   INTEGER NOT NULL,
+    state      TEXT NOT NULL,   -- engine to_dict() JSON
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (scope, scope_id)
 );
 
 -- status ∈ {scheduled,live,final}

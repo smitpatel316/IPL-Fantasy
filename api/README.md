@@ -16,10 +16,10 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `GET /api/leagues/{id}` | live | league + settings + standings |
 | `POST /api/leagues/{id}/join` | live | `{invite_code, team_name, owner_name}` |
 | `GET /api/leagues/{id}/teams` | live | |
-| `POST /api/leagues/{id}/draft/start` | stub **P2-L1** | creates draft (snake order), league → drafting |
+| `POST /api/leagues/{id}/draft/start` | **live (P3-A2)** | snake order (seeded shuffle), league → drafting, engine in `engine_state` |
 | `GET /api/drafts/{id}` | live | draft state |
 | `GET /api/drafts/{id}/picks` | live | pick list |
-| `POST /api/drafts/{id}/pick` | stub **P2-L1** | `{team_id, player_id}`; auto-pick on clock expiry |
+| `POST /api/drafts/{id}/pick` | **live (P3-A2)** | `{team_id, player_id}`; clock expiry auto-fires on the next pick request; league → in_season when complete |
 | `PUT /api/teams/{id}/lineup` | live | `{week_no, slots}` — validates D7 slots + D8 overseas cap (422 on violation); **P2-L2 seam**: weekly-lock deadline check goes here (marked in code) |
 | `GET /api/teams/{id}/lineup?week_no=` | live | |
 | `GET /api/players?league_id=&season=&role=&team=&q=` | live | universe + roles + preseason_rank + owned_by_team_id |
