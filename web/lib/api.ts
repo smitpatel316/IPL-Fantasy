@@ -1,8 +1,7 @@
 /* Typed client for the FastAPI backend (blueprint §7).
    Base URL: NEXT_PUBLIC_API_URL (dev default http://127.0.0.1:8014/api).
-   Engine endpoints (draft pick, waivers, trades, scoring) return 501 with a
-   {detail, track} body until league-core wires them — the UI renders the
-   track tag so users know which build owns it. */
+   Engine endpoints that are still scaffolds return 501 with a {detail, track}
+   body — the UI renders the track tag so users know which build owns it. */
 
 import { ApiError } from "./types";
 import type {
@@ -111,7 +110,7 @@ export const api = {
 
   // waivers
   submitClaim: (body: { league_id: number; team_id: number; add_player_id: number; drop_player_id?: number; bid: number }) =>
-    req<NotImplementedOut>("/waivers/claim", { method: "POST", body: JSON.stringify(body) }),
+    req<WaiverClaimOut>("/waivers/claim", { method: "POST", body: JSON.stringify(body) }),
   pendingClaims: (league_id: number, week_no: number) =>
     req<WaiverClaimOut[]>(`/waivers/pending?league_id=${league_id}&week_no=${week_no}`),
 
