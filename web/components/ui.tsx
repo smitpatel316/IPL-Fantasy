@@ -1,18 +1,88 @@
-export function PageHeader({ title, sub }: { title: string; sub?: string }) {
+import { cn } from "@/lib/utils";
+
+/* ------------------------------------------------------------------
+   Shared UI kit — monochrome + trophy-gold accent.
+   Props of PageHeader / ErrorBox / EngineStub are unchanged so every
+   track's pages keep working; only the visuals moved to the system.
+   ------------------------------------------------------------------ */
+
+export function PageHeader({
+  title,
+  sub,
+  eyebrow,
+}: {
+  title: string;
+  sub?: string;
+  eyebrow?: string;
+}) {
   return (
     <div className="mb-6">
-      <h1 className="text-2xl font-bold tracking-tight text-white">{title}</h1>
-      {sub && <p className="mt-1 text-sm text-slate-400">{sub}</p>}
+      {eyebrow && <p className="eyebrow mb-2">{eyebrow}</p>}
+      <h1 className="text-[26px] font-extrabold tracking-tight text-white sm:text-3xl">
+        {title}
+      </h1>
+      {sub && <p className="lede mt-1.5 max-w-2xl">{sub}</p>}
+    </div>
+  );
+}
+
+export function Card({
+  className,
+  children,
+  hover = false,
+}: {
+  className?: string;
+  children: React.ReactNode;
+  hover?: boolean;
+}) {
+  return <div className={cn(hover ? "card-hover" : "card", className)}>{children}</div>;
+}
+
+export function Badge({
+  tone = "neutral",
+  className,
+  children,
+}: {
+  tone?: "gold" | "neutral" | "green" | "red";
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const tones = {
+    gold: "badge-gold",
+    neutral: "badge-neutral",
+    green: "badge-green",
+    red: "badge-red",
+  } as const;
+  return <span className={cn(tones[tone], className)}>{children}</span>;
+}
+
+export function EmptyState({
+  icon,
+  title,
+  sub,
+  action,
+}: {
+  icon?: React.ReactNode;
+  title: string;
+  sub?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="card flex flex-col items-center px-6 py-12 text-center">
+      {icon && <div className="icon-tile mb-4">{icon}</div>}
+      <p className="font-semibold text-white">{title}</p>
+      {sub && <p className="lede mt-1 max-w-sm text-sm">{sub}</p>}
+      {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }
 
 export function EngineStub({ track, what }: { track: string; what: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-slate-700 bg-midnight-soft/50 p-6 text-center">
-      <p className="text-sm font-medium text-slate-300">{what} — engine not wired yet</p>
-      <p className="mt-1 text-xs text-slate-500">
-        Owned by <span className="font-mono text-trophy-gold">{track}</span> (league-core track).
+    <div className="card border-dashed p-8 text-center">
+      <p className="text-sm font-semibold text-zinc-200">{what} — engine not wired yet</p>
+      <p className="mt-1.5 text-xs text-zinc-500">
+        Owned by <span className="font-mono text-gold-400">{track}</span> (league-core track).
         This shell holds the place; the UI contract is final.
       </p>
     </div>
@@ -21,12 +91,12 @@ export function EngineStub({ track, what }: { track: string; what: string }) {
 
 export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="rounded-lg border border-brick-red/40 bg-brick-red/10 p-4 text-sm text-red-200">
+    <div className="rounded-xl border border-clay-400/30 bg-clay-400/[0.07] p-4 text-sm text-red-200">
       <p>{message}</p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="mt-2 rounded-md bg-brick-red/20 px-3 py-1 text-xs font-medium hover:bg-brick-red/30"
+          className="btn-ghost btn-sm mt-3"
         >
           Retry
         </button>
@@ -34,3 +104,8 @@ export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () =
     </div>
   );
 }
+
+/* Class-string helpers for pages that need raw classNames (Links etc.) */
+export const btnGold = "btn-gold";
+export const btnGhost = "btn-ghost";
+export const btnDark = "btn-dark";

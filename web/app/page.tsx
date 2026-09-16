@@ -2,19 +2,55 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trophy, Users, CalendarDays, ArrowLeftRight } from "lucide-react";
+import {
+  Trophy,
+  Users,
+  CalendarDays,
+  ArrowLeftRight,
+  Gavel,
+  ChevronRight,
+  Sparkles,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import { ApiError } from "@/lib/types";
+import { Card, Badge, ErrorBox } from "@/components/ui";
 
-function Card({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
-  return (
-    <div className="rounded-xl border border-slate-800 bg-midnight-soft p-5">
-      <div className="mb-3 text-trophy-gold">{icon}</div>
-      <h3 className="font-semibold text-white">{title}</h3>
-      <p className="mt-1 text-sm text-slate-400">{text}</p>
-    </div>
-  );
-}
+const STATS = [
+  { k: "15", v: "roster spots" },
+  { k: "11", v: "starters weekly" },
+  { k: "$100", v: "FAAB budget" },
+  { k: "Top 4", v: "make playoffs" },
+];
+
+const FEATURES = [
+  {
+    icon: <Users className="h-5 w-5" />,
+    title: "Snake draft",
+    text: "15 rounds with a pick clock, auto-pick, custom ranks and do-not-draft lists. Draft from your phone.",
+  },
+  {
+    icon: <CalendarDays className="h-5 w-5" />,
+    title: "Weekly head-to-head",
+    text: "Mon–Sun matchup periods with a weekly lineup lock. Set it once — no 7am alarms.",
+  },
+  {
+    icon: <Gavel className="h-5 w-5" />,
+    title: "FAAB waivers",
+    text: "$100 season budget, blind bids processed every Wednesday. Outbid your rivals, don't outspend yourself.",
+  },
+  {
+    icon: <ArrowLeftRight className="h-5 w-5" />,
+    title: "Trades & playoffs",
+    text: "Propose deals with commissioner review, a week-6 trade deadline, then a top-4 playoff bracket.",
+  },
+];
+
+const STEPS = [
+  { n: "01", t: "Draft", d: "Snake draft your 15-man squad in March, before the season starts." },
+  { n: "02", t: "Set lineups", d: "Pick your 11 starters each week — max 4 overseas in the XI." },
+  { n: "03", t: "Work the wire", d: "FAAB bids and trades keep your squad sharp through the season." },
+  { n: "04", t: "Playoffs", d: "Top 4 battle it out over the final two fantasy weeks." },
+];
 
 export default function Home() {
   const router = useRouter();
@@ -48,67 +84,184 @@ export default function Home() {
     }
   }
 
-  const input =
-    "w-full rounded-md border border-slate-700 bg-midnight px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-ipl-blue-bright focus:outline-none";
-
   return (
     <div>
-      <section className="py-10 text-center">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-trophy-gold/30 bg-trophy-gold/10 px-4 py-1 text-xs font-medium text-trophy-gold">
-          <Trophy className="h-3.5 w-3.5" /> Season-long fantasy cricket · IPL 2027
-        </div>
-        <h1 className="mx-auto max-w-2xl text-4xl font-extrabold tracking-tight text-white">
-          Your league. Your rivals. <span className="text-trophy-gold">One trophy.</span>
+      {/* ------------------------------ Hero ------------------------------ */}
+      <section className="pb-10 pt-8 text-center sm:pt-14">
+        <Badge tone="gold" className="mb-5">
+          <Sparkles className="h-3 w-3" /> Season-long fantasy cricket · IPL 2027
+        </Badge>
+        <h1 className="display mx-auto max-w-3xl text-[42px] sm:text-6xl lg:text-7xl">
+          Your league. Your rivals.
+          <br />
+          <span className="text-gold-400">One trophy.</span>
         </h1>
-        <p className="mx-auto mt-3 max-w-xl text-slate-400">
+        <p className="lede mx-auto mt-5 max-w-xl text-base">
           Snake draft, weekly head-to-head matchups, FAAB waivers, trades and playoffs —
-          the Yahoo-style season game, built for the IPL.
+          the season-long game you know from fantasy basketball, built for the IPL.
         </p>
+        <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <a href="#start" className="btn-gold w-full sm:w-auto">
+            Create a league <ChevronRight className="h-4 w-4" />
+          </a>
+          <a href="/league/1" className="btn-ghost w-full sm:w-auto">
+            Explore the demo league
+          </a>
+        </div>
+
+        {/* Stat strip */}
+        <dl className="mx-auto mt-10 grid max-w-2xl grid-cols-2 gap-px overflow-hidden rounded-2xl border hairline bg-white/[0.04] sm:grid-cols-4">
+          {STATS.map((s) => (
+            <div key={s.v} className="bg-ink-950/90 px-4 py-4">
+              <dt className="sr-only">{s.v}</dt>
+              <dd className="tnum text-xl font-extrabold text-white">{s.k}</dd>
+              <dd className="mt-0.5 text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+                {s.v}
+              </dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       {err && (
-        <div className="mx-auto mb-6 max-w-3xl rounded-lg border border-brick-red/40 bg-brick-red/10 p-3 text-sm text-red-200">
-          {err}
+        <div className="mx-auto mb-6 max-w-3xl">
+          <ErrorBox message={err} />
         </div>
       )}
 
-      <section className="mx-auto grid max-w-3xl gap-4 md:grid-cols-2">
-        <form onSubmit={create} className="rounded-xl border border-slate-800 bg-midnight-soft p-5">
-          <h2 className="mb-3 font-semibold text-white">Create a league</h2>
-          <div className="space-y-3">
-            <input className={input} placeholder="League name" value={name} onChange={(e) => setName(e.target.value)} required />
-            <input className={input} placeholder="Your name (commissioner)" value={commish} onChange={(e) => setCommish(e.target.value)} required />
-            <button className="w-full rounded-md bg-ipl-blue px-4 py-2 text-sm font-semibold text-white hover:bg-ipl-blue-bright">
-              Create league
-            </button>
-          </div>
-        </form>
-        <form onSubmit={join} className="rounded-xl border border-slate-800 bg-midnight-soft p-5">
-          <h2 className="mb-3 font-semibold text-white">Join with invite code</h2>
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <input className={input} placeholder="League ID" value={joinId} onChange={(e) => setJoinId(e.target.value)} required />
-              <input className={input} placeholder="Code" value={code} onChange={(e) => setCode(e.target.value)} required />
+      {/* --------------------------- Create / Join --------------------------- */}
+      <section id="start" className="mx-auto grid max-w-3xl scroll-mt-24 gap-4 md:grid-cols-2">
+        <Card className="p-6">
+          <p className="eyebrow mb-1">Commissioner</p>
+          <h2 className="mb-4 text-lg font-bold text-white">Create a league</h2>
+          <form onSubmit={create} className="space-y-3">
+            <div>
+              <label className="field-label" htmlFor="league-name">League name</label>
+              <input
+                id="league-name"
+                className="input"
+                placeholder="e.g. Backyard Legends"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </div>
-            <input className={input} placeholder="Team name" value={teamName} onChange={(e) => setTeamName(e.target.value)} required />
-            <input className={input} placeholder="Your name" value={owner} onChange={(e) => setOwner(e.target.value)} required />
-            <button className="w-full rounded-md bg-pitch-green px-4 py-2 text-sm font-semibold text-midnight hover:brightness-110">
-              Join league
-            </button>
+            <div>
+              <label className="field-label" htmlFor="commish">Your name</label>
+              <input
+                id="commish"
+                className="input"
+                placeholder="Commissioner"
+                value={commish}
+                onChange={(e) => setCommish(e.target.value)}
+                required
+              />
+            </div>
+            <button className="btn-gold w-full">Create league</button>
+          </form>
+        </Card>
+
+        <Card className="p-6">
+          <p className="eyebrow mb-1">Have an invite?</p>
+          <h2 className="mb-4 text-lg font-bold text-white">Join with a code</h2>
+          <form onSubmit={join} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="field-label" htmlFor="join-id">League ID</label>
+                <input
+                  id="join-id"
+                  className="input"
+                  value={joinId}
+                  onChange={(e) => setJoinId(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="field-label" htmlFor="join-code">Code</label>
+                <input
+                  id="join-code"
+                  className="input"
+                  placeholder="Invite code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="field-label" htmlFor="team-name">Team name</label>
+              <input
+                id="team-name"
+                className="input"
+                placeholder="e.g. Yorker Kings"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="field-label" htmlFor="owner">Your name</label>
+              <input
+                id="owner"
+                className="input"
+                placeholder="Manager"
+                value={owner}
+                onChange={(e) => setOwner(e.target.value)}
+                required
+              />
+            </div>
+            <button className="btn-dark w-full">Join league</button>
+          </form>
+        </Card>
+      </section>
+
+      {/* ------------------------------ Features ------------------------------ */}
+      <section className="mx-auto mt-16 max-w-5xl">
+        <p className="eyebrow text-center">The format</p>
+        <h2 className="mt-2 text-center text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+          Everything a season needs
+        </h2>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {FEATURES.map((f) => (
+            <Card key={f.title} hover className="p-5">
+              <div className="icon-tile mb-4">{f.icon}</div>
+              <h3 className="font-bold text-white">{f.title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">{f.text}</p>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* --------------------------- How it flows --------------------------- */}
+      <section className="mx-auto mt-16 max-w-5xl">
+        <Card className="overflow-hidden p-0">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((s, i) => (
+              <div
+                key={s.n}
+                className={
+                  "p-6 " + (i > 0 ? "border-t hairline sm:border-t-0 sm:border-l" : "")
+                }
+              >
+                <p className="tnum text-sm font-extrabold text-gold-500">{s.n}</p>
+                <h3 className="mt-2 font-bold text-white">{s.t}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-zinc-400">{s.d}</p>
+              </div>
+            ))}
           </div>
-        </form>
+        </Card>
       </section>
 
-      <section className="mx-auto mt-10 grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card icon={<Users className="h-5 w-5" />} title="Snake draft" text="15 rounds, pick clock with auto-pick, custom ranks and do-not-draft lists." />
-        <Card icon={<CalendarDays className="h-5 w-5" />} title="Weekly H2H" text="Mon–Sun matchup periods, weekly lineup lock — no 7am alarms." />
-        <Card icon={<Trophy className="h-5 w-5" />} title="FAAB waivers" text="$100 season budget, blind bids run every Wednesday." />
-        <Card icon={<ArrowLeftRight className="h-5 w-5" />} title="Trades & playoffs" text="Commissioner review, deadline end of week 6, top-4 playoff bracket." />
+      {/* -------------------------------- Footnote -------------------------------- */}
+      <section className="mx-auto mt-14 max-w-xl text-center">
+        <div className="icon-tile mb-3">
+          <Trophy className="h-5 w-5" />
+        </div>
+        <p className="text-sm text-zinc-500">
+          Exploring? The demo league (ID 1) is a full sandbox — draft, set lineups, run
+          waivers. Scoring uses the standard T20 fantasy points table.
+        </p>
       </section>
-
-      <p className="mt-10 text-center text-xs text-slate-600">
-        Sandbox mode — explore with the demo league (ID 1). Scoring: Dream11-official T20 table.
-      </p>
     </div>
   );
 }

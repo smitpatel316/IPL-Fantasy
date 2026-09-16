@@ -1,7 +1,31 @@
 @import "tailwindcss";
 
-/* Feb UI-DESIGN.md palette (kept per blueprint §11): dark theme first. */
+/* ------------------------------------------------------------------
+   IPL Fantasy design system (v1) — near-monochrome, one restrained
+   accent (trophy gold). Dark first; Smit browses on iPhone, so every
+   component below is built mobile-first.
+   Custom pieces are @utility (v4-native) so they compose with @apply.
+   ------------------------------------------------------------------ */
 @theme {
+  /* Ink — the monochrome ramp (page → raised surfaces) */
+  --color-ink-950: #09090c;
+  --color-ink-900: #101218;
+  --color-ink-850: #151923;
+  --color-ink-800: #1d2330;
+  --color-ink-700: #2a3142;
+
+  /* Trophy gold — the single accent. Used for brand moments, primary
+     actions, active states. Everything else stays black/white/gray. */
+  --color-gold-300: #fcd34d;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+  --color-gold-600: #d97706;
+
+  /* Semantic status tones (sparingly) */
+  --color-pine-400: #34d399;
+  --color-clay-400: #f87171;
+
+  /* ---- Legacy tokens (kept so other tracks' pages keep working) ---- */
   --color-ipl-blue: #1e3a8a;
   --color-ipl-blue-bright: #3b82f6;
   --color-trophy-gold: #f59e0b;
@@ -14,16 +38,126 @@
 
 html {
   color-scheme: dark;
+  scroll-behavior: smooth;
 }
 
 body {
-  background-color: var(--color-midnight);
-  color: #f1f5f9;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Faint floodlight glow up top; otherwise pure ink. Tasteful, static. */
+  background:
+    radial-gradient(1100px 480px at 50% -8%, rgb(245 158 11 / 0.07), transparent 62%),
+    var(--color-ink-950);
+  color: #fafafa;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgb(245 158 11 / 0.85);
+  color: #09090c;
 }
 
 /* Thin scrollbars for data-dense tables */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-midnight-softer) transparent;
+  scrollbar-color: var(--color-ink-700) transparent;
+}
+
+/* ------------------------------- Type ------------------------------- */
+
+/* Small caps section label */
+@utility eyebrow {
+  @apply text-[11px] font-bold uppercase tracking-[0.22em] text-gold-400;
+}
+
+/* Big sports headline */
+@utility display {
+  @apply font-extrabold uppercase leading-[0.95] tracking-tight text-white;
+}
+
+/* Muted secondary copy */
+@utility lede {
+  @apply text-[15px] leading-relaxed text-zinc-400;
+}
+
+/* Tabular figures for stats/tables */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------ Buttons ----------------------------- */
+/* Primary is gold (brand moment), secondary is ghost. */
+
+@utility btn {
+  @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5
+    text-sm font-semibold transition-all duration-150 select-none
+    focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400
+    active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-gold {
+  @apply btn bg-gold-500 text-ink-950 shadow-[0_8px_24px_-8px_rgb(245_158_11/0.5)] hover:bg-gold-400;
+}
+@utility btn-ghost {
+  @apply btn border border-white/15 bg-white/[0.03] text-white hover:border-white/25 hover:bg-white/[0.07];
+}
+@utility btn-dark {
+  @apply btn bg-white text-ink-950 hover:bg-zinc-200;
+}
+@utility btn-sm {
+  @apply rounded-lg px-3 py-1.5 text-[13px];
+}
+
+/* ------------------------------- Cards ------------------------------ */
+
+@utility card {
+  @apply rounded-2xl border border-white/10 bg-ink-900;
+}
+@utility card-hover {
+  @apply card transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20
+    hover:shadow-[0_16px_40px_-16px_rgb(0_0_0/0.8)];
+}
+@utility card-inset {
+  @apply rounded-xl border border-white/[0.07] bg-ink-950/60;
+}
+
+/* ------------------------------- Forms ------------------------------ */
+
+@utility field-label {
+  @apply mb-1.5 block text-xs font-semibold uppercase tracking-[0.08em] text-zinc-400;
+}
+@utility input {
+  @apply w-full rounded-xl border border-white/10 bg-ink-950 px-3.5 py-2.5 text-sm text-white
+    placeholder:text-zinc-600 transition-colors
+    focus:border-gold-500/60 focus:outline-none focus:ring-2 focus:ring-gold-500/20;
+}
+
+/* ------------------------------- Badges ----------------------------- */
+
+@utility badge {
+  @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold
+    uppercase tracking-[0.08em];
+}
+@utility badge-gold {
+  @apply badge border-gold-500/30 bg-gold-500/10 text-gold-300;
+}
+@utility badge-neutral {
+  @apply badge border-white/15 bg-white/[0.04] text-zinc-300;
+}
+@utility badge-green {
+  @apply badge border-pine-400/30 bg-pine-400/10 text-pine-400;
+}
+@utility badge-red {
+  @apply badge border-clay-400/30 bg-clay-400/10 text-clay-400;
+}
+
+/* Icon in a gold tile (feature cards, empty states) */
+@utility icon-tile {
+  @apply inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gold-500/12 text-gold-400
+    ring-1 ring-inset ring-gold-500/25;
+}
+
+/* Hairline divider color (pair with border-t / border-b) */
+@utility hairline {
+  @apply border-white/[0.08];
 }
