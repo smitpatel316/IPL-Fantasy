@@ -519,7 +519,10 @@ def _generate_schedule(con: sqlite3.Connection, league_id: int) -> None:
 
     Odd team counts get a bye: a BYE sentinel rounds the circle-method
     input up to even, and pairings against it are skipped (no matchup row).
+    Idempotent: any existing rows for the league are replaced, so a
+    re-fired completion side effect can't double the schedule.
     """
+    con.execute("DELETE FROM matchups WHERE league_id = ?", (league_id,))
     teams = [(t["id"], t["name"]) for t in _teams(con, league_id)]
     BYE = -1
     if len(teams) % 2 == 1:

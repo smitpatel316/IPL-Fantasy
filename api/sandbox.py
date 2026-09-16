@@ -142,14 +142,10 @@ def seed_if_empty(con) -> int | None:
                 )
             rank += 1
 
-    # Week-1 round-robin matchups (team i vs team n-1-i).
+    # No matchups are seeded here: the real weeks 1-6 H2H schedule is
+    # generated at draft completion (services._generate_schedule). Seeding
+    # a parallel week-1 set here doubled week-1 matchups in the demo league.
     n = len(team_ids)
-    for i in range(n // 2):
-        con.execute(
-            "INSERT INTO matchups (league_id, week_no, team_a_id, team_b_id, status)"
-            " VALUES (?, 1, ?, ?, 'scheduled')",
-            (league_id, team_ids[i], team_ids[n - 1 - i]),
-        )
 
     con.commit()
     log.info(f"sandbox seeded: league {league_id} ({SANDBOX_LEAGUE_NAME}), {n} teams, 48 players")
