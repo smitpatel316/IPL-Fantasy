@@ -84,7 +84,8 @@ export default function PlayoffsPage() {
       </div>
 
       <div className="mt-6">
-        <EngineStub track="P2-L6" what="Playoff engine (seeding, bracket, consolation)" />
+        {/* Track P2-L6 (league-core): playoff engine not wired yet — UI contract is final. */}
+        <EngineStub message="The playoff bracket appears here once the regular season ends." />
       </div>
       <p className="mt-4 max-w-2xl text-xs leading-relaxed text-zinc-600">
         The fantasy season ends before the real IPL playoffs — the player pool shrinks to 4 teams,

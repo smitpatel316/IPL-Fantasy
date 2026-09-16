@@ -2,8 +2,8 @@ import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------
    Shared UI kit — monochrome + trophy-gold accent.
-   Props of PageHeader / ErrorBox / EngineStub are unchanged so every
-   track's pages keep working; only the visuals moved to the system.
+   EngineStub takes a manager-friendly `message`; internal track IDs
+   live in code comments at the call sites, never in the UI.
    ------------------------------------------------------------------ */
 
 export function PageHeader({
@@ -77,13 +77,12 @@ export function EmptyState({
   );
 }
 
-export function EngineStub({ track, what }: { track: string; what: string }) {
+export function EngineStub({ message }: { message: string }) {
   return (
     <div className="card border-dashed p-8 text-center">
-      <p className="text-sm font-semibold text-zinc-200">{what} — engine not wired yet</p>
+      <p className="text-sm font-semibold text-zinc-200">{message}</p>
       <p className="mt-1.5 text-xs text-zinc-500">
-        Owned by <span className="font-mono text-gold-400">{track}</span> (league-core track).
-        This shell holds the place; the UI contract is final.
+        This part of the app is still being built — check back soon.
       </p>
     </div>
   );

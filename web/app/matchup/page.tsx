@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { ApiError, type MatchupOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
+import { ScrollHint } from "@/components/ScrollHint";
 import { cn } from "@/lib/utils";
 import { Swords, Trophy } from "lucide-react";
 
@@ -58,21 +59,23 @@ export default function MatchupPage() {
     <div>
       <PageHeader title="Matchups" sub="Weekly head-to-head · Monday–Sunday periods" />
 
-      <div className="mb-5 flex gap-1.5 overflow-x-auto rounded-xl border border-slate-800 bg-midnight-soft p-2" role="tablist" aria-label="Week">
-        {WEEKS.map((w) => (
-          <button
-            key={w}
-            role="tab"
-            aria-selected={week === w}
-            onClick={() => setWeek(w)}
-            className={cn(
-              "shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
-              week === w ? "bg-trophy-gold text-midnight" : "text-zinc-400 hover:bg-slate-800 hover:text-white",
-            )}
-          >
-            W{w}
-          </button>
-        ))}
+      <div className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-2">
+        <ScrollHint className="flex gap-1.5 overflow-x-auto" role="tablist" aria-label="Week">
+          {WEEKS.map((w) => (
+            <button
+              key={w}
+              role="tab"
+              aria-selected={week === w}
+              onClick={() => setWeek(w)}
+              className={cn(
+                "shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
+                week === w ? "bg-trophy-gold text-midnight" : "text-zinc-400 hover:bg-slate-800 hover:text-white",
+              )}
+            >
+              W{w}
+            </button>
+          ))}
+        </ScrollHint>
       </div>
 
       {err && <div className="mb-4"><ErrorBox message={err} /></div>}
@@ -115,8 +118,16 @@ export default function MatchupPage() {
         !err && (
           <div className="rounded-xl border border-dashed border-slate-700 p-10 text-center">
             <Swords className="mx-auto mb-3 h-8 w-8 text-zinc-700" />
-            <p className="text-sm font-medium text-zinc-400">No matchups scheduled for week {week} yet.</p>
-            <p className="mt-1 text-xs text-zinc-600">The schedule is set once the league fills and the draft completes.</p>
+            <p className="text-sm font-medium text-zinc-400">
+              {week >= 7
+                ? `Playoff matchups for week ${week} are set once the regular season ends and the top 4 are seeded.`
+                : `No matchups scheduled for week ${week} yet.`}
+            </p>
+            <p className="mt-1 text-xs text-zinc-600">
+              {week >= 7
+                ? "The playoff bracket is decided by final regular-season standings."
+                : "The schedule is set once the league fills and the draft completes."}
+            </p>
           </div>
         )
       )}

@@ -80,7 +80,8 @@ export default function WaiversPage() {
 
       <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-300">This week's claims</h2>
       {claims.length === 0 ? (
-        <EngineStub track="P2-L3" what="Waiver claims (blind bids, reverse-standings tiebreak)" />
+        // Track P2-L3 (league-core): waiver engine not wired yet — UI contract is final.
+        <EngineStub message="Waiver bidding opens soon — you'll place blind FAAB bids here." />
       ) : (
         <ul className="space-y-2">
           {claims.map((c) => (

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { ApiError, type PlayerOut, type TeamOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
+import { ScrollHint } from "@/components/ScrollHint";
 import { cn } from "@/lib/utils";
 import { Plane, Save, Search, X, CheckCircle2, AlertTriangle } from "lucide-react";
 
@@ -138,7 +139,7 @@ export default function LineupPage() {
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </select>
-          <div className="flex flex-1 items-center gap-1 overflow-x-auto" role="tablist" aria-label="Week">
+          <ScrollHint className="flex flex-1 items-center gap-1 overflow-x-auto" role="tablist" aria-label="Week">
             {WEEKS.map((w) => (
               <button
                 key={w}
@@ -156,7 +157,7 @@ export default function LineupPage() {
                 {w >= 7 && <span className={cn("ml-1 text-[10px]", week === w ? "text-midnight/70" : "text-trophy-gold")}>PO</span>}
               </button>
             ))}
-          </div>
+          </ScrollHint>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-800/70 pt-3">
           <div className="flex items-center gap-2">

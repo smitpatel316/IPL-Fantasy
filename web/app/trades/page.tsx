@@ -57,7 +57,8 @@ export default function TradesPage() {
 
       <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-300">Trade inbox</h2>
       {trades.length === 0 ? (
-        <EngineStub track="P2-L4" what="Trade engine (proposals, legality checks, veto)" />
+        // Track P2-L4 (league-core): trade engine not wired yet — UI contract is final.
+        <EngineStub message="Trading opens soon — propose and review trades here." />
       ) : (
         <ul className="space-y-3">
           {trades.map((t) => (

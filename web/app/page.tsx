@@ -26,7 +26,7 @@ const FEATURES = [
   {
     icon: <Users className="h-5 w-5" />,
     title: "Snake draft",
-    text: "15 rounds with a pick clock, auto-pick, custom ranks and do-not-draft lists. Draft from your phone.",
+    text: "14 rounds with a pick clock, auto-pick, custom ranks and do-not-draft lists. Draft from your phone.",
   },
   {
     icon: <CalendarDays className="h-5 w-5" />,
