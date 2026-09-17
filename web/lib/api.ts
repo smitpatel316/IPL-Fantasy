@@ -117,11 +117,13 @@ export const api = {
 
   // trades
   proposeTrade: (body: { league_id: number; from_team_id: number; to_team_id: number; gives: number[]; receives: number[] }) =>
-    req<NotImplementedOut>("/trades", { method: "POST", body: JSON.stringify(body) }),
+    req<TradeOut>("/trades", { method: "POST", body: JSON.stringify(body) }),
   listTrades: (league_id: number, status?: string) =>
     req<TradeOut[]>(`/trades?league_id=${league_id}${status ? `&status=${status}` : ""}`),
-  tradeAction: (tradeId: number, action: "accept" | "reject" | "veto") =>
-    req<NotImplementedOut>(`/trades/${tradeId}/${action}`, { method: "POST" }),
+  tradeAccept: (tradeId: number) => req<TradeOut>(`/trades/${tradeId}/accept`, { method: "POST" }),
+  tradeReject: (tradeId: number) => req<TradeOut>(`/trades/${tradeId}/reject`, { method: "POST" }),
+  tradeVeto: (tradeId: number, teamId: number) =>
+    req<TradeOut>(`/trades/${tradeId}/veto?team_id=${teamId}`, { method: "POST" }),
 
   // matchups / scoring
   listMatchups: (league_id: number, week_no: number) =>
