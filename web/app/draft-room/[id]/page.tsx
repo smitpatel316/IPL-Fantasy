@@ -6,6 +6,10 @@ import { ApiError, type DraftRoomState, type LeagueDetailOut, type PlayerOut } f
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { DraftClock } from "@/components/DraftClock";
 import { DraftPlayerCard } from "@/components/DraftPlayerCard";
+import {
+  ScheduleWeekPicker,
+  useScheduleBadges,
+} from "@/components/ScheduleBadges";
 import { DraftRoster } from "@/components/DraftRoster";
 import { DraftFeed, type DraftFeedItem } from "@/components/DraftFeed";
 import styles from "../draft-room.module.css";
@@ -45,6 +49,9 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
   const [roleFilter, setRoleFilter] = useState<(typeof ROLE_FILTERS)[number]>("ALL");
   const wsRef = useRef<WebSocket | null>(null);
   const feedKey = useRef(0);
+
+  // P3-A6: schedule-aware nudges — games per IPL team for the chosen week.
+  const sched = useScheduleBadges(leagueId ?? "", 1);
 
   useEffect(() => {
     params.then((p) => setLeagueId(p.id));
@@ -346,6 +353,14 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
                     {filtered.length}
                   </span>
                 </div>
+                <div className="mb-2 rounded-lg border border-slate-800 bg-midnight/60 p-2">
+                  <ScheduleWeekPicker weeks={sched.weeks} week={sched.week} setWeek={sched.setWeek} />
+                  {sched.range && !sched.loading && (
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Games per IPL team · fantasy week {sched.week} ({sched.range})
+                    </p>
+                  )}
+                </div>
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -376,6 +391,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
                       dnd={myDnd.has(p.id)}
                       onDraft={(id) => send({ type: "pick", player_id: id })}
                       onToggleDnd={(id, active) => send({ type: active ? "dnd_add" : "dnd_remove", player_id: id })}
+                      weekGames={sched.map}
                     />
                   ))}
                   {filtered.length === 0 && (

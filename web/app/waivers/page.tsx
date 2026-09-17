@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { ApiError, type PlayerOut, type TeamOut, type WaiverClaimOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
+import { GameCountBadge, ScheduleWeekPicker, useScheduleBadges } from "@/components/ScheduleBadges";
 import { cn } from "@/lib/utils";
 import { Gavel, CircleDollarSign, Timer, Scale, ArrowRight } from "lucide-react";
 
@@ -126,6 +127,9 @@ export default function WaiversPage() {
     }
   }
 
+  // P3-A6: schedule-aware nudge — games per IPL team per fantasy week.
+  const sched = useScheduleBadges(1, 1);
+
   return (
     <div>
       <PageHeader title="Waivers" sub="Weekly blind FAAB · $100 season budget · runs Wednesday ~3am PT" />
@@ -149,6 +153,32 @@ export default function WaiversPage() {
       </div>
 
       {err && <div className="mb-4"><ErrorBox message={err} onRetry={load} /></div>}
+
+      {/* P3-A6 schedule-aware nudge: target players from teams with more games. */}
+      <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">
+            Schedule outlook{sched.range ? ` · fantasy week ${sched.week} (${sched.range})` : ""}
+          </h2>
+          <ScheduleWeekPicker weeks={sched.weeks} week={sched.week} setWeek={sched.setWeek} />
+        </div>
+        {sched.loading ? (
+          <p className="text-xs text-slate-500">Loading game counts…</p>
+        ) : sched.map.size === 0 ? (
+          <p className="text-xs text-slate-500">
+            No fixture imported yet — schedule badges appear once the importer runs.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {[...sched.map.entries()].map(([code, games]) => (
+              <GameCountBadge key={code} code={code} games={games} />
+            ))}
+          </div>
+        )}
+        <p className="mt-2 text-[11px] text-slate-500">
+          More games = more chances to score. Bid with the schedule in mind.
+        </p>
+      </section>
 
       <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
         <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">

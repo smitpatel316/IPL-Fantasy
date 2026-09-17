@@ -5,7 +5,7 @@ import secrets
 import sqlite3
 import string
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from .. import schemas, services
 from ..constants import FAAB_BUDGET
@@ -127,6 +127,21 @@ def list_teams(league_id: int, con: sqlite3.Connection = Depends(get_db)):
             owner_name=t["owner_name"], faab_remaining=t["faab_remaining"],
         ))
     return out
+
+
+@router.get("/{league_id}/schedule-nudges", response_model=schemas.ScheduleNudgesOut)
+def schedule_nudges(league_id: int, week_no: int = Query(1, ge=1),
+                    con: sqlite3.Connection = Depends(get_db)):
+    """P3-A6 (D10 option 4): per-IPL-team game counts for a fantasy week.
+
+    Powers the draft-room and waiver-wire schedule badges. Empty `games`
+    (plus `weeks_available`) when the fixture hasn't been imported yet —
+    the importer is api/schedule_games.py.
+    """
+    league = get_league(con, league_id)  # 404 if missing
+    from .. import schedule_games
+    data = schedule_games.fetch_week(con, league["season"], week_no)
+    return schemas.ScheduleNudgesOut(league_id=league_id, **data)
 
 
 @router.post("/{league_id}/draft/start", response_model=schemas.DraftOut)

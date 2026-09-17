@@ -185,6 +185,22 @@ export interface ScoreboardOut {
   scores: PlayerScoreOut[];
 }
 
+export interface TeamGameCount {
+  ipl_team_code: string;
+  games: number;
+}
+
+export interface ScheduleNudgesOut {
+  league_id: number;
+  season: string;
+  week_no: number;
+  week_start: string | null;
+  week_end: string | null;
+  source: string;
+  weeks_available: number[];
+  games: TeamGameCount[];
+}
+
 export class ApiError extends Error {
   status: number;
   track?: string;

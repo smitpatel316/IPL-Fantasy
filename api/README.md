@@ -16,6 +16,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `GET /api/leagues/{id}` | live | league + settings + standings |
 | `POST /api/leagues/{id}/join` | live | `{invite_code, team_name, owner_name}` |
 | `GET /api/leagues/{id}/teams` | live | |
+| `GET /api/leagues/{id}/schedule-nudges?week_no=` | **live (P3-A6)** | per-IPL-team game counts for a fantasy week; `weeks_available` + `week_start/end` + `source` provenance; powers the draft-room + waiver schedule badges (D10 option 4). Data: `api/schedule_games.py` importer (2026 Cricsheet fixture as dev stand-in; 2027 fixture swaps in ~Feb 2027, no re-architecture) |
 | `POST /api/leagues/{id}/draft/start` | **live (P3-A2)** | snake order (seeded shuffle), league → drafting, engine in `engine_state` |
 | `GET /api/drafts/{id}` | live | draft state (`on_clock_team_id` from the live engine; `current_pick_no` 1-indexed; `draft_order` is the round-1 team order — even rounds snake) |
 | `GET /api/drafts/{id}/picks` | live | pick list |

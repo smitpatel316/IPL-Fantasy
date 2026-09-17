@@ -170,3 +170,20 @@ CREATE TABLE IF NOT EXISTS matchups (
     status      TEXT NOT NULL DEFAULT 'scheduled',
     UNIQUE (league_id, week_no, team_a_id, team_b_id)
 );
+
+-- P3-A6 (D10 option 4): per-fantasy-week IPL team game counts for the
+-- schedule-aware UI nudges (draft-room + waiver badges). Keyed by league
+-- season; written idempotently by api/schedule_games.py. week_start/week_end
+-- record the exact calendar the counts were built against (fixed 2027 league
+-- calendar or Mon–Sun weeks derived from the fixture), so badge counts always
+-- equal the fixture math. source = fixture provenance for the 2027 swap audit.
+CREATE TABLE IF NOT EXISTS team_weekly_games (
+    season        TEXT NOT NULL,   -- league season, e.g. '2027'
+    week_no       INTEGER NOT NULL,
+    week_start    TEXT NOT NULL,   -- ISO date, Monday
+    week_end      TEXT NOT NULL,   -- ISO date, Sunday
+    ipl_team_code TEXT NOT NULL,   -- e.g. 'MI'
+    games         INTEGER NOT NULL CHECK (games >= 0),
+    source        TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (season, week_no, ipl_team_code)
+);
