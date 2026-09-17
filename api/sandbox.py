@@ -1,5 +1,6 @@
-"""Deterministic sandbox seed: one demo league, 8 teams, 48 mock players
-(4 mock IPL franchises x 12) with roles/overseas flags and preseason ranks.
+"""Deterministic sandbox seed: one demo league, 8 teams, 48 players
+(the current IPL 2026 squads of 4 franchises x 12, trimmed to the
+fantasy-relevant core) with roles/overseas flags and preseason ranks.
 Mirrors nba-fantasy-ai's SANDBOX_MODE: the UI shell and engine dev never need
 live data. Idempotent — only seeds when the leagues table is empty."""
 
@@ -29,39 +30,42 @@ MOCK_FRANCHISES = [
     ("KKR", "Kolkata Knight Riders"),
 ]
 
-# (name, role, is_overseas) x12 per franchise — a plausible T20 squad shape.
+# (name, role, is_overseas) x12 per franchise — the current IPL 2026 squads
+# (post Dec-2025 mini-auction), trimmed to 12 fantasy-relevant players each.
+# Refreshed 2026-09-16; retired players (Pollard, Ashwin, Russell) removed and
+# team assignments corrected (de Kock KKR->MI, Curran/Deshpande CSK->RR, ...).
 MOCK_SQUADS: dict[str, list[tuple[str, str, bool]]] = {
     "MI": [
-        ("R Sharma", "BAT", False), ("I Kishan", "WK", False),
+        ("R Sharma", "BAT", False), ("R Rickelton", "WK", True),
         ("S Yadav", "BAT", False), ("T Varma", "BAT", False),
-        ("H Pandya", "AR", False), ("K Pollard", "AR", True),
+        ("H Pandya", "AR", False), ("M Santner", "AR", True),
         ("J Bumrah", "BOWL", False), ("T Boult", "BOWL", True),
-        ("R Khan", "BOWL", True), ("D Santner", "AR", True),
-        ("N Dhir", "BAT", False), ("A Madhwal", "BOWL", False),
+        ("D Chahar", "BOWL", False), ("Q de Kock", "WK", True),
+        ("W Jacks", "BAT", True), ("S Thakur", "AR", False),
     ],
     "CSK": [
-        ("R Gaikwad", "BAT", False), ("D Conway", "WK", True),
-        ("S Dube", "BAT", False), ("R Jadeja", "AR", False),
-        ("M Ali", "AR", True), ("MS Dhoni", "WK", False),
-        ("D Chahar", "BOWL", False), ("M Pathirana", "BOWL", True),
-        ("R Ashwin", "AR", False), ("N Ahmad", "BOWL", True),
-        ("S Curran", "AR", True), ("T Deshpande", "BOWL", False),
+        ("R Gaikwad", "BAT", False), ("S Samson", "WK", False),
+        ("MS Dhoni", "WK", False), ("S Dube", "AR", False),
+        ("D Brevis", "BAT", True), ("J Overton", "AR", True),
+        ("N Ahmad", "BOWL", True), ("K Ahmed", "BOWL", False),
+        ("M Henry", "BOWL", True), ("A Hosein", "BOWL", True),
+        ("M Short", "AR", True), ("R Chahar", "BOWL", False),
     ],
     "RCB": [
-        ("V Kohli", "BAT", False), ("P Salt", "WK", True),
-        ("R Patidar", "BAT", False), ("L Livingstone", "AR", True),
-        ("K Pandya", "AR", False), ("T David", "BAT", True),
+        ("V Kohli", "BAT", False), ("R Patidar", "BAT", False),
+        ("D Padikkal", "BAT", False), ("P Salt", "WK", True),
+        ("J Sharma", "WK", False), ("K Pandya", "AR", False),
+        ("T David", "BAT", True), ("R Shepherd", "AR", True),
         ("J Hazlewood", "BOWL", True), ("B Kumar", "BOWL", False),
-        ("Y Dayal", "BOWL", False), ("S Sharma", "BOWL", False),
-        ("R Singh", "BAT", False), ("M Bhandage", "AR", False),
+        ("J Bethell", "AR", True), ("V Iyer", "AR", False),
     ],
     "KKR": [
-        ("Q de Kock", "WK", True), ("A Raghuvanshi", "BAT", False),
-        ("A Russell", "AR", True), ("M Singh", "BAT", False),
-        ("S Narine", "AR", True), ("R Rinku", "BAT", False),
-        ("V Chakravarthy", "BOWL", False), ("H Rana", "BOWL", False),
-        ("S Iyer", "AR", False), ("M Starc", "BOWL", True),
-        ("M Pandey", "BAT", False), ("V Arora", "BOWL", False),
+        ("A Rahane", "BAT", False), ("A Raghuvanshi", "BAT", False),
+        ("R Singh", "BAT", False), ("S Narine", "AR", True),
+        ("V Chakravarthy", "BOWL", False), ("C Green", "AR", True),
+        ("M Pathirana", "BOWL", True), ("M Rahman", "BOWL", True),
+        ("R Ravindra", "AR", True), ("H Rana", "BOWL", False),
+        ("R Powell", "AR", True), ("F Allen", "WK", True),
     ],
 }
 
