@@ -1,0 +1,905 @@
+[
+  {
+    "name": "R Sharma",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "MI",
+    "pred": 90
+  },
+  {
+    "name": "S Yadav",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "MI",
+    "pred": 89
+  },
+  {
+    "name": "T Varma",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "MI",
+    "pred": 84
+  },
+  {
+    "name": "H Pandya",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "MI",
+    "pred": 86
+  },
+  {
+    "name": "J Bumrah",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "MI",
+    "pred": 93
+  },
+  {
+    "name": "T Boult",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "MI",
+    "pred": 70
+  },
+  {
+    "name": "D Chahar",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "MI",
+    "pred": 66
+  },
+  {
+    "name": "R Rickelton",
+    "role": "WK",
+    "is_overseas": 1,
+    "team": "MI",
+    "pred": 78.75
+  },
+  {
+    "name": "Q de Kock",
+    "role": "WK",
+    "is_overseas": 1,
+    "team": "MI",
+    "pred": 82
+  },
+  {
+    "name": "M Santner",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "MI",
+    "pred": 68
+  },
+  {
+    "name": "W Jacks",
+    "role": "BAT",
+    "is_overseas": 1,
+    "team": "MI",
+    "pred": 59.31
+  },
+  {
+    "name": "S Thakur",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "MI",
+    "pred": 64
+  },
+  {
+    "name": "R Gaikwad",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "CSK",
+    "pred": 72
+  },
+  {
+    "name": "S Samson",
+    "role": "WK",
+    "is_overseas": 0,
+    "team": "CSK",
+    "pred": 71.13
+  },
+  {
+    "name": "MS Dhoni",
+    "role": "WK",
+    "is_overseas": 0,
+    "team": "CSK",
+    "pred": 62
+  },
+  {
+    "name": "S Dube",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "CSK",
+    "pred": 70
+  },
+  {
+    "name": "D Brevis",
+    "role": "BAT",
+    "is_overseas": 1,
+    "team": "CSK",
+    "pred": 74
+  },
+  {
+    "name": "J Overton",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "CSK",
+    "pred": 53.69
+  },
+  {
+    "name": "N Ahmad",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "CSK",
+    "pred": 68
+  },
+  {
+    "name": "K Ahmed",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "CSK",
+    "pred": 64
+  },
+  {
+    "name": "M Henry",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "CSK",
+    "pred": 62
+  },
+  {
+    "name": "A Hosein",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "CSK",
+    "pred": 54.04
+  },
+  {
+    "name": "M Short",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "CSK",
+    "pred": 64
+  },
+  {
+    "name": "Sarfaraz Khan",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "CSK",
+    "pred": 58
+  },
+  {
+    "name": "R Chahar",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "CSK",
+    "pred": 60
+  },
+  {
+    "name": "V Kohli",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "RCB",
+    "pred": 94
+  },
+  {
+    "name": "R Patidar",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "RCB",
+    "pred": 72
+  },
+  {
+    "name": "D Padikkal",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "RCB",
+    "pred": 51.84
+  },
+  {
+    "name": "P Salt",
+    "role": "WK",
+    "is_overseas": 1,
+    "team": "RCB",
+    "pred": 80
+  },
+  {
+    "name": "J Sharma",
+    "role": "WK",
+    "is_overseas": 0,
+    "team": "RCB",
+    "pred": 66
+  },
+  {
+    "name": "K Pandya",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "RCB",
+    "pred": 70
+  },
+  {
+    "name": "T David",
+    "role": "BAT",
+    "is_overseas": 1,
+    "team": "RCB",
+    "pred": 75
+  },
+  {
+    "name": "R Shepherd",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "RCB",
+    "pred": 66
+  },
+  {
+    "name": "J Hazlewood",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "RCB",
+    "pred": 72
+  },
+  {
+    "name": "B Kumar",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "RCB",
+    "pred": 62
+  },
+  {
+    "name": "Suyash Sharma",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "RCB",
+    "pred": 64
+  },
+  {
+    "name": "J Bethell",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "RCB",
+    "pred": 66
+  },
+  {
+    "name": "V Iyer",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "RCB",
+    "pred": 68
+  },
+  {
+    "name": "Y Dayal",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "RCB",
+    "pred": 58
+  },
+  {
+    "name": "A Rahane",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "KKR",
+    "pred": 50.99
+  },
+  {
+    "name": "A Raghuvanshi",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "KKR",
+    "pred": 62
+  },
+  {
+    "name": "R Singh",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "KKR",
+    "pred": 76
+  },
+  {
+    "name": "S Narine",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "KKR",
+    "pred": 88
+  },
+  {
+    "name": "V Chakravarthy",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "KKR",
+    "pred": 52.87
+  },
+  {
+    "name": "C Green",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "KKR",
+    "pred": 67.76
+  },
+  {
+    "name": "M Pathirana",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "KKR",
+    "pred": 70
+  },
+  {
+    "name": "M Rahman",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "KKR",
+    "pred": 56.69
+  },
+  {
+    "name": "R Ravindra",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "KKR",
+    "pred": 68
+  },
+  {
+    "name": "H Rana",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "KKR",
+    "pred": 62
+  },
+  {
+    "name": "R Powell",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "KKR",
+    "pred": 60
+  },
+  {
+    "name": "F Allen",
+    "role": "WK",
+    "is_overseas": 1,
+    "team": "KKR",
+    "pred": 69.91
+  },
+  {
+    "name": "K Rahul",
+    "role": "WK",
+    "is_overseas": 0,
+    "team": "DC",
+    "pred": 81.39
+  },
+  {
+    "name": "A Patel",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "DC",
+    "pred": 63.93
+  },
+  {
+    "name": "K Yadav",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "DC",
+    "pred": 68
+  },
+  {
+    "name": "M Starc",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "DC",
+    "pred": 70
+  },
+  {
+    "name": "T Natarajan",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "DC",
+    "pred": 62
+  },
+  {
+    "name": "T Stubbs",
+    "role": "WK",
+    "is_overseas": 1,
+    "team": "DC",
+    "pred": 78
+  },
+  {
+    "name": "N Rana",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "DC",
+    "pred": 68
+  },
+  {
+    "name": "P Nissanka",
+    "role": "BAT",
+    "is_overseas": 1,
+    "team": "DC",
+    "pred": 59.2
+  },
+  {
+    "name": "D Miller",
+    "role": "BAT",
+    "is_overseas": 1,
+    "team": "DC",
+    "pred": 72
+  },
+  {
+    "name": "A Porel",
+    "role": "WK",
+    "is_overseas": 0,
+    "team": "DC",
+    "pred": 49.23
+  },
+  {
+    "name": "Ashutosh Sharma",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "DC",
+    "pred": 64
+  },
+  {
+    "name": "L Ngidi",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "DC",
+    "pred": 57.98
+  },
+  {
+    "name": "K Jamieson",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "DC",
+    "pred": 58
+  },
+  {
+    "name": "P Shaw",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "DC",
+    "pred": 52.75
+  },
+  {
+    "name": "P Cummins",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "SRH",
+    "pred": 57.76
+  },
+  {
+    "name": "T Head",
+    "role": "BAT",
+    "is_overseas": 1,
+    "team": "SRH",
+    "pred": 64.07
+  },
+  {
+    "name": "A Sharma",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "SRH",
+    "pred": 82
+  },
+  {
+    "name": "I Kishan",
+    "role": "WK",
+    "is_overseas": 0,
+    "team": "SRH",
+    "pred": 76
+  },
+  {
+    "name": "H Klaasen",
+    "role": "WK",
+    "is_overseas": 1,
+    "team": "SRH",
+    "pred": 77.89
+  },
+  {
+    "name": "N Reddy",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "SRH",
+    "pred": 57.46
+  },
+  {
+    "name": "H Patel",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "SRH",
+    "pred": 64
+  },
+  {
+    "name": "L Livingstone",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "SRH",
+    "pred": 74
+  },
+  {
+    "name": "B Carse",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "SRH",
+    "pred": 60
+  },
+  {
+    "name": "J Unadkat",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "SRH",
+    "pred": 58
+  },
+  {
+    "name": "E Malinga",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "SRH",
+    "pred": 62.48
+  },
+  {
+    "name": "K Mendis",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "SRH",
+    "pred": 62
+  },
+  {
+    "name": "A Verma",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "SRH",
+    "pred": 58
+  },
+  {
+    "name": "Y Jaiswal",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "RR",
+    "pred": 67.08
+  },
+  {
+    "name": "R Parag",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "RR",
+    "pred": 62.94
+  },
+  {
+    "name": "R Jadeja",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "RR",
+    "pred": 80
+  },
+  {
+    "name": "D Jurel",
+    "role": "WK",
+    "is_overseas": 0,
+    "team": "RR",
+    "pred": 59.93
+  },
+  {
+    "name": "S Hetmyer",
+    "role": "BAT",
+    "is_overseas": 1,
+    "team": "RR",
+    "pred": 66
+  },
+  {
+    "name": "J Archer",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "RR",
+    "pred": 68.06
+  },
+  {
+    "name": "R Bishnoi",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "RR",
+    "pred": 68
+  },
+  {
+    "name": "S Curran",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "RR",
+    "pred": 70
+  },
+  {
+    "name": "T Deshpande",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "RR",
+    "pred": 60
+  },
+  {
+    "name": "S Sharma",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "RR",
+    "pred": 60
+  },
+  {
+    "name": "V Suryavanshi",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "RR",
+    "pred": 96.03
+  },
+  {
+    "name": "L Pretorius",
+    "role": "BAT",
+    "is_overseas": 1,
+    "team": "RR",
+    "pred": 58
+  },
+  {
+    "name": "N Burger",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "RR",
+    "pred": 58
+  },
+  {
+    "name": "S Iyer",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "PBKS",
+    "pred": 80
+  },
+  {
+    "name": "A Singh",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "PBKS",
+    "pred": 72
+  },
+  {
+    "name": "Y Chahal",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "PBKS",
+    "pred": 68
+  },
+  {
+    "name": "M Stoinis",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "PBKS",
+    "pred": 76
+  },
+  {
+    "name": "S Singh",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "PBKS",
+    "pred": 64
+  },
+  {
+    "name": "N Wadhera",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "PBKS",
+    "pred": 62
+  },
+  {
+    "name": "P Singh",
+    "role": "WK",
+    "is_overseas": 0,
+    "team": "PBKS",
+    "pred": 64
+  },
+  {
+    "name": "P Arya",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "PBKS",
+    "pred": 63.75
+  },
+  {
+    "name": "A Omarzai",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "PBKS",
+    "pred": 58.87
+  },
+  {
+    "name": "L Ferguson",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "PBKS",
+    "pred": 62
+  },
+  {
+    "name": "M Jansen",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "PBKS",
+    "pred": 66
+  },
+  {
+    "name": "M Owen",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "PBKS",
+    "pred": 64
+  },
+  {
+    "name": "X Bartlett",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "PBKS",
+    "pred": 60
+  },
+  {
+    "name": "C Connolly",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "PBKS",
+    "pred": 74.93
+  },
+  {
+    "name": "S Gill",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "GT",
+    "pred": 87.15
+  },
+  {
+    "name": "B S Sudharsan",
+    "role": "BAT",
+    "is_overseas": 0,
+    "team": "GT",
+    "pred": 88.26
+  },
+  {
+    "name": "J Buttler",
+    "role": "WK",
+    "is_overseas": 1,
+    "team": "GT",
+    "pred": 76.07
+  },
+  {
+    "name": "W Sundar",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "GT",
+    "pred": 68
+  },
+  {
+    "name": "R Khan",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "GT",
+    "pred": 87
+  },
+  {
+    "name": "K Rabada",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "GT",
+    "pred": 54.87
+  },
+  {
+    "name": "M Siraj",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "GT",
+    "pred": 50.94
+  },
+  {
+    "name": "P Krishna",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "GT",
+    "pred": 59.59
+  },
+  {
+    "name": "G Phillips",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "GT",
+    "pred": 66
+  },
+  {
+    "name": "R Tewatia",
+    "role": "AR",
+    "is_overseas": 0,
+    "team": "GT",
+    "pred": 62
+  },
+  {
+    "name": "J Holder",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "GT",
+    "pred": 79.36
+  },
+  {
+    "name": "I Sharma",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "GT",
+    "pred": 56
+  },
+  {
+    "name": "R Pant",
+    "role": "WK",
+    "is_overseas": 0,
+    "team": "LSG",
+    "pred": 53.53
+  },
+  {
+    "name": "N Pooran",
+    "role": "WK",
+    "is_overseas": 1,
+    "team": "LSG",
+    "pred": 59.61
+  },
+  {
+    "name": "M Yadav",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "LSG",
+    "pred": 62
+  },
+  {
+    "name": "M Shami",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "LSG",
+    "pred": 66
+  },
+  {
+    "name": "A Khan",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "LSG",
+    "pred": 62
+  },
+  {
+    "name": "M Marsh",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "LSG",
+    "pred": 81.75
+  },
+  {
+    "name": "A Markram",
+    "role": "BAT",
+    "is_overseas": 1,
+    "team": "LSG",
+    "pred": 54.97
+  },
+  {
+    "name": "J Inglis",
+    "role": "WK",
+    "is_overseas": 1,
+    "team": "LSG",
+    "pred": 88.75
+  },
+  {
+    "name": "W Hasaranga",
+    "role": "AR",
+    "is_overseas": 1,
+    "team": "LSG",
+    "pred": 64
+  },
+  {
+    "name": "A Nortje",
+    "role": "BOWL",
+    "is_overseas": 1,
+    "team": "LSG",
+    "pred": 60
+  },
+  {
+    "name": "D Rathi",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "LSG",
+    "pred": 58
+  },
+  {
+    "name": "M Khan",
+    "role": "BOWL",
+    "is_overseas": 0,
+    "team": "LSG",
+    "pred": 58
+  }
+]
