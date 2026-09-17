@@ -199,3 +199,19 @@ class ScoreboardOut(BaseModel):
 
 class ScoreMatchIn(BaseModel):
     match_id: int
+
+
+class TeamGameCount(BaseModel):
+    ipl_team_code: str
+    games: int
+
+
+class ScheduleNudgesOut(BaseModel):
+    league_id: int
+    season: str
+    week_no: int
+    week_start: Optional[str] = None
+    week_end: Optional[str] = None
+    source: str = ""
+    weeks_available: list[int] = []
+    games: list[TeamGameCount] = []

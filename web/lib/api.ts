@@ -17,6 +17,7 @@ import type {
   NotImplementedOut,
   PlayerOut,
   ScoreboardOut,
+  ScheduleNudgesOut,
   TeamOut,
   TradeOut,
   WaiverClaimOut,
@@ -62,6 +63,8 @@ export const api = {
       body: JSON.stringify({ invite_code, team_name, owner_name }),
     }),
   listTeams: (leagueId: number | string) => req<TeamOut[]>(`/leagues/${leagueId}/teams`),
+  scheduleNudges: (leagueId: number | string, week: number) =>
+    req<ScheduleNudgesOut>(`/leagues/${leagueId}/schedule-nudges?week_no=${week}`),
 
   // players
   listPlayers: (params: { league_id: number; season?: string; role?: string; team?: string; q?: string }) => {

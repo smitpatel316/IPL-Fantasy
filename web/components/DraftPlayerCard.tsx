@@ -1,6 +1,7 @@
 "use client";
 
 import type { PlayerOut } from "@/lib/types";
+import { GameCountBadge } from "@/components/ScheduleBadges";
 
 const ROLE_STYLES: Record<string, string> = {
   WK: "border-sky-800 bg-sky-950/60 text-sky-300",
@@ -15,10 +16,13 @@ interface DraftPlayerCardProps {
   dnd: boolean;
   onDraft: (id: number) => void;
   onToggleDnd: (id: number, active: boolean) => void;
+  /** P3-A6: ipl_team_code -> games this schedule week (badge rendering). */
+  weekGames?: Map<string, number>;
 }
 
 /** One row on the available-players board. Visual only — actions pass through. */
-export function DraftPlayerCard({ player: p, myTurn, dnd, onDraft, onToggleDnd }: DraftPlayerCardProps) {
+export function DraftPlayerCard({ player: p, myTurn, dnd, onDraft, onToggleDnd, weekGames }: DraftPlayerCardProps) {
+  const schedGames = p.ipl_team_code ? weekGames?.get(p.ipl_team_code) : undefined;
   return (
     <div
       className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
@@ -38,6 +42,9 @@ export function DraftPlayerCard({ player: p, myTurn, dnd, onDraft, onToggleDnd }
           )}
           {p.ipl_team_code && (
             <span className="rounded bg-slate-800 px-1 font-mono text-[10px] text-slate-400">{p.ipl_team_code}</span>
+          )}
+          {schedGames !== undefined && p.ipl_team_code && (
+            <GameCountBadge code={p.ipl_team_code} games={schedGames} />
           )}
           {p.is_overseas && (
             <span title="Overseas player" className="text-[10px] text-slate-500">
