@@ -36,7 +36,13 @@ function TeamRow({
           {name}
         </p>
       </div>
-      <p className={cn("mt-1 text-3xl font-extrabold tabular-nums tracking-tight", winner ? "text-trophy-gold" : "text-white")}>
+      <p
+        className={cn(
+          "mt-1 text-3xl font-extrabold tabular-nums tracking-tight",
+          align === "right" && "text-right",
+          winner ? "text-trophy-gold" : "text-white",
+        )}
+      >
         {score.toFixed(1)}
       </p>
     </div>
