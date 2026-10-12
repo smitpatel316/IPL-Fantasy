@@ -760,6 +760,20 @@ def submit_waiver_claim(con: sqlite3.Connection, league_id: int, team_id: int,
 
 def run_waivers(con: sqlite3.Connection, league_id: int, week_no: int) -> list[dict]:
     get_league(con, league_id)
+    # P4-W31: a run for a week with zero pending claims is a NO-OP —
+    # return [] (processed 0, same list shape as a normal run) without
+    # recording the week as run, so later claims for that week are
+    # still accepted instead of BidClosed. Weeks that genuinely ran
+    # are NOT short-circuited: they fall through to the engine, whose
+    # WeekAlreadyRun keeps a re-run safe (no duplicate effects).
+    pending = con.execute(
+        "SELECT COUNT(*) FROM waiver_claims WHERE league_id = ?"
+        " AND week_no = ? AND status = 'pending'",
+        (league_id, week_no),
+    ).fetchone()[0]
+    if pending == 0 \
+            and _revive_waiver(con, league_id).get_run(week_no) is None:
+        return []
     eng = _revive_waiver(con, league_id)
     try:
         results = eng.run_week(week_no, standings_best_first(con, league_id))

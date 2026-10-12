@@ -118,9 +118,10 @@ class TestFreeze(unittest.TestCase):
 class TestGuards(unittest.TestCase):
     def test_bid_after_run_closed(self):
         eng = _eng()
+        eng.submit_bid("best", 1, "fa1", 10, drop_player_id="b0")
         eng.run_week(1, STANDINGS)
         with self.assertRaises(BidClosed):
-            eng.submit_bid("best", 1, "fa1", 5, drop_player_id="b0")
+            eng.submit_bid("best", 1, "fa2", 5, drop_player_id="b1")
         with self.assertRaises(WeekAlreadyRun):
             eng.run_week(1, STANDINGS)
 
@@ -150,6 +151,52 @@ class TestGuards(unittest.TestCase):
         self.assertEqual(eng.get_bids("best", 1), {})
         res = eng.run_week(1, STANDINGS)
         self.assertEqual(res, [])
+        # P4-W31: with every bid cancelled the run processed nothing,
+        # so it is a no-op — the week is not recorded as run.
+        self.assertIsNone(eng.get_run(1))
+
+
+class TestEmptyRunNoOp(unittest.TestCase):
+    """P4-W31: running a week with zero pending claims must not close it."""
+
+    def test_empty_run_then_claim_for_same_week_accepted(self):
+        eng = _eng()
+        self.assertEqual(eng.run_week(1, STANDINGS), [])
+        self.assertIsNone(eng.get_run(1))
+        # The regression: this bid used to raise BidClosed.
+        bid = eng.submit_bid("best", 1, "fa1", 12, drop_player_id="b0")
+        self.assertEqual(bid["amount"], 12)
+        res = eng.run_week(1, STANDINGS)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0]["winner"], "best")
+        self.assertEqual(eng.get_budget("best"), 88)
+        self.assertIsNotNone(eng.get_run(1))
+
+    def test_empty_run_is_repeatable_and_survives_json_roundtrip(self):
+        eng = _eng()
+        self.assertEqual(eng.run_week(3, STANDINGS), [])
+        self.assertEqual(eng.run_week(3, STANDINGS), [])
+        self.assertIsNone(eng.get_run(3))
+        # The no-op must persist as no-op: no run entry in the JSON
+        # contract, so a revived engine still leaves the week open.
+        eng2 = WaiverEngine.from_dict(json.loads(json.dumps(eng.to_dict())))
+        self.assertIsNone(eng2.get_run(3))
+        eng2.submit_bid("mid", 3, "fa2", 5, drop_player_id="m0")
+        self.assertEqual(eng2.get_bids("mid", 3)["fa2"]["amount"], 5)
+
+    def test_genuine_run_rerun_still_closed_and_effect_free(self):
+        eng = _eng()
+        eng.submit_bid("worst", 1, "fa1", 30, drop_player_id="w0")
+        eng.run_week(1, STANDINGS)
+        budget = eng.get_budget("worst")
+        roster = eng.get_roster("worst")
+        with self.assertRaises(WeekAlreadyRun):
+            eng.run_week(1, STANDINGS)
+        with self.assertRaises(BidClosed):
+            eng.submit_bid("worst", 1, "fa2", 5, drop_player_id="w1")
+        # No duplicate effects from the refused re-run.
+        self.assertEqual(eng.get_budget("worst"), budget)
+        self.assertEqual(eng.get_roster("worst"), roster)
 
 
 class TestMultiWeek(unittest.TestCase):

@@ -173,9 +173,20 @@ class WaiverEngine:
         broken by reverse order (worst team wins).
         Returns a list of result dicts, one per claimed player:
         {"player_id", "winner", "amount", "drop", "forfeited_by": [...]}.
+
+        P4-W31: a week with zero pending bids is a NO-OP — it returns
+        [] WITHOUT recording the week in _runs, so bidding for that
+        week stays open (an accidental early run must not permanently
+        close the week with BidClosed). A week that did process bids
+        is recorded as before, and re-running it still raises
+        WeekAlreadyRun (no duplicate effects).
         """
         if week in self._runs:
             raise WeekAlreadyRun(f"week {week} waivers already ran")
+        pending = sum(len(bids) for (_tid, wk), bids in self._bids.items()
+                      if wk == week)
+        if pending == 0:
+            return []
         now = self.clock() if now is None else now
         rank = {tid: i for i, tid in
                 enumerate(reversed(standings_best_first))}  # worst team: 0
