@@ -26,6 +26,13 @@ Design notes:
   the next bidder, exactly like an unaffordable win (P4-L1: settling
   it blindly crashed the run with ValueError after the budget had
   already been deducted and left the week unrecorded).
+- Fieldability (P4-W30): run_week accepts an optional
+  validate_swap(team_id, player_id, post_swap_roster) callback. A
+  winning candidate whose swap the callback rejects is forfeited to
+  the next bidder, exactly like an unaffordable win — no FAAB is
+  deducted and no swap executes for it. The engine stays
+  metadata-free; the callback (web layer) owns role/overseas
+  knowledge (the D8-reachability guard).
 - Tiebreak: reverse standings (worst team wins). `standings` is a list
   of team_ids ordered best-first (the P2-L5 output); internally reversed.
 - Weeks are caller-supplied ints; the "Wednesday ~3am PT" cadence is the
@@ -174,11 +181,17 @@ class WaiverEngine:
         self._bids.get((team_id, week), {}).pop(player_id, None)
 
     # -- run ---------------------------------------------------------------
-    def run_week(self, week, standings_best_first: list, now=None) -> list:
+    def run_week(self, week, standings_best_first: list, now=None,
+                 validate_swap=None) -> list:
         """Resolve all bids for a week (the Wednesday run).
 
         standings_best_first: team_ids ordered best -> worst; ties are
         broken by reverse order (worst team wins).
+        validate_swap: optional callable(team_id, player_id,
+        post_swap_roster) -> bool (P4-W30). When given, a candidate
+        winner whose post-swap roster it rejects is forfeited to the
+        next bidder (recorded in forfeited_by), so a swap that became
+        illegal between bid and run never executes.
         Returns a list of result dicts, one per claimed player:
         {"player_id", "winner", "amount", "drop", "forfeited_by": [...]}.
         """
@@ -228,6 +241,16 @@ class WaiverEngine:
                 elif drop not in self._rosters[tid]:
                     forfeited.append(tid)
                     continue
+                if validate_swap is not None:
+                    post = [p for p in self._rosters[tid] if p != drop]
+                    post.append(pid)
+                    if not validate_swap(tid, pid, post):
+                        # P4-W30: the swap would leave the team unable
+                        # to field a legal XI at run time — forfeit to
+                        # the next bidder instead of executing a
+                        # bricking swap.
+                        forfeited.append(tid)
+                        continue
                 winner = (tid, amount, drop)
                 break
             if winner is None:

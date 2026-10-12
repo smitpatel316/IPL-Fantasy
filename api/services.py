@@ -543,10 +543,16 @@ def _move_into_week1_slot(con: sqlite3.Connection, team_id: int,
                           drop_pid: int, add_pid: int) -> None:
     """Move add_pid into drop_pid's vacated week-1 lineup slot (same team).
 
-    Used by waiver wins. If the added player isn't role-eligible for that
-    slot the lineup reads valid=False until the manager fixes it via
-    PUT /teams/{id}/lineup (same honesty as Yahoo's post-waiver state).
+    Used by waiver wins. P4-W30: the slot write is SKIPPED when the
+    added player is not role-eligible for the vacated slot (per
+    constants.SLOT_ELIGIBILITY; IL additionally requires IL
+    eligibility, mirroring api.validation.validate_lineup) — a
+    slot-ineligible player is never written into a saved lineup. The
+    drop's row is still removed (the slot is vacated) and the manager
+    places the add via PUT /teams/{id}/lineup.
     """
+    if drop_pid is None:
+        return
     slot = _week1_slot(con, team_id, drop_pid)
     if slot is None:
         return
@@ -555,6 +561,17 @@ def _move_into_week1_slot(con: sqlite3.Connection, team_id: int,
         " AND week_no = 1",
         (team_id, drop_pid),
     )
+    meta = player_roles_map(con).get(add_pid) or {}
+    role = meta.get("role")
+    eligible = role in constants.SLOT_ELIGIBILITY.get(slot, ())
+    if slot == "IL" and not meta.get("il_eligible"):
+        eligible = False
+    if not eligible:
+        log.warning(
+            "team %s: waiver add %s (role %s) is not eligible for the "
+            "vacated week-1 %s slot — slot write skipped",
+            team_id, add_pid, role, slot)
+        return
     con.execute(
         "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
         " VALUES (?, ?, ?, 1)",
@@ -749,6 +766,28 @@ def submit_waiver_claim(con: sqlite3.Connection, league_id: int, team_id: int,
                 "list and cannot be dropped",
             )
     eng = _revive_waiver(con, league_id)
+    # D8-reachability guard (P4-W30, mirroring the P4-W24 trade guard):
+    # the waiver engine holds no player metadata, so check here that
+    # the post-swap roster can still field a D8-legal XI (exact check
+    # via _unfieldable_after_swap / d8_reachable at picks_remaining=0).
+    # Only checked when the swap is well-formed enough for the
+    # engine's own validation to pass it — the add is claimable and
+    # the drop (when named) is actually rostered; otherwise the
+    # engine raises the more specific 422. A no-drop claim is checked
+    # as a pure addition (roster + add).
+    roster = _roster_pids(con, team_id)
+    if add_player_id in eng.pool and add_player_id not in roster \
+            and (drop_player_id is None or drop_player_id in roster):
+        after = [p for p in roster if p != drop_player_id] + [add_player_id]
+        bad = _unfieldable_after_swap(con, {team_id: after})
+        if bad is not None:
+            name = next((t["name"] for t in _teams(con, league_id)
+                         if t["id"] == bad), f"team {bad}")
+            raise HTTPException(
+                422,
+                f"waiver claim would leave {name} unable to field a "
+                "legal XI (role minimums / overseas cap) — rejected "
+                "by the D8 guard")
     try:
         eng.submit_bid(team_id, week_no, add_player_id, bid,
                        drop_player_id=drop_player_id)
@@ -770,8 +809,30 @@ def submit_waiver_claim(con: sqlite3.Connection, league_id: int, team_id: int,
 def run_waivers(con: sqlite3.Connection, league_id: int, week_no: int) -> list[dict]:
     get_league(con, league_id)
     eng = _revive_waiver(con, league_id)
+    # D8 re-check at run time (P4-W30, mirroring the trade settle
+    # re-check in _settle_trades): rosters can change between bid and
+    # run, so a claim that was fieldable at submission may brick the
+    # team by run time. The engine evaluates the callback against the
+    # actual post-swap roster at settlement; a rejected swap is
+    # forfeited to the next bidder (the claim resolves 'lost' below,
+    # the team appears in the result's forfeited_by, no FAAB is
+    # deducted and no swap executes) while other claims still process.
+    roles = player_roles_map(con)
+
+    def _swap_stays_fieldable(tid: int, pid: int, post: list) -> bool:
+        d, o = _role_counts(post, roles)
+        if d8_reachable(d, o, 0):
+            return True
+        log.warning(
+            "league %s: waiver claim by team %s for player %s would "
+            "leave the team unable to field a legal XI (D8) at run "
+            "time — claim forfeited, swap not executed",
+            league_id, tid, pid)
+        return False
+
     try:
-        results = eng.run_week(week_no, standings_best_first(con, league_id))
+        results = eng.run_week(week_no, standings_best_first(con, league_id),
+                               validate_swap=_swap_stays_fieldable)
     except WaiverError as e:
         raise HTTPException(422, str(e))
     out = []
@@ -790,7 +851,16 @@ def run_waivers(con: sqlite3.Connection, league_id: int, week_no: int) -> list[d
                     (status, row["id"]),
                 )
             if winner is not None:
-                if r["drop"] is not None:
+                if r["drop"] is None:
+                    # Pure-addition win (no-drop claim): no slot to
+                    # steal — the add joins the construction roster on
+                    # the bench and no saved lineup is touched.
+                    con.execute(
+                        "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
+                        " VALUES (?, ?, 'BN', NULL)",
+                        (winner, r["player_id"]),
+                    )
+                else:
                     # Swap roster_slots: the added player takes the dropped slot.
                     slot = con.execute(
                         "SELECT slot FROM roster_slots WHERE team_id = ?"
@@ -803,19 +873,13 @@ def run_waivers(con: sqlite3.Connection, league_id: int, week_no: int) -> list[d
                         " AND week_no IS NULL",
                         (winner, r["drop"]),
                     )
-                else:
-                    # No-drop win (P4-W26): the team was under 15, so the
-                    # added player fills the open spot (bench) — nothing
-                    # is deleted and no drop slot is inherited.
-                    slot_name = "BN"
-                con.execute(
-                    "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
-                    " VALUES (?, ?, ?, NULL)",
-                    (winner, r["player_id"], slot_name),
-                )
-                if r["drop"] is not None:
+                    con.execute(
+                        "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
+                        " VALUES (?, ?, ?, NULL)",
+                        (winner, r["player_id"], slot_name),
+                    )
                     # Keep the week-1 lineup consistent: the add takes the drop's
-                    # vacated week-1 slot.
+                    # vacated week-1 slot (skipped when slot-ineligible, P4-W30).
                     _move_into_week1_slot(con, winner, r["drop"], r["player_id"])
                 con.execute(
                     "UPDATE teams SET faab_remaining = ? WHERE id = ?",
