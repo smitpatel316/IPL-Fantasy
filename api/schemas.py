@@ -231,6 +231,10 @@ class LineupOut(BaseModel):
     # Set on GET when no lineup is saved for week_no yet: the slots are
     # carried over from this earlier week's saved lineup (P4-W5).
     carried_over_from_week: Optional[int] = None
+    # D5 weekly lock state for this week (P4-W8): lock_at is the week's
+    # first-ball instant (ISO, UTC) when known.
+    locked: bool = False
+    lock_at: Optional[str] = None
 
 
 # ---------- waivers ----------
