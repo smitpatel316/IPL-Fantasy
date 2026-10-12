@@ -31,19 +31,30 @@ def submit_claim(body: schemas.WaiverClaimCreate,
 
 @router.get("/pending", response_model=list[schemas.WaiverClaimOut])
 def pending_claims(league_id: int = Query(...), week_no: int = Query(...),
+                   team_id: int | None = Query(None),
                    con: sqlite3.Connection = Depends(get_db)):
+    """Blind FAAB (D6): bid amounts are sealed until the Wednesday run.
+
+    With team_id: only that team's own claims, amounts visible.
+    Without: all claims listed but amounts sealed (bid=null) — a
+    league-activity view that can never leak a bid value.
+    """
     get_league(con, league_id)
+    sql = ("SELECT * FROM waiver_claims WHERE league_id = ? AND week_no = ?"
+           " AND status = 'pending'")
+    params: list = [league_id, week_no]
+    if team_id is not None:
+        get_team(con, team_id)
+        sql += " AND team_id = ?"
+        params.append(team_id)
+    sql += " ORDER BY created_at"
     return [
         schemas.WaiverClaimOut(
             id=r["id"], week_no=r["week_no"], team_id=r["team_id"],
             add_player_id=r["add_player_id"], drop_player_id=r["drop_player_id"],
-            bid=r["bid"], status=r["status"],
+            bid=r["bid"] if team_id is not None else None, status=r["status"],
         )
-        for r in con.execute(
-            "SELECT * FROM waiver_claims WHERE league_id = ? AND week_no = ? AND status = 'pending'"
-            " ORDER BY created_at",
-            (league_id, week_no),
-        )
+        for r in con.execute(sql, params)
     ]
 
 
