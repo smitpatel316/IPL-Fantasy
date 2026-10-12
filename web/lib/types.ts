@@ -99,12 +99,22 @@ export interface DraftRoomPick {
   slot?: string;
 }
 
+/** One draft-room chat message (P4-W20). */
+export interface ChatMessage {
+  seq: number;
+  team_id: number;
+  team_name: string;
+  text: string;
+  at: number; // epoch seconds
+}
+
 /** Full draft-room snapshot broadcast over the WebSocket (P3-A3). */
 export interface DraftRoomState {
   type: "state";
   event?: "pick" | "clock_expired" | "dnd_updated";
   pick?: DraftRoomPick;
   dnd_updated?: DndOut;
+  chat?: ChatMessage[];
   draft: {
     id: number;
     league_id: number;

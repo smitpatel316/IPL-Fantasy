@@ -21,7 +21,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `GET /api/drafts/{id}` | live | draft state (`on_clock_team_id` from the live engine; `current_pick_no` 1-indexed; `draft_order` is the round-1 team order — even rounds snake) |
 | `GET /api/drafts/{id}/picks` | live | pick list |
 | `POST /api/drafts/{id}/pick` | **live (P3-A2)** | `{team_id, player_id}`; clock expiry auto-fires on the next pick request; league → in_season when complete |
-| `WS /api/drafts/{id}/ws?team_id=` | **live (P3-A3)** | draft room: full `state` snapshot on connect; client `pick`/`dnd_add`/`dnd_remove`/`ping`; server broadcasts `state` (event `pick`/`clock_expired`/`dnd_updated`), `error`, `pong`; 1s clock sweeper auto-picks on expiry |
+| `WS /api/drafts/{id}/ws?team_id=` | **live (P3-A3)** | draft room: full `state` snapshot on connect; client `pick`/`dnd_add`/`dnd_remove`/`ping`; server broadcasts `state` (event `pick`/`clock_expired`/`dnd_updated`), `error`, `pong`; 1s clock sweeper auto-picks on expiry; P4-W20 adds room chat: client `chat {text}`, server broadcasts `chat {message}`, history (last 100, in-memory) rides every `state` snapshot as `chat` |
 | `POST /api/drafts/{id}/dnd` | **live (P3-A3)** | `{team_id, player_id}` — do-not-draft (live draft only); auto-pick skips, manual picks rejected |
 | `DELETE /api/drafts/{id}/dnd` | **live (P3-A3)** | `{team_id, player_id}` — un-block |
 | `GET /api/leagues/{id}/draft` | **live (P3-A3)** | league's most recent draft (404 if none) |
