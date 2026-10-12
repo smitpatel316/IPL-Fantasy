@@ -111,6 +111,15 @@ class DndOut(BaseModel):
     dnd: list[int]
 
 
+class RanksIn(BaseModel):
+    player_ids: list[int]
+
+
+class RanksOut(BaseModel):
+    team_id: int
+    player_ids: list[int]
+
+
 # ---------- lineups ----------
 class LineupSet(BaseModel):
     week_no: int = Field(ge=1, le=8)

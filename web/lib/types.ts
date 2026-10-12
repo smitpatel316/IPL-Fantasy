@@ -132,6 +132,11 @@ export interface DraftPickOut {
   is_auto: boolean;
 }
 
+export interface RanksOut {
+  team_id: number;
+  player_ids: number[];
+}
+
 export interface LineupOut {
   team_id: number;
   week_no: number;
