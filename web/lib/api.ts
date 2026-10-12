@@ -114,8 +114,10 @@ export const api = {
   // waivers
   submitClaim: (body: { league_id: number; team_id: number; add_player_id: number; drop_player_id?: number; bid: number }) =>
     req<WaiverClaimOut>("/waivers/claim", { method: "POST", body: JSON.stringify(body) }),
-  pendingClaims: (league_id: number, week_no: number) =>
-    req<WaiverClaimOut[]>(`/waivers/pending?league_id=${league_id}&week_no=${week_no}`),
+  pendingClaims: (league_id: number, week_no: number, team_id?: number) =>
+    req<WaiverClaimOut[]>(
+      `/waivers/pending?league_id=${league_id}&week_no=${week_no}${team_id != null ? `&team_id=${team_id}` : ""}`
+    ),
 
   // trades
   proposeTrade: (body: { league_id: number; from_team_id: number; to_team_id: number; gives: number[]; receives: number[] }) =>

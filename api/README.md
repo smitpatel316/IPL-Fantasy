@@ -29,7 +29,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `GET /api/teams/{id}/lineup?week_no=` | live | |
 | `GET /api/players?league_id=&season=&role=&team=&q=` | live | universe + roles + preseason_rank + owned_by_team_id |
 | `POST /api/waivers/claim` | **live (P3-A2)** | `{league_id, team_id, add_player_id, drop_player_id?, bid}` — blind FAAB, budget enforced |
-| `GET /api/waivers/pending?league_id=&week_no=` | live | pending claims for the week |
+| `GET /api/waivers/pending?league_id=&week_no=&team_id=` | live | pending claims for the week; blind (D6): pass team_id for that team's own claims with amounts — without it, amounts are sealed (bid=null) |
 | `POST /api/waivers/run?league_id=&week_no=` | **live (P3-A2)** | blind-bid run; winners swap into the drop's roster/week-1 slot; FAAB deducted |
 | `POST /api/trades` | **live (P3-A2)** | `{league_id, from_team_id, to_team_id, gives[], receives[]}` — balanced N-for-N enforced |
 | `GET /api/trades?league_id=&status=` | live | filter by proposed/accepted/rejected/vetoed/expired |

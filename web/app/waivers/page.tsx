@@ -57,6 +57,20 @@ export default function WaiversPage() {
   const sorted = useMemo(() => [...teams].sort((a, b) => b.faab_remaining - a.faab_remaining), [teams]);
   const claimsWeek = claims[0]?.week_no;
 
+  // Blind FAAB (D6): the feed only ever shows the selected team's own
+  // claims — rival bids stay sealed until the Wednesday run.
+  async function loadClaims(forTeamId: number | null) {
+    if (forTeamId == null) {
+      setClaims([]);
+      return;
+    }
+    const weeks = await Promise.all(
+      WEEKS.map((w) => api.pendingClaims(1, w, forTeamId).catch(() => [] as WaiverClaimOut[]))
+    );
+    const latest = WEEKS.find((w, i) => weeks[i].length > 0);
+    setClaims(latest != null ? weeks[WEEKS.indexOf(latest)] : []);
+  }
+
   async function load() {
     setLoading(true);
     setErr("");
@@ -67,10 +81,7 @@ export default function WaiversPage() {
       if (sel !== teamId) setTeamId(sel);
       const ps = await api.listPlayers({ league_id: 1, role: role || undefined, q: q || undefined });
       setPlayers(ps);
-      // Claims feed: show the latest week that has any.
-      const weeks = await Promise.all(WEEKS.map((w) => api.pendingClaims(1, w).catch(() => [] as WaiverClaimOut[])));
-      const latest = WEEKS.find((w, i) => weeks[i].length > 0);
-      setClaims(latest != null ? weeks[WEEKS.indexOf(latest)] : []);
+      await loadClaims(sel);
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "load failed");
     } finally {
@@ -82,6 +93,12 @@ export default function WaiversPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Switching "Managing as" re-scopes the claims feed to that team.
+  useEffect(() => {
+    if (teamId != null && teams.length > 0) loadClaims(teamId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamId]);
 
   function openBid(p: PlayerOut) {
     setBidTarget(p);
@@ -292,10 +309,10 @@ export default function WaiversPage() {
 
         <div>
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-300">
-            Claims{claimsWeek ? ` — week ${claimsWeek}` : ""}
+            Your claims{claimsWeek ? ` — week ${claimsWeek}` : ""}
           </h2>
           {claims.length === 0 ? (
-            <p className="text-sm text-slate-500">No bids in yet this week.</p>
+            <p className="text-sm text-slate-500">You have no bids in yet this week.</p>
           ) : (
             <ul className="space-y-2">
               {claims.map((c) => (
@@ -314,7 +331,9 @@ export default function WaiversPage() {
                     </span>
                   )}
                   <span className="ml-auto flex items-center gap-2">
-                    <span className="tabular-nums font-bold text-trophy-gold">${c.bid}</span>
+                    <span className="tabular-nums font-bold text-trophy-gold">
+                      {c.bid != null ? `$${c.bid}` : "sealed"}
+                    </span>
                     <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-bold uppercase", STATUS_STYLE[c.status] ?? "bg-slate-800 text-zinc-400")}>
                       {c.status}
                     </span>

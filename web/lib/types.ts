@@ -146,7 +146,7 @@ export interface WaiverClaimOut {
   team_id: number;
   add_player_id: number;
   drop_player_id: number | null;
-  bid: number;
+  bid: number | null; // null = sealed rival bid (blind FAAB)
   status: string;
 }
 

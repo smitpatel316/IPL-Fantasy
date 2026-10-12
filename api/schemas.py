@@ -140,7 +140,7 @@ class WaiverClaimOut(BaseModel):
     team_id: int
     add_player_id: int
     drop_player_id: Optional[int]
-    bid: int
+    bid: Optional[int]  # null = sealed rival bid (blind FAAB, D6)
     status: str  # pending | won | lost
 
 
