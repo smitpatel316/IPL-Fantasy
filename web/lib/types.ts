@@ -159,6 +159,11 @@ export interface TradeOut {
   receives: number[];
   status: string;
   review_deadline: string | null;
+  veto_count: number;
+  proposed_at: string | null;
+  accepted_at: string | null;
+  vetoed_at: string | null;
+  executed_at: string | null;
 }
 
 export interface MatchupOut {

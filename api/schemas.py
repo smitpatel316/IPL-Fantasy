@@ -170,6 +170,12 @@ class TradeOut(BaseModel):
     receives: list[int]
     status: str  # proposed | accepted | rejected | vetoed | expired
     review_deadline: Optional[str]
+    # History detail (P4-W1): veto votes cast + lifecycle timestamps (ISO UTC).
+    veto_count: int = 0
+    proposed_at: Optional[str] = None
+    accepted_at: Optional[str] = None
+    vetoed_at: Optional[str] = None
+    executed_at: Optional[str] = None
 
 
 # ---------- matchups / scoring ----------

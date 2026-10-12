@@ -69,6 +69,17 @@ def ensure_engine_tables(con: sqlite3.Connection) -> None:
     cols = {r["name"] for r in con.execute("PRAGMA table_info(trades)")}
     if "engine_id" not in cols:
         con.execute("ALTER TABLE trades ADD COLUMN engine_id INTEGER")
+    # P4-W1 history detail: veto count + lifecycle timestamps on the
+    # trades read projection (backfilled from engine state on next sync).
+    for col, ddl in (
+        ("veto_count", "INTEGER NOT NULL DEFAULT 0"),
+        ("proposed_at", "TEXT"),
+        ("accepted_at", "TEXT"),
+        ("vetoed_at", "TEXT"),
+        ("executed_at", "TEXT"),
+    ):
+        if col not in cols:
+            con.execute(f"ALTER TABLE trades ADD COLUMN {col} {ddl}")
     con.commit()
 
 
@@ -768,6 +779,31 @@ _TRADE_STATUS_MAP = {
 }
 
 
+def _iso(ts) -> str | None:
+    """Epoch seconds -> ISO UTC string (same format as review_deadline)."""
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts)) if ts else None
+
+
+def _trade_detail(trade: dict) -> dict:
+    """History detail (P4-W1): veto count + lifecycle timestamps.
+
+    The engine stamps `decided_at` at the terminal transition; it is the
+    veto moment for a vetoed trade and the execution moment for an
+    executed one, so vetoed_at/executed_at split it by final status.
+    """
+    decided_at = trade.get("decided_at")
+    status = trade["status"]
+    return {
+        "veto_count": len(trade.get("vetoes") or []),
+        "proposed_at": _iso(trade.get("proposed_at")),
+        "accepted_at": _iso(trade.get("accepted_at")),
+        "vetoed_at": _iso(decided_at)
+                     if status == TradeEngine.STATUS_VETOED else None,
+        "executed_at": _iso(decided_at)
+                       if status == TradeEngine.STATUS_EXECUTED else None,
+    }
+
+
 def _trade_to_out(trade: dict, db_id: int) -> dict:
     """Project an engine trade to the API contract.
 
@@ -784,10 +820,8 @@ def _trade_to_out(trade: dict, db_id: int) -> dict:
         "gives": list(gives.get(proposer, [])),
         "receives": list(gives.get(offeree, [])),
         "status": _TRADE_STATUS_MAP[trade["status"]],
-        "review_deadline": (
-            time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(trade["review_until"]))
-            if trade.get("review_until") else None
-        ),
+        "review_deadline": _iso(trade.get("review_until")),
+        **_trade_detail(trade),
     }
 
 
@@ -807,6 +841,7 @@ def _sync_trade_row(con: sqlite3.Connection, league_id: int, trade: dict) -> int
 
     Returns the trades-table id — the only trade id the API exposes.
     """
+    detail = _trade_detail(trade)
     row = con.execute(
         "SELECT id FROM trades WHERE league_id = ? AND engine_id = ?",
         (league_id, trade["id"]),
@@ -817,21 +852,28 @@ def _sync_trade_row(con: sqlite3.Connection, league_id: int, trade: dict) -> int
         # Insert first so _trade_to_out can carry the real DB id.
         cur = con.execute(
             "INSERT INTO trades (league_id, from_team_id, to_team_id, gives,"
-            " receives, status, review_deadline, engine_id)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            " receives, status, review_deadline, engine_id, veto_count,"
+            " proposed_at, accepted_at, vetoed_at, executed_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (league_id, trade["parties"][0], trade["parties"][1],
              json.dumps(list(trade["gives"].get(trade["parties"][0], []))),
              json.dumps(list(trade["gives"].get(trade["parties"][1], []))),
              _TRADE_STATUS_MAP[trade["status"]],
-             (time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(trade["review_until"]))
-              if trade.get("review_until") else None),
-             trade["id"]),
+             _iso(trade.get("review_until")),
+             trade["id"],
+             detail["veto_count"], detail["proposed_at"],
+             detail["accepted_at"], detail["vetoed_at"],
+             detail["executed_at"]),
         )
         db_id = cur.lastrowid
     out = _trade_to_out(trade, db_id)
     con.execute(
-        "UPDATE trades SET status = ?, review_deadline = ? WHERE id = ?",
-        (out["status"], out["review_deadline"], db_id),
+        "UPDATE trades SET status = ?, review_deadline = ?, veto_count = ?,"
+        " proposed_at = ?, accepted_at = ?, vetoed_at = ?, executed_at = ?"
+        " WHERE id = ?",
+        (out["status"], out["review_deadline"], out["veto_count"],
+         out["proposed_at"], out["accepted_at"], out["vetoed_at"],
+         out["executed_at"], db_id),
     )
     return db_id
 
@@ -943,13 +985,20 @@ def list_trades(con: sqlite3.Connection, league_id: int,
         sql += " AND status = ?"
         params.append(status)
     sql += " ORDER BY created_at DESC"
-    return [
-        {
+    out = []
+    for r in con.execute(sql, params):
+        keys = r.keys()
+        out.append({
             "id": r["id"], "league_id": r["league_id"],
             "from_team_id": r["from_team_id"], "to_team_id": r["to_team_id"],
             "gives": json.loads(r["gives"] or "[]"),
             "receives": json.loads(r["receives"] or "[]"),
             "status": r["status"], "review_deadline": r["review_deadline"],
-        }
-        for r in con.execute(sql, params)
-    ]
+            # P4-W1 detail columns; guarded for pre-migration rows/DBs.
+            "veto_count": (r["veto_count"] or 0) if "veto_count" in keys else 0,
+            "proposed_at": r["proposed_at"] if "proposed_at" in keys else None,
+            "accepted_at": r["accepted_at"] if "accepted_at" in keys else None,
+            "vetoed_at": r["vetoed_at"] if "vetoed_at" in keys else None,
+            "executed_at": r["executed_at"] if "executed_at" in keys else None,
+        })
+    return out
