@@ -146,8 +146,13 @@ class TradeEngine:
                    if t["status"] in self._PENDING and team_id in t["parties"])
 
     def veto_threshold(self) -> int:
-        """Vetoes needed: ceil((num_teams - 2) / 3)."""
-        return math.ceil((len(self._rosters) - 2) / 3)
+        """Vetoes needed: ceil((num_teams - 2) / 3), floored at 1.
+
+        The floor matters in a 2-team league: the raw formula gives 0,
+        and execute()'s `vetoes >= threshold` check would then veto
+        every trade with zero vetoes cast (P4-L1).
+        """
+        return max(1, math.ceil((len(self._rosters) - 2) / 3))
 
     # -- propose -----------------------------------------------------------
     def propose(self, proposer, offeree, gives_proposer: list,
@@ -264,7 +269,14 @@ class TradeEngine:
         now = self.clock() if now is None else now
         if trade["status"] != self.STATUS_UNDER_REVIEW:
             raise VetoNotAllowed("trade is not under review")
-        if now > trade["review_until"]:
+        # Boundary ownership (P4-L1): the window is [accepted_at,
+        # review_until) — at review_until the window has closed and
+        # the trade becomes executable (execute refuses only strictly
+        # before it, and the API settle path fires at >= review_until;
+        # api/services.py _settle_trades). Previously a veto at
+        # exactly review_until was ALSO accepted, so a veto and an
+        # execute could both "win" at the same instant.
+        if now >= trade["review_until"]:
             raise VetoNotAllowed("review window has closed")
         if team_id in trade["parties"]:
             raise VetoNotAllowed("trading parties may not veto")
@@ -294,9 +306,18 @@ class TradeEngine:
             trade["status"] = self.STATUS_VETOED
             trade["decided_at"] = now
             return dict(trade)
-        # Atomic roster swap.
+        # Atomic roster swap. Validate BEFORE mutating: a player may
+        # have been offered in two pending trades and already moved by
+        # the first execution — fail cleanly with rosters untouched
+        # instead of dying halfway through the swap (P4-L1).
         a, b = trade["parties"]
         ga, gb = trade["gives"][a], trade["gives"][b]
+        missing = [pid for pid in ga if pid not in self._rosters[a]]
+        missing += [pid for pid in gb if pid not in self._rosters[b]]
+        if missing:
+            raise InvalidTradeState(
+                f"players no longer on the offering rosters: {missing} "
+                f"(already traded away?) — trade cannot execute")
         for pid in ga:
             self._rosters[a].remove(pid)
         for pid in gb:

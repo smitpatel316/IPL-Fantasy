@@ -290,7 +290,16 @@ class LineupService:
             if slot not in ROLE_TO_SLOTS[meta["role"]]:
                 raise IneligibleSlot(
                     f"role {meta['role']!r} may not occupy slot {slot!r}")
-            if slot == "IL" and pid not in self.il_eligible:
+            # IL-eligibility gates move_to_il (a fresh move needs a
+            # current designation). The player who ALREADY occupies IL
+            # keeps the slot even if the feed later revokes his
+            # designation (he recovered): without this, a team that
+            # added a replacement could never field a lineup again —
+            # the occupant had to sit in IL but was ineligible for it,
+            # and activate_from_il is refused at a full active roster
+            # (P4-L1 deadlock). Everyone else still needs eligibility.
+            if slot == "IL" and pid not in self.il_eligible \
+                    and pid != self._il[team_id]:
                 raise ILIneligible(
                     f"player {pid!r} is not IL-eligible (has not missed and "
                     f"is not expected to miss a game) — cannot occupy IL")
