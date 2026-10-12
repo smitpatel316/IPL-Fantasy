@@ -16,6 +16,13 @@ Design notes:
   winning-bid order; if a team's remaining budget can no longer cover
   its winning bid (it won earlier claims), the claim is forfeited to the
   next-highest affordable bidder.
+- Contingency bids: the same player may be named as the drop on
+  several of a team's claims for a week (win one, the rest lapse). A
+  claim whose drop is no longer on the team's roster at settlement —
+  spent by an earlier-settled claim in the same run — is forfeited to
+  the next bidder, exactly like an unaffordable win (P4-L1: settling
+  it blindly crashed the run with ValueError after the budget had
+  already been deducted and left the week unrecorded).
 - Tiebreak: reverse standings (worst team wins). `standings` is a list
   of team_ids ordered best-first (the P2-L5 output); internally reversed.
 - Weeks are caller-supplied ints; the "Wednesday ~3am PT" cadence is the
@@ -188,7 +195,12 @@ class WaiverEngine:
             winner = None
             forfeited = []
             for tid, amount, drop in bidders:
-                if amount <= self.remaining[tid]:
+                # Settleable only if the team can still pay AND the
+                # named drop is still on its roster (the same drop may
+                # back several contingency claims; an earlier claim in
+                # this run may already have spent it).
+                if amount <= self.remaining[tid] \
+                        and drop in self._rosters[tid]:
                     winner = (tid, amount, drop)
                     break
                 forfeited.append(tid)
