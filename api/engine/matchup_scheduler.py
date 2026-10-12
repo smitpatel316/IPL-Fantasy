@@ -71,6 +71,7 @@ season state (config, schedule, recorded weeks, records).
 
 from __future__ import annotations
 
+import math
 import random
 import time
 from dataclasses import dataclass
@@ -294,6 +295,14 @@ class Season:
             if not isinstance(value, (int, float)) or isinstance(value, bool):
                 raise ScheduleError(
                     f"weekly total for team {tid!r} must be a number, "
+                    f"got {value!r}"
+                )
+            if not math.isfinite(value):
+                # NaN comparisons are all False (a NaN total would
+                # silently record as a tie and poison the PF sums) and
+                # +/-inf is not a score — fail closed (P4-L1).
+                raise ScheduleError(
+                    f"weekly total for team {tid!r} must be finite, "
                     f"got {value!r}"
                 )
             if value < 0:
