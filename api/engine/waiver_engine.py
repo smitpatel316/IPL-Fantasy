@@ -5,9 +5,12 @@ budget, blind bids, Wednesday run, 2-day freeze for drops, reverse-
 standings tiebreak).
 
 Design notes:
-- Every claim MUST name a drop (rosters are fixed 15-man; there are no
-  open slots). The dropped player is frozen for 2 days and cannot be
-  claimed until the freeze lifts.
+- A claim must name a drop ONLY when the claiming team's roster is
+  full at 15 (P4-W26). Rosters are 15-man (D7) but the draft fills
+  only 14 (IL is never draft-filled), so a team under 15 may claim
+  with no drop and fill its open spot; a team at 15 must swap. The
+  dropped player is frozen for 2 days and cannot be claimed until
+  the freeze lifts.
 - Bids are blind by construction: the engine stores them but exposes no
   read API for other teams' bids; the web layer is responsible for
   hiding them (to_dict includes bids for persistence only).
@@ -39,6 +42,7 @@ import time
 
 FREEZE_SECS = 2 * 86400          # 2-day freeze for drops (D6)
 SEASON_BUDGET = 100             # $100 FAAB (D6)
+ROSTER_SIZE = 15                # D7 roster cap; draft fills only 14
 
 
 def _intify(key):
@@ -129,7 +133,9 @@ class WaiverEngine:
                    drop_player_id=None, now=None) -> dict:
         """Submit (or overwrite) a blind bid for a week.
 
-        drop_player_id is required: 15-man rosters have no open slots.
+        drop_player_id is required only when the team's roster is
+        full at 15; a team under 15 may claim with no drop and fill
+        its open spot (P4-W26 — the draft fills only 14 of 15).
         """
         self._require_team(team_id)
         now = self.clock() if now is None else now
@@ -142,9 +148,11 @@ class WaiverEngine:
             raise FrozenPlayer(
                 f"player {player_id!r} frozen until {frozen}")
         if drop_player_id is None:
-            raise WaiverError("a drop_player_id is required (rosters are "
-                              "fixed 15-man)")
-        if drop_player_id not in self._rosters[team_id]:
+            if len(self._rosters[team_id]) >= ROSTER_SIZE:
+                raise WaiverError(
+                    "a drop_player_id is required (team roster is full "
+                    f"at {ROSTER_SIZE})")
+        elif drop_player_id not in self._rosters[team_id]:
             raise NotOnRoster(
                 f"player {drop_player_id!r} is not on team {team_id!r}'s roster")
         if amount < 0:
@@ -203,28 +211,40 @@ class WaiverEngine:
             winner = None
             forfeited = []
             for tid, amount, drop in bidders:
-                # Settleable only if the team can still pay AND the
-                # named drop is still on its roster (the same drop may
-                # back several contingency claims; an earlier claim in
-                # this run may already have spent it).
-                if amount <= self.remaining[tid] \
-                        and drop in self._rosters[tid]:
-                    winner = (tid, amount, drop)
-                    break
-                forfeited.append(tid)
+                # Settleable only if the team can still pay AND, for a
+                # swap claim, the named drop is still on its roster (the
+                # same drop may back several contingency claims; an
+                # earlier claim in this run may already have spent it).
+                # A no-drop claim (P4-W26) is settleable only while the
+                # roster is still under the cap — an earlier no-drop win
+                # in this same run may already have filled the last spot.
+                if amount > self.remaining[tid]:
+                    forfeited.append(tid)
+                    continue
+                if drop is None:
+                    if len(self._rosters[tid]) >= ROSTER_SIZE:
+                        forfeited.append(tid)
+                        continue
+                elif drop not in self._rosters[tid]:
+                    forfeited.append(tid)
+                    continue
+                winner = (tid, amount, drop)
+                break
             if winner is None:
                 results.append({"player_id": pid, "winner": None,
                                 "amount": None, "drop": None,
                                 "forfeited_by": forfeited})
                 continue
             tid, amount, drop = winner
-            # Settle: pay, swap roster, freeze the drop.
+            # Settle: pay, then swap (freeze the drop) or, for a
+            # no-drop claim, simply add into the open spot.
             self.remaining[tid] -= amount
-            self._rosters[tid].remove(drop)
+            if drop is not None:
+                self._rosters[tid].remove(drop)
+                self.pool.add(drop)
+                self._frozen[drop] = now + FREEZE_SECS
             self._rosters[tid].append(pid)
             self.pool.discard(pid)
-            self.pool.add(drop)
-            self._frozen[drop] = now + FREEZE_SECS
             results.append({"player_id": pid, "winner": tid, "amount": amount,
                             "drop": drop, "forfeited_by": forfeited})
         self._runs[week] = results
