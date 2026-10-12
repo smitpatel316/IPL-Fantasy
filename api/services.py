@@ -886,7 +886,23 @@ def _settle_trades(con: sqlite3.Connection, league_id: int) -> None:
     for tid, trade in list(eng._trades.items()):
         if trade["status"] == TradeEngine.STATUS_UNDER_REVIEW \
                 and now >= (trade["review_until"] or float("inf")):
-            result = eng.execute(tid, now=now)
+            try:
+                result = eng.execute(tid, now=now)
+            except TradeError as e:
+                # P4-W23: the trade can never execute — its players were
+                # already moved by another executed trade (the engine
+                # validates before mutating, P4-L1, so rosters are
+                # untouched). Give it a defined terminal fate instead of
+                # 500ing every trade read for the league forever: expire
+                # it (a status the API contract already exposes) and log
+                # loudly so the commissioner sees it in the server log.
+                log.warning(
+                    "league %s: trade %s cannot execute (%s) — expiring it",
+                    league_id, tid, e)
+                trade["status"] = TradeEngine.STATUS_EXPIRED
+                trade["decided_at"] = now
+                changed.append(tid)
+                continue
             if result["status"] == TradeEngine.STATUS_EXECUTED:
                 a, b = result["parties"][0], result["parties"][1]
                 gives = result["gives"]
