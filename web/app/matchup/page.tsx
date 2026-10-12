@@ -259,9 +259,13 @@ export default function MatchupPage() {
       {matchups.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2">
           {matchups.map((m) => {
-            const played = m.score_a > 0 || m.score_b > 0;
-            const aWin = played && m.score_a >= m.score_b;
-            const bWin = played && m.score_b > m.score_a;
+            // Result state comes from the matchup status, not the
+            // scores: a final can legitimately be 0.0–0.0, and a tie
+            // has no winner (P4-W9).
+            const final = m.status === "final";
+            const tied = final && m.score_a === m.score_b;
+            const aWin = final && m.score_a > m.score_b;
+            const bWin = final && m.score_b > m.score_a;
             const total = m.score_a + m.score_b;
             const aPct = total > 0 ? (m.score_a / total) * 100 : 50;
             return (
@@ -289,8 +293,17 @@ export default function MatchupPage() {
                   <div className={cn("h-full rounded-l-full", aWin ? "bg-trophy-gold" : "bg-slate-600")} style={{ width: `${aPct}%` }} />
                   <div className={cn("h-full rounded-r-full", bWin ? "bg-trophy-gold" : "bg-slate-600")} style={{ width: `${100 - aPct}%` }} />
                 </div>
-                {!played && (
-                  <p className="mt-3 text-xs text-zinc-600">Not played yet — set your lineup before the week's first ball.</p>
+                {!final && (
+                  <p className="mt-3 text-xs text-zinc-600">
+                    {m.status === "live"
+                      ? "In progress — scores are not final yet."
+                      : "Not played yet — set your lineup before the week's first ball."}
+                  </p>
+                )}
+                {tied && (
+                  <p className="mt-3 text-xs font-semibold text-zinc-400">
+                    All square — this matchup ends in a tie.
+                  </p>
                 )}
                 <p className="mt-3 text-[11px] font-semibold text-zinc-500">Tap to view lineups →</p>
               </button>
