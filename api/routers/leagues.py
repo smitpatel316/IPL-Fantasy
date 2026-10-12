@@ -90,6 +90,67 @@ def get_league_detail(league_id: int, con: sqlite3.Connection = Depends(get_db))
     )
 
 
+@router.patch("/{league_id}/settings", response_model=schemas.LeagueOut)
+def patch_league_settings(league_id: int, body: schemas.LeagueSettingsPatch,
+                          con: sqlite3.Connection = Depends(get_db)):
+    """Commissioner settings edit (P4-W15). Ungated until team identity
+    lands (P4-W18); only the patchable keys are applied."""
+    league = get_league(con, league_id)
+    updates = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(422, "no settings supplied")
+    settings = dict(league["settings"] or {})
+    settings.update(updates)
+    con.execute("UPDATE leagues SET settings = ? WHERE id = ?",
+                (json.dumps(settings), league_id))
+    con.commit()
+    league = get_league(con, league_id)
+    return schemas.LeagueOut(**{k: league[k] for k in ("id", "name", "invite_code", "season", "status", "settings")})
+
+
+@router.post("/{league_id}/adjustments", response_model=schemas.AdjustmentOut)
+def create_adjustment(league_id: int, body: schemas.AdjustmentCreate,
+                      con: sqlite3.Connection = Depends(get_db)):
+    """Manual FAAB adjustment with a mandatory audit note (P4-W15)."""
+    get_league(con, league_id)  # 404 if missing
+    team = get_team(con, body.team_id)
+    if team["league_id"] != league_id:
+        raise HTTPException(422, "team is not in this league")
+    faab_after = max(0, team["faab_remaining"] + body.faab_delta)
+    con.execute("UPDATE teams SET faab_remaining = ? WHERE id = ?",
+                (faab_after, team["id"]))
+    cur = con.execute(
+        "INSERT INTO league_adjustments (league_id, team_id, kind, faab_delta, faab_after, note)"
+        " VALUES (?, ?, 'faab', ?, ?, ?)",
+        (league_id, team["id"], body.faab_delta, faab_after, body.note),
+    )
+    con.commit()
+    row = con.execute("SELECT * FROM league_adjustments WHERE id = ?", (cur.lastrowid,)).fetchone()
+    return schemas.AdjustmentOut(
+        id=row["id"], league_id=row["league_id"], team_id=row["team_id"],
+        team_name=team["name"], kind=row["kind"], faab_delta=row["faab_delta"],
+        faab_after=row["faab_after"], note=row["note"], created_at=row["created_at"],
+    )
+
+
+@router.get("/{league_id}/adjustments", response_model=list[schemas.AdjustmentOut])
+def list_adjustments(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+    get_league(con, league_id)  # 404 if missing
+    return [
+        schemas.AdjustmentOut(
+            id=r["id"], league_id=r["league_id"], team_id=r["team_id"],
+            team_name=r["team_name"], kind=r["kind"], faab_delta=r["faab_delta"],
+            faab_after=r["faab_after"], note=r["note"], created_at=r["created_at"],
+        )
+        for r in con.execute(
+            "SELECT a.*, t.name AS team_name FROM league_adjustments a"
+            " JOIN teams t ON t.id = a.team_id WHERE a.league_id = ?"
+            " ORDER BY a.id DESC LIMIT 50",
+            (league_id,),
+        )
+    ]
+
+
 @router.post("/{league_id}/join", response_model=schemas.TeamOut)
 def join_league(league_id: int, body: schemas.JoinLeagueIn, con: sqlite3.Connection = Depends(get_db)):
     league = get_league(con, league_id)

@@ -9,6 +9,7 @@ import type {
   DraftOut,
   DraftPickOut,
   HealthOut,
+  AdjustmentOut,
   LeagueDetailOut,
   LeagueOut,
   LineupOut,
@@ -56,6 +57,24 @@ export const api = {
   createLeague: (name: string, commissioner_name: string) =>
     req<LeagueOut>("/leagues", { method: "POST", body: JSON.stringify({ name, commissioner_name }) }),
   getLeague: (id: number | string) => req<LeagueDetailOut>(`/leagues/${id}`),
+  patchLeagueSettings: (
+    id: number | string,
+    patch: { pick_clock_secs?: number; trade_deadline_week?: number; waiver_run_weekday?: string },
+  ) =>
+    req<LeagueOut>(`/leagues/${id}/settings`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  createAdjustment: (
+    id: number | string,
+    body: { team_id: number; faab_delta: number; note: string },
+  ) =>
+    req<AdjustmentOut>(`/leagues/${id}/adjustments`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  listAdjustments: (id: number | string) =>
+    req<AdjustmentOut[]>(`/leagues/${id}/adjustments`),
   joinLeague: (id: number | string, invite_code: string, team_name: string, owner_name: string) =>
     req<TeamOut>(`/leagues/${id}/join`, {
       method: "POST",

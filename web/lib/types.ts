@@ -15,6 +15,7 @@ export interface NotImplementedOut {
 export interface LeagueSettings {
   draft_type: string;
   rounds: number;
+  pick_clock_secs?: number;
   roster_slots: Record<string, number>;
   faab_budget: number;
   scoring_table_version: string;
@@ -22,6 +23,18 @@ export interface LeagueSettings {
   playoff_teams: number;
   trade_deadline_week: number;
   waiver_run_weekday: string;
+}
+
+export interface AdjustmentOut {
+  id: number;
+  league_id: number;
+  team_id: number;
+  team_name: string;
+  kind: string;
+  faab_delta: number;
+  faab_after: number;
+  note: string;
+  created_at: string;
 }
 
 export interface LeagueOut {

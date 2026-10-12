@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { ApiError, type LeagueDetailOut } from "@/lib/types";
+import { ApiError, type AdjustmentOut, type LeagueDetailOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { Trophy, Settings2, ArrowRight, Crown } from "lucide-react";
@@ -17,12 +17,17 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
     params.then((p) => setId(p.id));
   }, [params]);
 
-  useEffect(() => {
+  function refresh() {
     if (!id) return;
     api
       .getLeague(id)
       .then(setLeague)
       .catch((e) => setErr(e instanceof ApiError ? e.message : "load failed"));
+  }
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   if (err) return <div className="pt-8"><ErrorBox message={err} /></div>;
@@ -151,6 +156,176 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
           </Link>
         </div>
       </div>
+
+      <CommissionerTools league={league} onChanged={refresh} />
     </div>
+  );
+}
+
+const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
+/** Commissioner tools (P4-W15): settings edit + audited FAAB adjustments.
+ *  Ungated until team identity lands (P4-W18) — every change is written
+ *  to the league's audit log below. */
+function CommissionerTools({
+  league,
+  onChanged,
+}: {
+  league: LeagueDetailOut;
+  onChanged: () => void;
+}) {
+  const [clock, setClock] = useState(String(league.settings.pick_clock_secs ?? 90));
+  const [deadline, setDeadline] = useState(String(league.settings.trade_deadline_week ?? 6));
+  const [weekday, setWeekday] = useState(String(league.settings.waiver_run_weekday ?? "wednesday"));
+  const [adjTeam, setAdjTeam] = useState("");
+  const [adjDelta, setAdjDelta] = useState("");
+  const [adjNote, setAdjNote] = useState("");
+  const [adjustments, setAdjustments] = useState<AdjustmentOut[]>([]);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api.listAdjustments(league.id).then(setAdjustments).catch(() => {});
+  }, [league.id]);
+
+  const input =
+    "rounded-lg border border-slate-700 bg-midnight px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none";
+
+  async function saveSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setErr("");
+    setMsg("");
+    setBusy(true);
+    try {
+      await api.patchLeagueSettings(league.id, {
+        pick_clock_secs: Number(clock),
+        trade_deadline_week: Number(deadline),
+        waiver_run_weekday: weekday,
+      });
+      setMsg("Settings saved.");
+      onChanged();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "settings save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitAdjustment(e: React.FormEvent) {
+    e.preventDefault();
+    setErr("");
+    setMsg("");
+    const teamId = Number(adjTeam || league.standings[0]?.team_id);
+    const delta = Number(adjDelta);
+    if (!teamId || !Number.isFinite(delta) || adjNote.trim() === "") {
+      setErr("Pick a team, a FAAB delta, and an audit note.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const adj = await api.createAdjustment(league.id, {
+        team_id: teamId,
+        faab_delta: delta,
+        note: adjNote.trim(),
+      });
+      setAdjustments((prev) => [adj, ...prev]);
+      setAdjDelta("");
+      setAdjNote("");
+      setMsg(`FAAB adjusted — ${adj.team_name} now has $${adj.faab_after}.`);
+      onChanged();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "adjustment failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-xl border border-slate-800 bg-midnight-soft p-5">
+      <h2 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
+        <Settings2 className="h-4 w-4 text-zinc-500" /> Commissioner tools
+      </h2>
+      <p className="mb-4 text-xs text-zinc-500">
+        Settings edits and manual FAAB adjustments. Every adjustment is written to the audit
+        log with its note.
+      </p>
+      {err && (
+        <div className="mb-3">
+          <ErrorBox message={err} />
+        </div>
+      )}
+      {msg && <p className="mb-3 text-sm text-pitch-green">{msg}</p>}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <form onSubmit={saveSettings} className="space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">League settings</h3>
+          <label className="block text-xs text-zinc-500">
+            Pick clock (seconds, applies to future drafts)
+            <input type="number" min={0} max={600} className={cn(input, "mt-1 w-full")} value={clock} onChange={(e) => setClock(e.target.value)} />
+          </label>
+          <label className="block text-xs text-zinc-500">
+            Trade deadline (end of week)
+            <input type="number" min={1} max={8} className={cn(input, "mt-1 w-full")} value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+          </label>
+          <label className="block text-xs text-zinc-500">
+            Waiver run day
+            <select className={cn(input, "mt-1 w-full")} value={weekday} onChange={(e) => setWeekday(e.target.value)}>
+              {WEEKDAYS.map((d) => (
+                <option key={d} value={d}>
+                  {d[0].toUpperCase() + d.slice(1)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" disabled={busy} className="rounded-lg bg-trophy-gold px-4 py-2 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-50">
+            Save settings
+          </button>
+        </form>
+
+        <form onSubmit={submitAdjustment} className="space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">FAAB adjustment</h3>
+          <label className="block text-xs text-zinc-500">
+            Team
+            <select className={cn(input, "mt-1 w-full")} value={adjTeam} onChange={(e) => setAdjTeam(e.target.value)}>
+              {league.standings.map((s) => (
+                <option key={s.team_id} value={s.team_id}>
+                  {s.team_name} (${s.faab_remaining})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs text-zinc-500">
+            Delta (e.g. 10 to grant, -5 to dock)
+            <input type="number" className={cn(input, "mt-1 w-full")} value={adjDelta} onChange={(e) => setAdjDelta(e.target.value)} placeholder="0" />
+          </label>
+          <label className="block text-xs text-zinc-500">
+            Audit note (required)
+            <input className={cn(input, "mt-1 w-full")} value={adjNote} onChange={(e) => setAdjNote(e.target.value)} placeholder="Why is this being adjusted?" maxLength={200} />
+          </label>
+          <button type="submit" disabled={busy} className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-700 disabled:opacity-50">
+            Apply adjustment
+          </button>
+        </form>
+      </div>
+
+      {adjustments.length > 0 && (
+        <div className="mt-6">
+          <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">Audit log</h3>
+          <ul className="space-y-1.5 text-sm">
+            {adjustments.map((a) => (
+              <li key={a.id} className="flex flex-wrap items-baseline gap-x-3 rounded-lg bg-slate-800/50 px-3 py-2">
+                <span className="font-semibold text-white">{a.team_name}</span>
+                <span className={a.faab_delta >= 0 ? "text-pitch-green" : "text-brick-red"}>
+                  {a.faab_delta >= 0 ? "+" : ""}${a.faab_delta} → ${a.faab_after}
+                </span>
+                <span className="text-zinc-400">{a.note}</span>
+                <span className="ml-auto text-xs text-zinc-600">{a.created_at}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   );
 }
