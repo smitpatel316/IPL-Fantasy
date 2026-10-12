@@ -35,6 +35,7 @@ from api.engine.draft_engine import (
     PoolExhausted,
     RosterFull,
     UnfieldableRoster,
+    d8_reachable,
 )
 # P2-L7 exact best-ADP D8-legal-11 solver (lives in sandbox_season; pure function).
 from api.engine.sandbox_season import solve_best_d8_lineup
@@ -985,6 +986,32 @@ def _sync_trade_row(con: sqlite3.Connection, league_id: int, trade: dict) -> int
     return db_id
 
 
+def _role_counts(player_ids, roles: dict) -> tuple[dict, dict]:
+    """(domestic_by_role, overseas_by_role) for a flat player-id list —
+    the input shape draft_engine.d8_reachable consumes."""
+    d: dict = {}
+    o: dict = {}
+    for pid in player_ids:
+        meta = roles.get(pid) or {}
+        target = o if meta.get("is_overseas") else d
+        role = meta.get("role")
+        target[role] = target.get(role, 0) + 1
+    return d, o
+
+
+def _unfieldable_after_swap(con: sqlite3.Connection, rosters_after: dict) -> int | None:
+    """Return the first team id whose post-swap roster cannot field a
+    D8-legal XI (exact check via d8_reachable at picks_remaining=0), or
+    None when both sides stay fieldable (P4-W24 D8 guard, league-core
+    filing)."""
+    roles = player_roles_map(con)
+    for tid, pids in rosters_after.items():
+        d, o = _role_counts(pids, roles)
+        if not d8_reachable(d, o, 0):
+            return tid
+    return None
+
+
 def _settle_trades(con: sqlite3.Connection, league_id: int) -> None:
     """Expire stale proposals; execute review-closed trades (roster swap)."""
     eng = _revive_trade(con, league_id)
@@ -993,6 +1020,25 @@ def _settle_trades(con: sqlite3.Connection, league_id: int) -> None:
     for tid, trade in list(eng._trades.items()):
         if trade["status"] == TradeEngine.STATUS_UNDER_REVIEW \
                 and now >= (trade["review_until"] or float("inf")):
+            # D8 re-check at settle: rosters may have changed during the
+            # review window (another trade executed first), so a swap
+            # that was legal at proposal can now brick a team's lineup.
+            a0, b0 = trade["parties"][0], trade["parties"][1]
+            gives0 = trade["gives"]
+            after = {
+                a0: [p for p in eng._rosters[a0] if p not in gives0[a0]] + list(gives0[b0]),
+                b0: [p for p in eng._rosters[b0] if p not in gives0[b0]] + list(gives0[a0]),
+            }
+            bad = _unfieldable_after_swap(con, after)
+            if bad is not None:
+                log.warning(
+                    "league %s: trade %s would leave team %s unable to field "
+                    "a legal XI (D8) — expiring it instead of executing",
+                    league_id, tid, bad)
+                trade["status"] = TradeEngine.STATUS_EXPIRED
+                trade["decided_at"] = now
+                changed.append(tid)
+                continue
             try:
                 result = eng.execute(tid, now=now)
             except TradeError as e:
@@ -1036,6 +1082,27 @@ def propose_trade(con: sqlite3.Connection, league_id: int, from_team_id: int,
                   to_team_id: int, gives: list[int], receives: list[int]) -> dict:
     get_league(con, league_id)
     _settle_trades(con, league_id)
+    # D8-reachability guard (P4-W24, league-core filing): the trade
+    # engine holds no player metadata, so check here that the swap
+    # leaves BOTH teams able to field a D8-legal XI. Only checked when
+    # the offered players are actually on the offering rosters —
+    # otherwise the engine's own validation raises the right 422.
+    rosters = {t["id"]: _roster_pids(con, t["id"]) for t in _teams(con, league_id)}
+    if from_team_id in rosters and to_team_id in rosters \
+            and set(gives) <= set(rosters[from_team_id]) \
+            and set(receives) <= set(rosters[to_team_id]):
+        after = {
+            from_team_id: [p for p in rosters[from_team_id] if p not in gives] + list(receives),
+            to_team_id: [p for p in rosters[to_team_id] if p not in receives] + list(gives),
+        }
+        bad = _unfieldable_after_swap(con, after)
+        if bad is not None:
+            name = next((t["name"] for t in _teams(con, league_id) if t["id"] == bad),
+                        f"team {bad}")
+            raise HTTPException(
+                422,
+                f"trade would leave {name} unable to field a legal XI "
+                "(role minimums / overseas cap) — rejected by the D8 guard")
     eng = _revive_trade(con, league_id)
     try:
         trade = eng.propose(from_team_id, to_team_id, list(gives),
