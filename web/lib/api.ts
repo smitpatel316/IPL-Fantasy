@@ -23,6 +23,7 @@ import type {
   PlayerOut,
   PlayoffsOut,
   RanksOut,
+  RosterMoveOut,
   ScoreboardOut,
   ScheduleNudgesOut,
   TeamOut,
@@ -85,6 +86,13 @@ export const api = {
   listAdjustments: (id: number | string) =>
     req<AdjustmentOut[]>(`/leagues/${id}/adjustments`),
   getCantCut: (leagueId: number | string) => req<CantCutOut>(`/leagues/${leagueId}/cant-cut`),
+  rosterMove: (leagueId: number | string, body: { team_id: number; player_id: number; action: "add" | "drop"; note: string }) =>
+    req<RosterMoveOut>(`/leagues/${leagueId}/roster-moves`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  listRosterMoves: (leagueId: number | string) =>
+    req<RosterMoveOut[]>(`/leagues/${leagueId}/roster-moves`),
   joinLeague: (id: number | string, invite_code: string, team_name: string, owner_name: string) =>
     req<TeamOut>(`/leagues/${id}/join`, {
       method: "POST",
