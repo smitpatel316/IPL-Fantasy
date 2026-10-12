@@ -729,6 +729,15 @@ def submit_waiver_claim(con: sqlite3.Connection, league_id: int, team_id: int,
     team_ids = {t["id"] for t in _teams(con, league_id)}
     if team_id not in team_ids:
         raise HTTPException(404, f"team {team_id} not found")
+    if drop_player_id is None and \
+            len(_roster_pids(con, team_id)) >= constants.ROSTER_SIZE:
+        # P4-W26: a drop is required only when the roster is full at
+        # 15; a team under 15 (the draft fills only 14) may claim with
+        # no drop and fill its open spot. The engine enforces the same
+        # rule against its roster state — this is the API-layer guard.
+        raise HTTPException(
+            422, "a drop_player_id is required — this team's roster is "
+                 f"full at {constants.ROSTER_SIZE}")
     if drop_player_id is not None:
         protected, _src = cant_cut_player_ids(con, league_id)
         if drop_player_id in protected:
@@ -781,26 +790,33 @@ def run_waivers(con: sqlite3.Connection, league_id: int, week_no: int) -> list[d
                     (status, row["id"]),
                 )
             if winner is not None:
-                # Swap roster_slots: the added player takes the dropped slot.
-                slot = con.execute(
-                    "SELECT slot FROM roster_slots WHERE team_id = ?"
-                    " AND player_id = ? AND week_no IS NULL",
-                    (winner, r["drop"]),
-                ).fetchone()
-                slot_name = slot["slot"] if slot else "BN"
-                con.execute(
-                    "DELETE FROM roster_slots WHERE team_id = ? AND player_id = ?"
-                    " AND week_no IS NULL",
-                    (winner, r["drop"]),
-                )
+                if r["drop"] is not None:
+                    # Swap roster_slots: the added player takes the dropped slot.
+                    slot = con.execute(
+                        "SELECT slot FROM roster_slots WHERE team_id = ?"
+                        " AND player_id = ? AND week_no IS NULL",
+                        (winner, r["drop"]),
+                    ).fetchone()
+                    slot_name = slot["slot"] if slot else "BN"
+                    con.execute(
+                        "DELETE FROM roster_slots WHERE team_id = ? AND player_id = ?"
+                        " AND week_no IS NULL",
+                        (winner, r["drop"]),
+                    )
+                else:
+                    # No-drop win (P4-W26): the team was under 15, so the
+                    # added player fills the open spot (bench) — nothing
+                    # is deleted and no drop slot is inherited.
+                    slot_name = "BN"
                 con.execute(
                     "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
                     " VALUES (?, ?, ?, NULL)",
                     (winner, r["player_id"], slot_name),
                 )
-                # Keep the week-1 lineup consistent: the add takes the drop's
-                # vacated week-1 slot.
-                _move_into_week1_slot(con, winner, r["drop"], r["player_id"])
+                if r["drop"] is not None:
+                    # Keep the week-1 lineup consistent: the add takes the drop's
+                    # vacated week-1 slot.
+                    _move_into_week1_slot(con, winner, r["drop"], r["player_id"])
                 con.execute(
                     "UPDATE teams SET faab_remaining = ? WHERE id = ?",
                     (eng.remaining[winner], winner),

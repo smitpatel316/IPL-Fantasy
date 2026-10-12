@@ -152,6 +152,74 @@ class TestGuards(unittest.TestCase):
         self.assertEqual(res, [])
 
 
+def _eng_sized(sizes, now=NOW, budget=100):
+    """Engine whose teams have explicit roster sizes (P4-W26)."""
+    teams = {}
+    for tid, n in sizes.items():
+        prefix = tid[0]
+        teams[tid] = [f"{prefix}{i}" for i in range(n)]
+    pool = ["fa1", "fa2", "fa3", "fa4"]
+    return WaiverEngine(teams, pool, budget=budget, clock=lambda: now)
+
+
+class TestNoDropFill(unittest.TestCase):
+    """P4-W26: rosters are 15-man (D7) but the draft fills only 14,
+    so a no-drop claim must be allowed while a team is under 15 and
+    still required at a full 15."""
+
+    def test_no_drop_claim_accepted_and_fills_open_spot_at_run(self):
+        eng = _eng_sized({"best": 15, "mid": 15, "worst": 14})
+        bid = eng.submit_bid("worst", 1, "fa1", 12)  # no drop named
+        self.assertIsNone(bid["drop"])
+        res = eng.run_week(1, STANDINGS)
+        r = res[0]
+        self.assertEqual(r["winner"], "worst")
+        self.assertEqual(r["amount"], 12)
+        self.assertIsNone(r["drop"])
+        self.assertEqual(r["forfeited_by"], [])
+        roster = eng.get_roster("worst")
+        self.assertEqual(len(roster), 15)          # 14 -> 15, filled
+        self.assertIn("fa1", roster)
+        self.assertNotIn("fa1", eng.pool)
+        self.assertEqual(eng.get_budget("worst"), 88)
+        # Nobody was dropped, so nobody is frozen or returned to pool.
+        self.assertFalse(any(eng.is_frozen(f"w{i}", now=NOW)
+                             for i in range(14)))
+
+    def test_no_drop_claim_rejected_at_full_15(self):
+        eng = _eng_sized({"best": 15, "mid": 15, "worst": 15})
+        with self.assertRaises(WaiverError):
+            eng.submit_bid("worst", 1, "fa1", 5)  # no drop, roster full
+
+    def test_swap_with_drop_still_works_when_under_15(self):
+        eng = _eng_sized({"best": 15, "mid": 15, "worst": 14})
+        eng.submit_bid("worst", 1, "fa1", 10, drop_player_id="w0")
+        res = eng.run_week(1, STANDINGS)
+        self.assertEqual(res[0]["winner"], "worst")
+        self.assertEqual(res[0]["drop"], "w0")
+        roster = eng.get_roster("worst")
+        self.assertEqual(len(roster), 14)          # swap: size unchanged
+        self.assertIn("fa1", roster)
+        self.assertNotIn("w0", roster)
+        self.assertIn("w0", eng.pool)
+        self.assertTrue(eng.is_frozen("w0", now=NOW))
+
+    def test_second_no_drop_claim_forfeits_once_spot_fills(self):
+        # A 14-man team names no drop on two claims; winning the first
+        # fills it to 15, so its second no-drop claim must forfeit at
+        # settlement to the next bidder rather than exceed the cap.
+        eng = _eng_sized({"best": 15, "mid": 14, "worst": 14})
+        eng.submit_bid("worst", 1, "fa1", 50)
+        eng.submit_bid("worst", 1, "fa2", 40)
+        eng.submit_bid("mid", 1, "fa2", 30)
+        res = {r["player_id"]: r for r in eng.run_week(1, STANDINGS)}
+        self.assertEqual(res["fa1"]["winner"], "worst")
+        self.assertEqual(len(eng.get_roster("worst")), 15)
+        self.assertEqual(res["fa2"]["winner"], "mid")
+        self.assertEqual(res["fa2"]["forfeited_by"], ["worst"])
+        self.assertEqual(len(eng.get_roster("mid")), 15)
+
+
 class TestMultiWeek(unittest.TestCase):
     def test_multi_week_independence(self):
         eng = _eng()

@@ -23,7 +23,8 @@ def submit_claim(body: schemas.WaiverClaimCreate, request: Request,
                  con: sqlite3.Connection = Depends(get_db)):
     get_league(con, body.league_id)
     require_team_actor(con, body.team_id, request)  # P4-W18 claim-code gate
-    # 15-man rosters have no open slots: a drop is required (422 otherwise).
+    # A drop is required only at a full 15-man roster (422 otherwise);
+    # a team under 15 may claim with no drop and fill its open spot (P4-W26).
     week_no = services.current_week(con, body.league_id)
     return schemas.WaiverClaimOut(**services.submit_waiver_claim(
         con, body.league_id, body.team_id, week_no,
