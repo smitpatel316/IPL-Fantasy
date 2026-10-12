@@ -42,7 +42,7 @@ from api.engine.sandbox_season import solve_best_d8_lineup
 from api.engine.matchup_scheduler import (
     ScheduleConfig, ScheduleError, generate_schedule,
 )
-from api.engine.trade_engine import TradeEngine, TradeError
+from api.engine.trade_engine import ACTIVE_ROSTER_SIZE, TradeEngine, TradeError
 from api.engine.waiver_engine import WaiverEngine, WaiverError
 
 from . import constants
@@ -1010,7 +1010,22 @@ def _unfieldable_after_swap(con: sqlite3.Connection, rosters_after: dict) -> int
 
 def _settle_trades(con: sqlite3.Connection, league_id: int) -> None:
     """Expire stale proposals; execute review-closed trades (roster swap)."""
-    eng = _revive_trade(con, league_id)
+    try:
+        eng = _revive_trade(con, league_id)
+    except TradeError as e:
+        # P4-W29: a pre-existing sub-14 roster (left behind by a fiat
+        # drop from before the commissioner-drop floor below, e.g. the
+        # Pi demo league's 13-man team) makes TradeEngine construction
+        # fail for the whole league. That must not 500 every trade
+        # read/write league-wide: skip settling for this league — the
+        # defined fate, following the P4-W23 pattern below — log loudly
+        # so the commissioner sees it, and let reads serve the trades
+        # table projection. Propose/accept revive the engine themselves
+        # and surface this as a 422 instead.
+        log.warning(
+            "league %s: trade engine cannot be constructed (%s) — "
+            "skipping trade settle for this league", league_id, e)
+        return
     now = time.time()
     changed = eng.sweep(now=now)
     for tid, trade in list(eng._trades.items()):
@@ -1099,8 +1114,12 @@ def propose_trade(con: sqlite3.Connection, league_id: int, from_team_id: int,
                 422,
                 f"trade would leave {name} unable to field a legal XI "
                 "(role minimums / overseas cap) — rejected by the D8 guard")
-    eng = _revive_trade(con, league_id)
     try:
+        # Revive inside the try (P4-W29): with a pre-existing sub-14
+        # roster in the league, construction itself raises TradeError —
+        # surface it as the same defined 422 as any other illegal trade,
+        # never a 500.
+        eng = _revive_trade(con, league_id)
         trade = eng.propose(from_team_id, to_team_id, list(gives),
                             list(receives), week=current_week(con, league_id))
     except TradeError as e:
@@ -1130,8 +1149,10 @@ def respond_trade(con: sqlite3.Connection, league_id: int, trade_id: int,
     # 404 on unknown trade before touching engine state (draft may be live).
     eid = _db_engine_id(con, league_id, trade_id)
     _settle_trades(con, league_id)
-    eng = _revive_trade(con, league_id)
     try:
+        # Revive inside the try (P4-W29): same construction-failure ->
+        # 422 conversion as propose_trade, never a 500.
+        eng = _revive_trade(con, league_id)
         if action == "accept":
             trade = eng.get_trade(eid)
             offeree = trade["parties"][1]
@@ -1166,7 +1187,10 @@ def commissioner_roster_move(con: sqlite3.Connection, league_id: int,
     clears the player from the team's saved weekly lineups, and is
     refused while the team has a pending waiver claim using this
     player as its drop piece (the claim would strand mid-run — the
-    drop-freeze tangle the commissioner must resolve first). Engine
+    drop-freeze tangle the commissioner must resolve first). Drop is
+    also floored at ACTIVE_ROSTER_SIZE (14) players (P4-W29): a roster
+    below that makes TradeEngine construction fail league-wide, so a
+    fiat drop must never create one. Engine
     caches for the league are invalidated so waiver/trade engines
     revive from the new rosters."""
     get_league(con, league_id)
@@ -1209,6 +1233,18 @@ def commissioner_roster_move(con: sqlite3.Connection, league_id: int,
             raise HTTPException(
                 409, f"{player_name} is the drop piece of a pending waiver "
                      "claim for this team — resolve that claim first")
+        # Roster floor (P4-W29): never drop below ACTIVE_ROSTER_SIZE.
+        # Below 14 the trade engine refuses to construct for the whole
+        # league, so one fiat drop used to brick all trading with 500s.
+        count = con.execute(
+            "SELECT COUNT(*) FROM roster_slots WHERE team_id = ? AND week_no IS NULL",
+            (team_id,)).fetchone()[0]
+        if count <= ACTIVE_ROSTER_SIZE:
+            raise HTTPException(
+                422, f"cannot drop {player_name}: this team has only "
+                     f"{count} players — a commissioner drop cannot take "
+                     f"a roster below {ACTIVE_ROSTER_SIZE} players; "
+                     "add a player first")
         con.execute(
             "DELETE FROM roster_slots WHERE team_id = ? AND player_id = ?",
             (team_id, player_id))
