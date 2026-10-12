@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { ApiError, type PlayerOut, type TeamOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
@@ -113,13 +114,19 @@ export default function PlayersPage() {
               <th className="px-4 py-3 font-semibold">IPL</th>
               <th className="px-4 py-3 font-semibold">OS</th>
               <th className="px-4 py-3 font-semibold">Owner</th>
+              <th className="px-4 py-3 text-right font-semibold">Avg pts</th>
+              <th className="px-4 py-3 text-right font-semibold">Own %</th>
             </tr>
           </thead>
           <tbody>
             {players.map((p) => (
               <tr key={p.id} className="border-t border-slate-800/60 transition hover:bg-slate-800/30">
                 <td className="px-4 py-2.5 tabular-nums text-zinc-500">{p.preseason_rank ?? "–"}</td>
-                <td className="px-4 py-2.5 font-medium text-white">{p.name}</td>
+                <td className="px-4 py-2.5 font-medium text-white">
+                  <Link href={`/players/${p.id}`} className="hover:text-trophy-gold hover:underline">
+                    {p.name}
+                  </Link>
+                </td>
                 <td className="px-4 py-2.5">
                   {p.role ? (
                     <span className={cn("rounded px-1.5 py-0.5 text-xs font-bold", ROLE_BADGE[p.role])}>
@@ -144,6 +151,12 @@ export default function PlayersPage() {
                     <span className="rounded bg-pitch-green/15 px-1.5 py-0.5 text-xs font-bold text-pitch-green">FA</span>
                   )}
                 </td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-zinc-300">
+                  {p.avg_points != null ? p.avg_points.toFixed(1) : "–"}
+                </td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-zinc-400">
+                  {p.ownership_pct != null ? `${p.ownership_pct.toFixed(0)}%` : "–"}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -156,7 +169,11 @@ export default function PlayersPage() {
       {/* Mobile cards */}
       <div className="space-y-2 md:hidden">
         {players.map((p) => (
-          <div key={p.id} className="flex items-center gap-3 rounded-xl border border-slate-800 bg-midnight-soft px-3.5 py-3">
+          <Link
+            key={p.id}
+            href={`/players/${p.id}`}
+            className="flex items-center gap-3 rounded-xl border border-slate-800 bg-midnight-soft px-3.5 py-3"
+          >
             <span className="w-8 shrink-0 tabular-nums text-xs text-zinc-500">{p.preseason_rank ?? "–"}</span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-white">
@@ -168,6 +185,7 @@ export default function PlayersPage() {
                   <span className={cn("rounded px-1 py-px text-[10px] font-bold", ROLE_BADGE[p.role])}>{p.role}</span>
                 )}
                 <span className="font-semibold">{p.ipl_team_code ?? ""}</span>
+                {p.avg_points != null && <span>· {p.avg_points.toFixed(1)} avg</span>}
               </p>
             </div>
             {p.owned_by_team_id ? (
@@ -175,7 +193,7 @@ export default function PlayersPage() {
             ) : (
               <span className="shrink-0 rounded bg-pitch-green/15 px-1.5 py-0.5 text-xs font-bold text-pitch-green">FA</span>
             )}
-          </div>
+          </Link>
         ))}
         {!loading && players.length === 0 && !err && (
           <p className="rounded-xl border border-slate-800 p-8 text-center text-sm text-zinc-600">No players match.</p>
