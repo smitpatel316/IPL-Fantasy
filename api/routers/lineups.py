@@ -62,6 +62,8 @@ def set_lineup(team_id: int, body: schemas.LineupSet, con: sqlite3.Connection = 
 @router.get("/teams/{team_id}/lineup", response_model=schemas.LineupOut)
 def get_lineup(team_id: int, week_no: int, con: sqlite3.Connection = Depends(get_db)):
     get_team(con, team_id)
+    if not 1 <= week_no <= TOTAL_WEEKS:
+        raise HTTPException(422, f"week_no must be 1..{TOTAL_WEEKS}")
     slots: dict[str, list[int]] = {}
     for r in con.execute(
         "SELECT slot, player_id FROM roster_slots WHERE team_id = ? AND week_no = ?",

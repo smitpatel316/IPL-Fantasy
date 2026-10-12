@@ -11,6 +11,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, Query
 
 from .. import schemas, services
+from ..constants import TOTAL_WEEKS
 from ..database import get_db
 from . import get_league, get_team
 
@@ -30,7 +31,8 @@ def submit_claim(body: schemas.WaiverClaimCreate,
 
 
 @router.get("/pending", response_model=list[schemas.WaiverClaimOut])
-def pending_claims(league_id: int = Query(...), week_no: int = Query(...),
+def pending_claims(league_id: int = Query(...),
+                   week_no: int = Query(..., ge=1, le=TOTAL_WEEKS),
                    con: sqlite3.Connection = Depends(get_db)):
     get_league(con, league_id)
     return [
