@@ -41,7 +41,7 @@ MOCK_SQUADS: dict[str, list[tuple[str, str, bool]]] = {
         ("H Pandya", "AR", False), ("M Santner", "AR", True),
         ("J Bumrah", "BOWL", False), ("T Boult", "BOWL", True),
         ("D Chahar", "BOWL", False), ("Q de Kock", "WK", True),
-        ("W Jacks", "BAT", True), ("S Thakur", "AR", False),
+        ("W Jacks", "AR", True), ("S Thakur", "AR", False),
     ],
     "CSK": [
         ("R Gaikwad", "BAT", False), ("S Samson", "WK", False),
