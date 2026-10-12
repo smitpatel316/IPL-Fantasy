@@ -841,6 +841,17 @@ def run_waivers(con: sqlite3.Connection, league_id: int, week_no: int) -> list[d
     if not 1 <= week_no <= constants.TOTAL_WEEKS:
         raise HTTPException(
             422, f"week_no must be 1..{constants.TOTAL_WEEKS}")
+    # P4-W31: a run for a week with zero pending claims is a NO-OP —
+    # return [] (processed 0, same list shape as a normal run) without
+    # recording the week as run, so later claims for that week are
+    # still accepted instead of BidClosed. Weeks that genuinely ran
+    # are NOT short-circuited: they fall through to the engine, whose
+    # WeekAlreadyRun keeps a re-run safe (no duplicate effects).
+    pending = con.execute(
+        "SELECT COUNT(*) FROM waiver_claims WHERE league_id = ?"
+        " AND week_no = ? AND status = 'pending'",
+        (league_id, week_no),
+    ).fetchone()[0]
     eng = _revive_waiver(con, league_id)
     # D8 re-check at run time (P4-W30, mirroring the trade settle
     # re-check in _settle_trades): rosters can change between bid and
