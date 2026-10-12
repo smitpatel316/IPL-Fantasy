@@ -41,6 +41,7 @@ export default function LineupPage() {
   const [week, setWeek] = useState(1);
   const [roster, setRoster] = useState<PlayerOut[]>([]);
   const [slots, setSlots] = useState<Record<string, number[]>>({});
+  const [carriedFrom, setCarriedFrom] = useState<number | null>(null);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [saving, setSaving] = useState(false);
@@ -64,11 +65,18 @@ export default function LineupPage() {
       .listPlayers({ league_id: 1 })
       .then((ps) => setRoster(ps.filter((p) => p.owned_by_team_id === teamId)))
       .catch(() => {});
-    // Prefill from any saved lineup for this team+week.
+    // Prefill from the saved lineup for this team+week; when none is
+    // saved yet the API carries the most recent week's lineup forward.
     api
       .getLineup(teamId, week)
-      .then((l) => setSlots(l.slots ?? {}))
-      .catch(() => setSlots({}));
+      .then((l) => {
+        setSlots(l.slots ?? {});
+        setCarriedFrom(l.carried_over_from_week ?? null);
+      })
+      .catch(() => {
+        setSlots({});
+        setCarriedFrom(null);
+      });
   }, [teamId, week]);
 
   function toggle(slot: string, pid: number) {
@@ -92,6 +100,7 @@ export default function LineupPage() {
     setSaving(true);
     try {
       const out = await api.setLineup(teamId, week, slots);
+      setCarriedFrom(null);
       setMsg(`Lineup saved · ${out.overseas_starters}/${OVERSEAS_CAP} overseas starters`);
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "save failed");
@@ -201,6 +210,12 @@ export default function LineupPage() {
         )}
       </div>
 
+      {carriedFrom != null && (
+        <p className="mb-4 rounded-lg border border-slate-800 bg-midnight-soft px-4 py-2.5 text-sm text-zinc-400">
+          No lineup saved for week {week} yet — this is your week {carriedFrom} lineup carried
+          forward. Review it and save to lock it in for week {week}.
+        </p>
+      )}
       {err && <div className="mb-4"><ErrorBox message={err} /></div>}
       {msg && (
         <p className="mb-4 flex items-center gap-1.5 text-sm text-pitch-green">
