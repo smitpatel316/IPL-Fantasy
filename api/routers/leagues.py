@@ -73,13 +73,28 @@ def create_league(body: schemas.LeagueCreate, con: sqlite3.Connection = Depends(
     return schemas.LeagueOut(**{k: league[k] for k in ("id", "name", "invite_code", "season", "status", "settings")})
 
 
+def _standings_sort_key(s: schemas.TeamStandingOut) -> tuple:
+    """Standings order, best first (P4-W27).
+
+    Mirrors the tiebreak chain in engine/matchup_scheduler.standings()
+    (wins desc, losses asc, points-for desc) with ties desc in between
+    (a tie outranks a loss): the scheduler's later steps — head-to-head
+    win% among the tied group and its seeded coin-flip — are not
+    derivable from this endpoint's per-team aggregates, and the
+    playoffs projection's final fallback (team id desc) would make
+    full ties look arbitrary on the dashboard, so full ties here fall
+    back to team name asc (then team id, for determinism)."""
+    return (-s.wins, s.losses, -s.ties, -s.points_for,
+            s.team_name.casefold(), s.team_id)
+
+
 @router.get("/{league_id}", response_model=schemas.LeagueDetailOut)
 def get_league_detail(league_id: int, con: sqlite3.Connection = Depends(get_db)):
     league = get_league(con, league_id)
     standings = []
     for t in con.execute(
         """SELECT t.*, u.name AS owner_name FROM teams t
-           LEFT JOIN users u ON u.id = t.owner_id WHERE t.league_id = ? ORDER BY t.name""",
+           LEFT JOIN users u ON u.id = t.owner_id WHERE t.league_id = ?""",
         (league_id,),
     ):
         # W-L-T derives from finalized matchups; scaffold has none final yet.
@@ -100,6 +115,10 @@ def get_league_detail(league_id: int, con: sqlite3.Connection = Depends(get_db))
                 claimed=bool(t["claim_code"]),
             )
         )
+    # P4-W27: rank by record, not alphabet — the web dashboard renders
+    # rows (rank numbers, playoff highlighting/cut line, and the
+    # my-matchup strip's default team = standings[0]) in this order.
+    standings.sort(key=_standings_sort_key)
     return schemas.LeagueDetailOut(
         id=league["id"], name=league["name"], invite_code=league["invite_code"],
         season=league["season"], status=league["status"], settings=league["settings"],
