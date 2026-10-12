@@ -29,6 +29,10 @@ CREATE TABLE IF NOT EXISTS teams (
     owner_id        INTEGER REFERENCES users(id),
     name            TEXT NOT NULL,
     faab_remaining  INTEGER NOT NULL DEFAULT 100,
+    -- P4-W18: per-team claim code (lightweight identity). NULL = the
+    -- team is unclaimed and mutations stay honor-system; once set,
+    -- team-scoped mutations must present the code.
+    claim_code      TEXT,
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE (league_id, name)
 );

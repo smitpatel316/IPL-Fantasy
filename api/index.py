@@ -22,7 +22,7 @@ from fastapi.responses import JSONResponse  # noqa: E402
 from api import draft_ws, schemas  # noqa: E402
 from api.constants import SANDBOX_LEAGUE_NAME, SCORING_TABLE_VERSION  # noqa: E402
 from api.database import init_db  # noqa: E402
-from api.routers import admin, drafts, leagues, lineups, matchups, players, trades, waivers  # noqa: E402
+from api.routers import admin, drafts, identity, leagues, lineups, matchups, players, trades, waivers  # noqa: E402
 from api.sandbox import seed_if_empty  # noqa: E402
 
 APP_VERSION = "0.1.0-scaffold"
@@ -103,6 +103,7 @@ def health():
 
 app.include_router(leagues.router, prefix="/api/leagues", tags=["leagues"])
 app.include_router(lineups.router, prefix="/api", tags=["lineups"])
+app.include_router(identity.router, prefix="/api", tags=["identity"])
 app.include_router(drafts.router, prefix="/api/drafts", tags=["drafts"])
 app.include_router(players.router, prefix="/api/players", tags=["players"])
 app.include_router(waivers.router, prefix="/api/waivers", tags=["waivers"])

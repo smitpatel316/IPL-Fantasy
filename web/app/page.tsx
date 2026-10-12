@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { setTeamClaim } from "@/lib/identity";
 import { ApiError } from "@/lib/types";
 import { Card, Badge, ErrorBox } from "@/components/ui";
 
@@ -77,7 +78,9 @@ export default function Home() {
     e.preventDefault();
     setErr("");
     try {
-      await api.joinLeague(joinId, code, teamName, owner);
+      const team = await api.joinLeague(joinId, code, teamName, owner);
+      // Joining auto-claims the team (P4-W18): keep the code in this browser.
+      if (team.claim_code) setTeamClaim(team.id, team.claim_code);
       router.push(`/league/${joinId}`);
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "join failed");

@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from .. import schemas, services
 from ..constants import FAAB_BUDGET
 from ..database import get_db
-from . import get_league, get_team, row_dict
+from . import get_league, get_team, new_claim_code, row_dict
 
 router = APIRouter()
 
@@ -81,6 +81,7 @@ def get_league_detail(league_id: int, con: sqlite3.Connection = Depends(get_db))
                 team_id=t["id"], team_name=t["name"], owner_name=t["owner_name"],
                 wins=w[0] or 0, losses=w[1] or 0, ties=w[2] or 0,
                 points_for=w[3] or 0.0, faab_remaining=t["faab_remaining"],
+                claimed=bool(t["claim_code"]),
             )
         )
     return schemas.LeagueDetailOut(
@@ -98,10 +99,15 @@ def join_league(league_id: int, body: schemas.JoinLeagueIn, con: sqlite3.Connect
     if league["status"] != "setup":
         raise HTTPException(409, f"league is {league['status']}; joins closed")
     owner = con.execute("INSERT INTO users (name) VALUES (?)", (body.owner_name,)).lastrowid
+    # Joining auto-claims the team for its creator (P4-W18): the claim
+    # code is returned in this response only, and gates the team's
+    # mutations from now on.
+    code = new_claim_code()
     try:
         cur = con.execute(
-            "INSERT INTO teams (league_id, owner_id, name, faab_remaining) VALUES (?, ?, ?, ?)",
-            (league_id, owner, body.team_name, FAAB_BUDGET),
+            "INSERT INTO teams (league_id, owner_id, name, faab_remaining, claim_code)"
+            " VALUES (?, ?, ?, ?, ?)",
+            (league_id, owner, body.team_name, FAAB_BUDGET, code),
         )
     except sqlite3.IntegrityError:
         raise HTTPException(409, f"team name '{body.team_name}' taken in this league")
@@ -110,6 +116,7 @@ def join_league(league_id: int, body: schemas.JoinLeagueIn, con: sqlite3.Connect
     return schemas.TeamOut(
         id=team["id"], league_id=team["league_id"], name=team["name"],
         owner_name=team["owner_name"], faab_remaining=team["faab_remaining"],
+        claimed=True, claim_code=code,
     )
 
 
@@ -125,6 +132,7 @@ def list_teams(league_id: int, con: sqlite3.Connection = Depends(get_db)):
         out.append(schemas.TeamOut(
             id=t["id"], league_id=t["league_id"], name=t["name"],
             owner_name=t["owner_name"], faab_remaining=t["faab_remaining"],
+            claimed=bool(t["claim_code"]),
         ))
     return out
 

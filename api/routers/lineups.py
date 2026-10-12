@@ -3,13 +3,13 @@ the weekly-lock deadline enforcement is the P2-L2 seam (marked below)."""
 
 import sqlite3
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from .. import schemas
 from ..constants import STARTER_SLOTS, TOTAL_WEEKS
 from ..database import get_db
 from ..validation import LineupError, validate_lineup
-from . import get_team, player_roles_map
+from . import get_team, player_roles_map, require_team_actor
 
 router = APIRouter()
 
@@ -17,8 +17,10 @@ TRACK = "P2-L2"
 
 
 @router.put("/teams/{team_id}/lineup", response_model=schemas.LineupOut)
-def set_lineup(team_id: int, body: schemas.LineupSet, con: sqlite3.Connection = Depends(get_db)):
-    team = get_team(con, team_id)
+def set_lineup(team_id: int, body: schemas.LineupSet, request: Request,
+               con: sqlite3.Connection = Depends(get_db)):
+    # P4-W18: a claimed team requires its claim code to be set by anyone else.
+    team = require_team_actor(con, team_id, request)
     if not 1 <= body.week_no <= TOTAL_WEEKS:
         raise HTTPException(422, f"week_no must be 1..{TOTAL_WEEKS}")
 

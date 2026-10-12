@@ -42,6 +42,7 @@ export interface TeamStandingOut {
   ties: number;
   points_for: number;
   faab_remaining: number;
+  claimed: boolean;
 }
 
 export interface LeagueDetailOut extends LeagueOut {
@@ -54,6 +55,13 @@ export interface TeamOut {
   name: string;
   owner_name: string | null;
   faab_remaining: number;
+  claimed: boolean;
+  claim_code?: string | null; // only on join + claim responses
+}
+
+export interface ClaimOut {
+  team_id: number;
+  claim_code: string;
 }
 
 export type PlayerRole = "WK" | "BAT" | "AR" | "BOWL";

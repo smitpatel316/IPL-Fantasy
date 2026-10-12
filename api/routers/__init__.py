@@ -1,9 +1,18 @@
 """Shared router helpers: row mapping, 404s, league lookups."""
 
+import hmac
 import json
+import secrets
 import sqlite3
+import string
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
+
+
+def new_claim_code() -> str:
+    """A fresh per-team claim code (P4-W18)."""
+    alphabet = string.ascii_uppercase + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(10))
 
 
 def row_dict(row: sqlite3.Row) -> dict:
@@ -28,6 +37,24 @@ def get_team(con: sqlite3.Connection, team_id: int) -> dict:
     if not row:
         raise HTTPException(404, f"team {team_id} not found")
     return row_dict(row)
+
+
+def require_team_actor(con: sqlite3.Connection, team_id: int, request: Request) -> dict:
+    """Lightweight team identity (P4-W18): once a team is CLAIMED (has a
+    claim code), team-scoped mutations must present that code in the
+    X-Team-Claim header. Unclaimed teams stay honor-system so existing
+    leagues keep working until their managers claim them."""
+    team = get_team(con, team_id)
+    code = team.get("claim_code")
+    if code:
+        sent = request.headers.get("x-team-claim", "")
+        if not hmac.compare_digest(sent, code):
+            raise HTTPException(
+                403,
+                f"team '{team['name']}' is claimed — its claim code is "
+                "required to act for it (X-Team-Claim header)",
+            )
+    return team
 
 
 def player_roles_map(con: sqlite3.Connection, season: str = "2027") -> dict[int, dict]:
