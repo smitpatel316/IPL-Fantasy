@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import { useLeague } from "@/lib/league-context";
 import { ApiError, type LineupOut, type MatchupOut, type PlayerOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { ScrollHint } from "@/components/ScrollHint";
@@ -136,6 +137,7 @@ function MatchupDetail({
   matchup: MatchupOut;
   onClose: () => void;
 }) {
+  const { leagueId } = useLeague();
   const [players, setPlayers] = useState<Map<number, PlayerOut>>(new Map());
   const [err, setErr] = useState("");
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -143,7 +145,7 @@ function MatchupDetail({
   useEffect(() => {
     let live = true;
     api
-      .listPlayers({ league_id: 1 })
+      .listPlayers({ league_id: leagueId })
       .then((list) => {
         if (live) setPlayers(new Map(list.map((p) => [p.id, p])));
       })
@@ -153,7 +155,7 @@ function MatchupDetail({
     return () => {
       live = false;
     };
-  }, []);
+  }, [leagueId]);
 
   const close = useCallback(onClose, [onClose]);
 
@@ -216,6 +218,7 @@ function MatchupDetail({
 }
 
 export default function MatchupPage() {
+  const { leagueId } = useLeague();
   const [matchups, setMatchups] = useState<MatchupOut[]>([]);
   const [week, setWeek] = useState(1);
   const [err, setErr] = useState("");
@@ -223,10 +226,10 @@ export default function MatchupPage() {
 
   useEffect(() => {
     api
-      .listMatchups(1, week)
+      .listMatchups(leagueId, week)
       .then(setMatchups)
       .catch((e) => setErr(e instanceof ApiError ? e.message : "load failed"));
-  }, [week]);
+  }, [leagueId, week]);
 
   return (
     <div>

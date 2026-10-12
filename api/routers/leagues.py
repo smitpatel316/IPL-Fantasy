@@ -43,6 +43,22 @@ def _default_settings() -> dict:
     }
 
 
+@router.get("", response_model=list[schemas.LeagueSummaryOut])
+def list_leagues(con: sqlite3.Connection = Depends(get_db)):
+    """All leagues (id/name/season/status/team count) — powers the web
+    league switcher (P4-W7)."""
+    return [
+        schemas.LeagueSummaryOut(
+            id=r["id"], name=r["name"], season=r["season"], status=r["status"],
+            team_count=r["team_count"],
+        )
+        for r in con.execute(
+            "SELECT l.*, (SELECT COUNT(*) FROM teams t WHERE t.league_id = l.id)"
+            " AS team_count FROM leagues l ORDER BY l.id"
+        )
+    ]
+
+
 @router.post("", response_model=schemas.LeagueOut)
 def create_league(body: schemas.LeagueCreate, con: sqlite3.Connection = Depends(get_db)):
     owner = con.execute("INSERT INTO users (name) VALUES (?)", (body.commissioner_name,)).lastrowid

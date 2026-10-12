@@ -35,6 +35,14 @@ class LeagueOut(BaseModel):
     settings: dict[str, Any]
 
 
+class LeagueSummaryOut(BaseModel):
+    id: int
+    name: str
+    season: str
+    status: str
+    team_count: int
+
+
 class LeagueDetailOut(LeagueOut):
     standings: list["TeamStandingOut"]
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
+import { useLeague } from "@/lib/league-context";
 import { ApiError, type PlayerOut, type TeamOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ const ROLE_BADGE: Record<string, string> = {
 };
 
 export default function PlayersPage() {
+  const { leagueId } = useLeague();
   const [players, setPlayers] = useState<PlayerOut[]>([]);
   const [teams, setTeams] = useState<TeamOut[]>([]);
   const [err, setErr] = useState("");
@@ -28,8 +30,8 @@ export default function PlayersPage() {
     setErr("");
     try {
       const [ps, ts] = await Promise.all([
-        api.listPlayers({ league_id: 1, role: role || undefined, q: q || undefined }),
-        api.listTeams(1).catch(() => [] as TeamOut[]),
+        api.listPlayers({ league_id: leagueId, role: role || undefined, q: q || undefined }),
+        api.listTeams(leagueId).catch(() => [] as TeamOut[]),
       ]);
       setPlayers(ps);
       setTeams(ts);
@@ -43,7 +45,7 @@ export default function PlayersPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [leagueId]);
 
   const teamName = useMemo(() => new Map(teams.map((t) => [t.id, t.name])), [teams]);
   const freeAgents = useMemo(() => players.filter((p) => !p.owned_by_team_id).length, [players]);

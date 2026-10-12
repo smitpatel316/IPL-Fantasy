@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, draftWsUrl } from "@/lib/api";
+import { useLeague } from "@/lib/league-context";
 import { ApiError, type DraftRoomState, type LeagueDetailOut, type PlayerOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { DraftClock } from "@/components/DraftClock";
@@ -49,13 +50,19 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
   const [roleFilter, setRoleFilter] = useState<(typeof ROLE_FILTERS)[number]>("ALL");
   const wsRef = useRef<WebSocket | null>(null);
   const feedKey = useRef(0);
+  const { setLeagueId: setCurrentLeague } = useLeague();
 
   // P3-A6: schedule-aware nudges — games per IPL team for the chosen week.
   const sched = useScheduleBadges(leagueId ?? "", 1);
 
   useEffect(() => {
-    params.then((p) => setLeagueId(p.id));
-  }, [params]);
+    params.then((p) => {
+      setLeagueId(p.id);
+      // Viewing a league's draft room makes it the current league (P4-W7).
+      const n = Number(p.id);
+      if (Number.isFinite(n) && n > 0) setCurrentLeague(n);
+    });
+  }, [params, setCurrentLeague]);
 
   // Load league + existing draft + board.
   useEffect(() => {
