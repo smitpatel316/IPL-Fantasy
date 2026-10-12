@@ -852,6 +852,8 @@ def run_waivers(con: sqlite3.Connection, league_id: int, week_no: int) -> list[d
         " AND week_no = ? AND status = 'pending'",
         (league_id, week_no),
     ).fetchone()[0]
+    if pending == 0:
+        return []
     eng = _revive_waiver(con, league_id)
     # D8 re-check at run time (P4-W30, mirroring the trade settle
     # re-check in _settle_trades): rosters can change between bid and
