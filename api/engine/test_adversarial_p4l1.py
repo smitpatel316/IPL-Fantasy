@@ -38,7 +38,7 @@ from api.engine.roster_service import (
     ILIneligible, LineupLocked, LineupService,
 )
 from api.engine.trade_engine import (
-    REVIEW_WINDOW_SECS, InvalidTradeState, TradeEngine,
+    REVIEW_WINDOW_SECS, InvalidTradeState, TradeEngine, VetoNotAllowed,
 )
 from api.engine.waiver_engine import (
     OverBudget, WaiverEngine, WeekAlreadyRun,
@@ -150,29 +150,32 @@ def _trade_eng(n_teams=6, roster_size=14):
 
 class TestTradeAdversarial(unittest.TestCase):
 
-    def test_veto_at_exact_review_deadline_counts_execute_waits(self):
+    def test_review_deadline_belongs_to_execute_not_veto(self):
         # The review deadline instant must belong to exactly one side.
-        # Consistent with the proposal TTL (accept AT expires_at is
-        # legal; expiry is strictly after), the window protects the
-        # vetoers through review_until inclusive: a veto cast at
-        # exactly review_until counts, and execute at that same
-        # instant must still refuse.
+        # The shipped system processes trades AT review_until (engine
+        # execute refuses only strictly before it; the API settle path
+        # fires at >= review_until), so the window is [accepted_at,
+        # review_until): a veto cast at exactly review_until is too
+        # late, and execute at that instant succeeds. Pre-fix, veto
+        # also accepted the boundary instant, so a veto and an execute
+        # could both "win" at the same timestamp. Vetoes strictly
+        # inside the window still count and can kill the trade.
         eng = _trade_eng()
         t = eng.propose("t1", "t2", ["p1_0"], ["p2_0"], week=3, now=NOW)
         eng.accept(t["id"], "t2", now=NOW)
         review_until = NOW + REVIEW_WINDOW_SECS
-        eng.veto(t["id"], "t3", now=review_until)
-        eng.veto(t["id"], "t4", now=review_until)  # threshold 2 of 6 teams
+        eng.veto(t["id"], "t3", now=review_until - 2)
+        eng.veto(t["id"], "t4", now=review_until - 1)  # threshold 2 of 6
         tr = eng.get_trade(t["id"])
         self.assertEqual(tr["status"], "vetoed")
-        self.assertEqual(tr["decided_at"], review_until)
+        self.assertEqual(tr["decided_at"], review_until - 1)
 
         eng2 = _trade_eng()
         t2 = eng2.propose("t1", "t2", ["p1_0"], ["p2_0"], week=3, now=NOW)
         eng2.accept(t2["id"], "t2", now=NOW)
-        with self.assertRaises(InvalidTradeState):
-            eng2.execute(t2["id"], now=review_until)
-        done = eng2.execute(t2["id"], now=review_until + 1)
+        with self.assertRaises(VetoNotAllowed):
+            eng2.veto(t2["id"], "t3", now=review_until)
+        done = eng2.execute(t2["id"], now=review_until)
         self.assertEqual(done["status"], "executed")
 
     def test_execute_second_trade_for_traded_player_fails_atomically(self):
