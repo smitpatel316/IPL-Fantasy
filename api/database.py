@@ -42,6 +42,13 @@ def init_db() -> None:
     schema = SCHEMA_PATH.read_text()
     with connect() as con:
         con.executescript(schema)
+        # P4-W4: player_roles.status (IL-eligibility designation) predates
+        # its schema entry — the 2026 demo migration added it ad hoc on
+        # the Pi. Add it wherever it's still missing.
+        cols = {r["name"] for r in con.execute("PRAGMA table_info(player_roles)")}
+        if "status" not in cols:
+            con.execute("ALTER TABLE player_roles ADD COLUMN status TEXT")
+            con.commit()
     log.info(f"db ready at {db_path()}")
 
 

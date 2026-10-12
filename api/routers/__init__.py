@@ -31,16 +31,29 @@ def get_team(con: sqlite3.Connection, team_id: int) -> dict:
 
 
 def player_roles_map(con: sqlite3.Connection, season: str = "2027") -> dict[int, dict]:
-    """player_id -> {role, is_overseas, ipl_team_code} for lineup validation."""
+    """player_id -> {role, is_overseas, ipl_team_code, status, il_eligible}.
+
+    IL eligibility (D7, P4-W4): a player is IL-eligible when their
+    curated status designates them out ('retired' | 'injured' | 'out' —
+    i.e. any status other than NULL/'active'): they have missed or are
+    expected to miss a game. The status column is read defensively —
+    DBs created before it existed simply have nobody eligible.
+    """
+    cols = {r["name"] for r in con.execute("PRAGMA table_info(player_roles)")}
+    status_expr = "status" if "status" in cols else "NULL AS status"
     out: dict[int, dict] = {}
     for r in con.execute(
-        "SELECT player_id, role, is_overseas, ipl_team_code FROM player_roles WHERE season = ?",
+        f"SELECT player_id, role, is_overseas, ipl_team_code, {status_expr}"
+        " FROM player_roles WHERE season = ?",
         (season,),
     ):
+        status = r["status"]
         out[r["player_id"]] = {
             "role": r["role"],
             "is_overseas": bool(r["is_overseas"]),
             "ipl_team_code": r["ipl_team_code"],
+            "status": status,
+            "il_eligible": bool(status) and status.strip().lower() != "active",
         }
     return out
 
