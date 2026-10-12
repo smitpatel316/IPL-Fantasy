@@ -13,6 +13,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 |---|---|---|
 | `GET /api/health` | live | `{status, version, sandbox, scoring_table}` |
 | `POST /api/leagues` | live | `{name, commissioner_name}` → league + invite_code |
+| `GET /api/leagues` | **live (P4-W7)** | league summaries (id, name, season, status, team_count) for the web league switcher |
 | `GET /api/leagues/{id}` | live | league + settings + standings |
 | `POST /api/leagues/{id}/join` | live | `{invite_code, team_name, owner_name}` |
 | `GET /api/leagues/{id}/teams` | live | |

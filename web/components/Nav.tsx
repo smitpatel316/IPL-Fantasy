@@ -1,21 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Trophy, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const LINKS = [
-  { href: "/league/1", label: "League", match: "league" },
-  { href: "/draft-room/1", label: "Draft", match: "draft-room" },
-  { href: "/lineup", label: "Lineup", match: "lineup" },
-  { href: "/players", label: "Players", match: "players" },
-  { href: "/waivers", label: "Waivers", match: "waivers" },
-  { href: "/trades", label: "Trades", match: "trades" },
-  { href: "/matchup", label: "Matchup", match: "matchup" },
-  { href: "/playoffs", label: "Playoffs", match: "playoffs" },
-];
+import { api } from "@/lib/api";
+import { useLeague } from "@/lib/league-context";
+import type { LeagueSummaryOut } from "@/lib/types";
 
 function Brand({ onClick }: { onClick?: () => void }) {
   return (
@@ -33,10 +25,55 @@ function Brand({ onClick }: { onClick?: () => void }) {
 
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const { leagueId, setLeagueId } = useLeague();
+  const [leagues, setLeagues] = useState<LeagueSummaryOut[]>([]);
+
+  useEffect(() => {
+    api.listLeagues().then(setLeagues).catch(() => {});
+  }, []);
+
+  const LINKS = [
+    { href: `/league/${leagueId}`, label: "League", match: "league" },
+    { href: `/draft-room/${leagueId}`, label: "Draft", match: "draft-room" },
+    { href: "/lineup", label: "Lineup", match: "lineup" },
+    { href: "/players", label: "Players", match: "players" },
+    { href: "/waivers", label: "Waivers", match: "waivers" },
+    { href: "/trades", label: "Trades", match: "trades" },
+    { href: "/matchup", label: "Matchup", match: "matchup" },
+    { href: "/playoffs", label: "Playoffs", match: "playoffs" },
+  ];
 
   const isActive = (match: string) =>
     pathname === `/${match}` || pathname.startsWith(`/${match}/`);
+
+  /** Switch the current league; on a league-scoped route, navigate to
+   *  the same view for the newly selected league. */
+  function switchLeague(id: number) {
+    setLeagueId(id);
+    const m = pathname.match(/^\/(league|draft-room)\/\d+/);
+    if (m) router.push(`/${m[1]}/${id}`);
+  }
+
+  const switcher = (
+    <label className="flex items-center gap-2 text-xs text-zinc-500">
+      <span className="hidden font-semibold uppercase tracking-wide xl:inline">League</span>
+      <select
+        aria-label="Current league"
+        className="max-w-44 rounded-lg border border-slate-700 bg-midnight px-2 py-1.5 text-[13px] text-white focus:border-trophy-gold focus:outline-none"
+        value={leagueId}
+        onChange={(e) => switchLeague(Number(e.target.value))}
+      >
+        {leagues.length === 0 && <option value={leagueId}>League {leagueId}</option>}
+        {leagues.map((l) => (
+          <option key={l.id} value={l.id}>
+            {l.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 
   return (
     <header className="sticky top-0 z-40 border-b hairline bg-ink-950/85 backdrop-blur-md">
@@ -62,7 +99,8 @@ export default function Nav() {
           ))}
         </nav>
 
-        <div className="ml-auto hidden items-center lg:flex">
+        <div className="ml-auto hidden items-center gap-3 lg:flex">
+          {switcher}
           <span className="badge-gold">IPL 2027</span>
         </div>
 
@@ -97,7 +135,8 @@ export default function Nav() {
               </Link>
             ))}
           </div>
-          <div className="mt-3 flex justify-center">
+          <div className="mt-3 flex items-center justify-center gap-3">
+            {switcher}
             <span className="badge-gold">IPL 2027 Season</span>
           </div>
         </nav>

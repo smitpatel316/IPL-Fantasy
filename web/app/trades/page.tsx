@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
+import { useLeague } from "@/lib/league-context";
 import { ApiError, type PlayerOut, type TeamOut, type TradeOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -133,6 +134,7 @@ function TradeCard({
 }
 
 export default function TradesPage() {
+  const { leagueId } = useLeague();
   const [trades, setTrades] = useState<TradeOut[]>([]);
   const [teams, setTeams] = useState<TeamOut[]>([]);
   const [players, setPlayers] = useState<PlayerOut[]>([]);
@@ -156,14 +158,14 @@ export default function TradesPage() {
     setErr("");
     try {
       const [ts, ps, trs] = await Promise.all([
-        api.listTeams(1),
-        api.listPlayers({ league_id: 1 }),
-        api.listTrades(1),
+        api.listTeams(leagueId),
+        api.listPlayers({ league_id: leagueId }),
+        api.listTrades(leagueId),
       ]);
       setTeams(ts);
       setPlayers(ps);
       setTrades(trs);
-      if (teamId == null && ts.length > 0) setTeamId(ts[0].id);
+      if (!ts.some((t) => t.id === teamId)) setTeamId(ts[0]?.id ?? null);
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "load failed");
     } finally {
@@ -174,7 +176,7 @@ export default function TradesPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [leagueId]);
 
   const teamName = useMemo(() => new Map(teams.map((t) => [t.id, t.name])), [teams]);
   const playerName = useMemo(() => new Map(players.map((p) => [p.id, p.name])), [players]);
@@ -219,7 +221,7 @@ export default function TradesPage() {
     setSubmitting(true);
     try {
       const t = await api.proposeTrade({
-        league_id: 1,
+        league_id: leagueId,
         from_team_id: teamId,
         to_team_id: Number(partnerId),
         gives,

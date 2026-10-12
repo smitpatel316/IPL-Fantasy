@@ -44,6 +44,14 @@ export interface TeamStandingOut {
   faab_remaining: number;
 }
 
+export interface LeagueSummaryOut {
+  id: number;
+  name: string;
+  season: string;
+  status: string;
+  team_count: number;
+}
+
 export interface LeagueDetailOut extends LeagueOut {
   standings: TeamStandingOut[];
 }

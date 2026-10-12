@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
+import { useLeague } from "@/lib/league-context";
 import { ApiError, type PlayerOut, type TeamOut, type WaiverClaimOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { GameCountBadge, ScheduleWeekPicker, useScheduleBadges } from "@/components/ScheduleBadges";
@@ -31,6 +32,7 @@ const btnGhost =
   "rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed";
 
 export default function WaiversPage() {
+  const { leagueId } = useLeague();
   const [teams, setTeams] = useState<TeamOut[]>([]);
   const [teamId, setTeamId] = useState<number | null>(null);
   const [players, setPlayers] = useState<PlayerOut[]>([]);
@@ -75,11 +77,11 @@ export default function WaiversPage() {
     setLoading(true);
     setErr("");
     try {
-      const ts = await api.listTeams(1);
+      const ts = await api.listTeams(leagueId);
       setTeams(ts);
-      const sel = teamId ?? ts[0]?.id ?? null;
+      const sel = ts.some((t) => t.id === teamId) ? teamId : (ts[0]?.id ?? null);
       if (sel !== teamId) setTeamId(sel);
-      const ps = await api.listPlayers({ league_id: 1, role: role || undefined, q: q || undefined });
+      const ps = await api.listPlayers({ league_id: leagueId, role: role || undefined, q: q || undefined });
       setPlayers(ps);
       await loadClaims(sel);
     } catch (e) {
@@ -92,7 +94,7 @@ export default function WaiversPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [leagueId]);
 
   // Switching "Managing as" re-scopes the claims feed to that team.
   useEffect(() => {
@@ -128,7 +130,7 @@ export default function WaiversPage() {
     setSubmitting(true);
     try {
       await api.submitClaim({
-        league_id: 1,
+        league_id: leagueId,
         team_id: teamId,
         add_player_id: bidTarget.id,
         drop_player_id: Number(dropId),
@@ -145,7 +147,7 @@ export default function WaiversPage() {
   }
 
   // P3-A6: schedule-aware nudge — games per IPL team per fantasy week.
-  const sched = useScheduleBadges(1, 1);
+  const sched = useScheduleBadges(leagueId, 1);
 
   return (
     <div>

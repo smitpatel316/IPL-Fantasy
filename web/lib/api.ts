@@ -11,6 +11,7 @@ import type {
   HealthOut,
   LeagueDetailOut,
   LeagueOut,
+  LeagueSummaryOut,
   LineupOut,
   MatchupOut,
   NotImplementedOut,
@@ -54,6 +55,7 @@ export const api = {
   health: () => req<HealthOut>("/health"),
 
   // leagues
+  listLeagues: () => req<LeagueSummaryOut[]>("/leagues"),
   createLeague: (name: string, commissioner_name: string) =>
     req<LeagueOut>("/leagues", { method: "POST", body: JSON.stringify({ name, commissioner_name }) }),
   getLeague: (id: number | string) => req<LeagueDetailOut>(`/leagues/${id}`),

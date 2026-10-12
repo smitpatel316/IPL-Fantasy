@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
+import { useLeague } from "@/lib/league-context";
 import { ApiError, type PlayerOut, type TeamOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { ScrollHint } from "@/components/ScrollHint";
@@ -36,6 +37,7 @@ function playerSlot(slots: Record<string, number[]>, pid: number): string | null
 }
 
 export default function LineupPage() {
+  const { leagueId } = useLeague();
   const [teams, setTeams] = useState<TeamOut[]>([]);
   const [teamId, setTeamId] = useState<number | null>(null);
   const [week, setWeek] = useState(1);
@@ -50,19 +52,19 @@ export default function LineupPage() {
 
   useEffect(() => {
     api
-      .listTeams(1)
+      .listTeams(leagueId)
       .then((t) => {
         setTeams(t);
         if (t[0]) setTeamId(t[0].id);
       })
       .catch((e) => setErr(e instanceof ApiError ? e.message : "load failed"));
-  }, []);
+  }, [leagueId]);
 
   useEffect(() => {
     if (!teamId) return;
     setErr("");
     api
-      .listPlayers({ league_id: 1 })
+      .listPlayers({ league_id: leagueId })
       .then((ps) => setRoster(ps.filter((p) => p.owned_by_team_id === teamId)))
       .catch(() => {});
     // Prefill from the saved lineup for this team+week; when none is

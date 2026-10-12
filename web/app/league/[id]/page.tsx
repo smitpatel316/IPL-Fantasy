@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useLeague } from "@/lib/league-context";
 import { ApiError, type LeagueDetailOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -12,10 +13,16 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
   const [id, setId] = useState<string | null>(null);
   const [league, setLeague] = useState<LeagueDetailOut | null>(null);
   const [err, setErr] = useState("");
+  const { setLeagueId } = useLeague();
 
   useEffect(() => {
-    params.then((p) => setId(p.id));
-  }, [params]);
+    params.then((p) => {
+      setId(p.id);
+      // Viewing a league makes it the current league for every tab (P4-W7).
+      const n = Number(p.id);
+      if (Number.isFinite(n) && n > 0) setLeagueId(n);
+    });
+  }, [params, setLeagueId]);
 
   useEffect(() => {
     if (!id) return;
