@@ -41,6 +41,14 @@ FREEZE_SECS = 2 * 86400          # 2-day freeze for drops (D6)
 SEASON_BUDGET = 100             # $100 FAAB (D6)
 
 
+def _intify(key):
+    """Restore an int id after a JSON round-trip flattened it to a
+    string; leave non-numeric ids untouched (P4-W24)."""
+    if isinstance(key, str) and key.lstrip("-").isdigit():
+        return int(key)
+    return key
+
+
 # ---------------------------------------------------------------------------
 # Exceptions
 # ---------------------------------------------------------------------------
@@ -260,14 +268,19 @@ class WaiverEngine:
 
     @classmethod
     def from_dict(cls, state: dict, clock=None) -> "WaiverEngine":
-        eng = cls(state["rosters"], state["pool"],
-                  budget=state["budget"], clock=clock)
-        eng.remaining = dict(state["remaining"])
+        # Keys flattened by to_dict come back as strings after a JSON
+        # round-trip; restore ints for numeric ids so lookups by the
+        # live (int) ids hit the revived entries — non-numeric ids
+        # (engine tests use strings) pass through. P4-W24: this is the
+        # ONE place persisted keys are normalized.
+        eng = cls({_intify(t): r for t, r in state["rosters"].items()},
+                  state["pool"], budget=state["budget"], clock=clock)
+        eng.remaining = {_intify(t): v for t, v in state["remaining"].items()}
         for key, bids in state["bids"].items():
             tid, week_s = key.rsplit("|", 1)
-            eng._bids[(tid, int(week_s))] = {pid: dict(b)
-                                            for pid, b in bids.items()}
-        eng._frozen = dict(state["frozen"])
+            eng._bids[(_intify(tid), int(week_s))] = {
+                _intify(pid): dict(b) for pid, b in bids.items()}
+        eng._frozen = {_intify(p): v for p, v in state["frozen"].items()}
         eng._runs = {int(w): [dict(r) for r in res]
                      for w, res in state["runs"].items()}
         return eng

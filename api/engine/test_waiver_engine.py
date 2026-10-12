@@ -175,6 +175,25 @@ class TestJsonContract(unittest.TestCase):
         self.assertTrue(eng2.is_frozen("w0", now=NOW))
         self.assertEqual(eng2.get_run(1), eng.get_run(1))
 
+    def test_json_roundtrip_with_pending_bids_int_ids(self):
+        """P4-W24 regression: a bid persisted via JSON (the server
+        restart path) must revive with (int, int) bid keys and int
+        player ids — a str team id made the revived bid invisible to
+        int-id lookups, and the service layer's duplicate
+        re-normalization crashed on the tuple keys outright."""
+        teams = {9: list(range(1, 16)), 10: list(range(16, 31))}
+        eng = WaiverEngine(teams, [41, 42], budget=100, clock=lambda: NOW)
+        eng.submit_bid(9, 1, 41, 12, drop_player_id=3, now=NOW)
+        state = json.loads(json.dumps(eng.to_dict()))
+        eng2 = WaiverEngine.from_dict(state)
+        bids = eng2.get_bids(9, 1)
+        self.assertEqual(list(bids), [41])
+        self.assertEqual(bids[41]["amount"], 12)
+        res = eng2.run_week(1, [10, 9], now=NOW)
+        self.assertEqual(res[0]["winner"], 9)
+        self.assertIn(41, eng2.get_roster(9))
+        self.assertNotIn(3, eng2.get_roster(9))
+
 
 if __name__ == "__main__":
     unittest.main()

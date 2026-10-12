@@ -614,15 +614,11 @@ def _revive_waiver(con: sqlite3.Connection, league_id: int) -> WaiverEngine:
     else:
         eng = WaiverEngine.from_dict(state)
         # JSON round-trip leaves dict keys as strings; normalize to ints.
+        # Bid keys are NOT touched here — from_dict already restored
+        # them to (int, int) tuples (P4-W24: normalize exactly once;
+        # re-normalizing them here crashed on the tuple keys).
         eng._rosters = {int(k): list(v) for k, v in eng._rosters.items()}
         eng.remaining = {int(k): v for k, v in eng.remaining.items()}
-        bids = {}
-        for key, inner in eng._bids.items():
-            tid_s, week_s = key.rsplit("|", 1)
-            bids[(int(tid_s), int(week_s))] = {
-                int(pid): dict(b) for pid, b in inner.items()
-            }
-        eng._bids = bids
         eng._frozen = {int(k): v for k, v in eng._frozen.items()}
     _registry[("waiver", league_id)] = eng
     return eng
