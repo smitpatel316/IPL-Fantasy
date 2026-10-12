@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useLeague } from "@/lib/league-context";
 import { ApiError } from "@/lib/types";
 import type { PlayoffGameOut, PlayoffsOut } from "@/lib/types";
 import { Trophy, Medal, Swords } from "lucide-react";
@@ -101,15 +102,16 @@ function GameCard({
 }
 
 export default function PlayoffsPage() {
+  const { leagueId } = useLeague();
   const [data, setData] = useState<PlayoffsOut | null>(null);
   const [err, setErr] = useState("");
 
   useEffect(() => {
     api
-      .getPlayoffs(1)
+      .getPlayoffs(leagueId)
       .then(setData)
       .catch((e) => setErr(e instanceof ApiError ? e.message : "load failed"));
-  }, []);
+  }, [leagueId]);
 
   const seedChip = (teamId: number | null, fallback: string) => {
     if (teamId == null || !data) return fallback;
