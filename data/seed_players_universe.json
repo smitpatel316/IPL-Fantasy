@@ -71,7 +71,7 @@
   },
   {
     "name": "W Jacks",
-    "role": "BAT",
+    "role": "AR",
     "is_overseas": 1,
     "team": "MI",
     "pred": 59.31
@@ -764,7 +764,7 @@
   },
   {
     "name": "R Khan",
-    "role": "AR",
+    "role": "BOWL",
     "is_overseas": 1,
     "team": "GT",
     "pred": 87
