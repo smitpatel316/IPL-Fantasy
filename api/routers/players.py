@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query
 
 from .. import schemas
 from ..database import get_db
-from . import owned_map
+from . import get_league, owned_map
 
 router = APIRouter()
 
@@ -21,6 +21,7 @@ def list_players(
     q: Optional[str] = Query(None, description="name substring"),
     con: sqlite3.Connection = Depends(get_db),
 ):
+    get_league(con, league_id)  # 404 for an unknown league (P4-W10)
     owned = owned_map(con, league_id)
     sql = """SELECT p.id, p.name, p.season, pr.role, pr.is_overseas, pr.ipl_team_code,
                     (SELECT MIN(rank) FROM pre_draft_ranks r

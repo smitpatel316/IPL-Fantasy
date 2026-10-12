@@ -7,6 +7,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from .. import schemas
+from ..constants import TOTAL_WEEKS
 from ..database import get_db
 from . import get_league
 
@@ -14,7 +15,8 @@ router = APIRouter()
 
 
 @router.get("", response_model=list[schemas.MatchupOut])
-def list_matchups(league_id: int = Query(...), week_no: int = Query(...),
+def list_matchups(league_id: int = Query(...),
+                  week_no: int = Query(..., ge=1, le=TOTAL_WEEKS),
                   con: sqlite3.Connection = Depends(get_db)):
     get_league(con, league_id)
     out = []
