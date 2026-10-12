@@ -34,7 +34,9 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `GET /api/leagues/{id}/draft` | **live (P3-A3)** | league's most recent draft (404 if none) |
 | `PUT /api/teams/{id}/lineup` | live | `{week_no, slots}` — validates D7 slots + D8 overseas cap + IL eligibility (422 on violation; IL only for players whose curated `player_roles.status` marks them out — retired/injured/out); **P2-L2 seam**: weekly-lock deadline check goes here (marked in code) |
 | `GET /api/teams/{id}/lineup?week_no=` | live | when no lineup is saved for the week, carries the most recent earlier saved lineup forward (response flags `carried_over_from_week`; players no longer rostered are dropped from the prefill; nothing persists until a PUT) |
-| `GET /api/players?league_id=&season=&role=&team=&q=` | live | universe + roles + preseason_rank + owned_by_team_id |
+| `GET /api/players?league_id=&season=&role=&team=&q=` | live | universe + roles + preseason_rank + owned_by_team_id; P4-W19 adds `avg_points` (null until scoring lands) + `ownership_pct` (% of leagues rostered) |
+| `GET /api/players/{id}?league_id=` | **live (P4-W19)** | player detail: profile + owners across all leagues + match-by-match log from `player_match_stats` (empty until scoring lands) |
+>>>>>>> origin/ipl/web/player-detail
 | `POST /api/waivers/claim` | **live (P3-A2)** | `{league_id, team_id, add_player_id, drop_player_id?, bid}` — blind FAAB, budget enforced |
 | `GET /api/waivers/pending?league_id=&week_no=&team_id=` | live | pending claims for the week; blind (D6): pass team_id for that team's own claims with amounts — without it, amounts are sealed (bid=null) |
 | `GET /api/waivers/history?league_id=&week_no=` | **live (P4-W14)** | resolved claims (status != pending) for a league+week; bids are public record once the run resolves them |

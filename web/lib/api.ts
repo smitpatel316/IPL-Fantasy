@@ -18,6 +18,7 @@ import type {
   LineupOut,
   MatchupOut,
   NotImplementedOut,
+  PlayerDetailOut,
   PlayerOut,
   PlayoffsOut,
   RanksOut,
@@ -103,6 +104,8 @@ export const api = {
     );
     return req<PlayerOut[]>(`/players?${qs}`);
   },
+  getPlayer: (playerId: number | string, league_id: number) =>
+    req<PlayerDetailOut>(`/players/${playerId}?league_id=${league_id}`),
 
   // drafts
   getDraft: (id: number | string) => req<DraftOut>(`/drafts/${id}`),

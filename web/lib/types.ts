@@ -96,6 +96,32 @@ export interface PlayerOut {
   ipl_team_code: string | null;
   preseason_rank: number | null;
   owned_by_team_id: number | null;
+  avg_points: number | null;
+  ownership_pct: number | null;
+}
+
+export interface PlayerOwnerOut {
+  league_id: number;
+  league_name: string;
+  team_id: number;
+  team_name: string;
+}
+
+export interface PlayerMatchLogOut {
+  match_id: number;
+  week_no: number | null;
+  match_date_ist: string | null;
+  home_code: string | null;
+  away_code: string | null;
+  fantasy_points: number;
+  breakdown: Record<string, number>;
+}
+
+export interface PlayerDetailOut extends PlayerOut {
+  owners: PlayerOwnerOut[];
+  matches_played: number;
+  total_points: number;
+  match_log: PlayerMatchLogOut[];
 }
 
 export interface DraftOut {

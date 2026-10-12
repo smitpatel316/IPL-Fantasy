@@ -122,6 +122,34 @@ class PlayerOut(BaseModel):
     ipl_team_code: Optional[str]
     preseason_rank: Optional[int]
     owned_by_team_id: Optional[int]  # None = free agent
+    # P4-W19: None until scoring lands (no player_match_stats rows yet).
+    avg_points: Optional[float] = None
+    # Share of leagues (0-100) in which the player is rostered.
+    ownership_pct: Optional[float] = None
+
+
+class PlayerOwnerOut(BaseModel):
+    league_id: int
+    league_name: str
+    team_id: int
+    team_name: str
+
+
+class PlayerMatchLogOut(BaseModel):
+    match_id: int
+    week_no: Optional[int]
+    match_date_ist: Optional[str]
+    home_code: Optional[str]
+    away_code: Optional[str]
+    fantasy_points: int
+    breakdown: dict = {}
+
+
+class PlayerDetailOut(PlayerOut):
+    owners: list[PlayerOwnerOut] = []  # across every league
+    matches_played: int = 0
+    total_points: int = 0
+    match_log: list[PlayerMatchLogOut] = []
 
 
 # ---------- drafts ----------
