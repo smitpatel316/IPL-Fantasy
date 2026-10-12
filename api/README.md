@@ -15,6 +15,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `POST /api/leagues` | live | `{name, commissioner_name}` → league + invite_code |
 | `GET /api/leagues/{id}` | live | league + settings + standings |
 | `POST /api/leagues/{id}/join` | live | `{invite_code, team_name, owner_name}` |
+| `POST /api/leagues/{id}/roster-moves` · `GET /api/leagues/{id}/roster-moves` | **live (P4-W25)** | commissioner roster fiat: `{team_id, player_id, action: add\|drop, note}` — add enforces league-wide ownership + the 15-man cap; drop clears saved weekly lineups and refuses while the player is a pending claim's drop piece. Audited in `league_adjustments` (kind roster_add/roster_drop, sharing the P4-W15 table + player_id/player_name columns) |
 | `GET /api/leagues/{id}/teams` | live | |
 | `GET /api/leagues/{id}/schedule-nudges?week_no=` | **live (P3-A6)** | per-IPL-team game counts for a fantasy week; `weeks_available` + `week_start/end` + `source` provenance; powers the draft-room + waiver schedule badges (D10 option 4). Data: `api/schedule_games.py` importer (2026 Cricsheet fixture as dev stand-in; 2027 fixture swaps in ~Feb 2027, no re-architecture) |
 | `POST /api/leagues/{id}/draft/start` | **live (P3-A2)** | snake order (seeded shuffle), league → drafting, engine in `engine_state` |

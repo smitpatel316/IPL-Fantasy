@@ -90,6 +90,33 @@ def get_league_detail(league_id: int, con: sqlite3.Connection = Depends(get_db))
     )
 
 
+@router.post("/{league_id}/roster-moves", response_model=schemas.RosterMoveOut)
+def create_roster_move(league_id: int, body: schemas.RosterMoveCreate,
+                       con: sqlite3.Connection = Depends(get_db)):
+    """Commissioner add/drop by fiat with a mandatory audit note (P4-W25)."""
+    out = services.commissioner_roster_move(
+        con, league_id, body.team_id, body.player_id, body.action, body.note)
+    return schemas.RosterMoveOut(**out)
+
+
+@router.get("/{league_id}/roster-moves", response_model=list[schemas.RosterMoveOut])
+def list_roster_moves(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+    get_league(con, league_id)
+    return [
+        schemas.RosterMoveOut(
+            id=r["id"], league_id=r["league_id"], team_id=r["team_id"],
+            team_name=r["team_name"], kind=r["kind"], player_id=r["player_id"],
+            player_name=r["player_name"], note=r["note"],
+            created_at=r["created_at"])
+        for r in con.execute(
+            "SELECT a.*, t.name AS team_name FROM league_adjustments a"
+            " JOIN teams t ON t.id = a.team_id"
+            " WHERE a.league_id = ? AND a.kind IN ('roster_add', 'roster_drop')"
+            " ORDER BY a.id DESC LIMIT 50",
+            (league_id,))
+    ]
+
+
 @router.post("/{league_id}/join", response_model=schemas.TeamOut)
 def join_league(league_id: int, body: schemas.JoinLeagueIn, con: sqlite3.Connection = Depends(get_db)):
     league = get_league(con, league_id)

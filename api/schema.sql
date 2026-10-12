@@ -121,6 +121,20 @@ CREATE TABLE IF NOT EXISTS player_match_stats (
     UNIQUE (match_id, player_name)
 );
 
+-- Commissioner adjustments audit (P4-W15 FAAB + P4-W25 roster fiat).
+CREATE TABLE IF NOT EXISTS league_adjustments (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    league_id       INTEGER NOT NULL REFERENCES leagues(id) ON DELETE CASCADE,
+    team_id         INTEGER NOT NULL REFERENCES teams(id),
+    kind            TEXT NOT NULL DEFAULT 'faab',
+    faab_delta      INTEGER NOT NULL DEFAULT 0,
+    faab_after      INTEGER NOT NULL,
+    player_id       INTEGER REFERENCES players(id),
+    player_name     TEXT,
+    note            TEXT NOT NULL,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- status ∈ {pending,won,lost}
 CREATE TABLE IF NOT EXISTS waiver_claims (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,

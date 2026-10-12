@@ -970,6 +970,79 @@ def respond_trade(con: sqlite3.Connection, league_id: int, trade_id: int,
     return out
 
 
+def commissioner_roster_move(con: sqlite3.Connection, league_id: int,
+                             team_id: int, player_id: int, action: str,
+                             note: str) -> dict:
+    """Commissioner roster fiat (P4-W25): add/drop a player by decree,
+    with a mandatory audit note in league_adjustments.
+
+    Add respects league-wide ownership and the 15-man cap. Drop also
+    clears the player from the team's saved weekly lineups, and is
+    refused while the team has a pending waiver claim using this
+    player as its drop piece (the claim would strand mid-run — the
+    drop-freeze tangle the commissioner must resolve first). Engine
+    caches for the league are invalidated so waiver/trade engines
+    revive from the new rosters."""
+    get_league(con, league_id)
+    team = next((t for t in _teams(con, league_id) if t["id"] == team_id), None)
+    if team is None:
+        raise HTTPException(404, f"team {team_id} not found in league {league_id}")
+    prow = con.execute("SELECT name FROM players WHERE id = ?",
+                       (player_id,)).fetchone()
+    if not prow:
+        raise HTTPException(404, f"player {player_id} not found")
+    player_name = prow["name"]
+    if action == "add":
+        owner = owned_map(con, league_id).get(player_id)
+        if owner is not None:
+            raise HTTPException(
+                409, f"{player_name} is already rostered in this league "
+                     f"(team {owner})")
+        count = con.execute(
+            "SELECT COUNT(*) FROM roster_slots WHERE team_id = ? AND week_no IS NULL",
+            (team_id,)).fetchone()[0]
+        if count >= constants.ROSTER_SIZE:
+            raise HTTPException(
+                422, f"team already carries {constants.ROSTER_SIZE} players — "
+                     "drop someone first")
+        con.execute(
+            "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
+            " VALUES (?, ?, 'BN', NULL)", (team_id, player_id))
+        kind = "roster_add"
+    else:  # drop
+        on_roster = con.execute(
+            "SELECT 1 FROM roster_slots WHERE team_id = ? AND player_id = ?"
+            " AND week_no IS NULL", (team_id, player_id)).fetchone()
+        if not on_roster:
+            raise HTTPException(422, f"{player_name} is not on this team's roster")
+        pending = con.execute(
+            "SELECT COUNT(*) FROM waiver_claims WHERE team_id = ?"
+            " AND drop_player_id = ? AND status = 'pending'",
+            (team_id, player_id)).fetchone()[0]
+        if pending:
+            raise HTTPException(
+                409, f"{player_name} is the drop piece of a pending waiver "
+                     "claim for this team — resolve that claim first")
+        con.execute(
+            "DELETE FROM roster_slots WHERE team_id = ? AND player_id = ?",
+            (team_id, player_id))
+        kind = "roster_drop"
+    cur = con.execute(
+        "INSERT INTO league_adjustments (league_id, team_id, kind, faab_delta,"
+        " faab_after, player_id, player_name, note)"
+        " VALUES (?, ?, ?, 0, ?, ?, ?, ?)",
+        (league_id, team_id, kind, team["faab_remaining"], player_id,
+         player_name, note))
+    con.commit()
+    _registry.pop(("waiver", league_id), None)
+    _registry.pop(("trade", league_id), None)
+    row = con.execute(
+        "SELECT * FROM league_adjustments WHERE id = ?", (cur.lastrowid,)).fetchone()
+    out = dict(row)
+    out["team_name"] = team["name"]
+    return out
+
+
 def list_trades(con: sqlite3.Connection, league_id: int,
                 status: str | None = None) -> list[dict]:
     get_league(con, league_id)

@@ -35,6 +35,25 @@ class LeagueOut(BaseModel):
     settings: dict[str, Any]
 
 
+class RosterMoveCreate(BaseModel):
+    team_id: int
+    player_id: int
+    action: str = Field(pattern="^(add|drop)$")
+    note: str = Field(min_length=1, max_length=200)
+
+
+class RosterMoveOut(BaseModel):
+    id: int
+    league_id: int
+    team_id: int
+    team_name: str
+    kind: str  # roster_add | roster_drop
+    player_id: int
+    player_name: str
+    note: str
+    created_at: str
+
+
 class LeagueDetailOut(LeagueOut):
     standings: list["TeamStandingOut"]
 

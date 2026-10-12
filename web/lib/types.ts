@@ -48,6 +48,18 @@ export interface LeagueDetailOut extends LeagueOut {
   standings: TeamStandingOut[];
 }
 
+export interface RosterMoveOut {
+  id: number;
+  league_id: number;
+  team_id: number;
+  team_name: string;
+  kind: "roster_add" | "roster_drop";
+  player_id: number;
+  player_name: string;
+  note: string;
+  created_at: string;
+}
+
 export interface TeamOut {
   id: number;
   league_id: number;

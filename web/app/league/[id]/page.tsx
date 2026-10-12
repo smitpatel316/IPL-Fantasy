@@ -3,15 +3,23 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { ApiError, type LeagueDetailOut } from "@/lib/types";
+import { ApiError, type LeagueDetailOut, type PlayerOut, type RosterMoveOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { Trophy, Settings2, ArrowRight, Crown } from "lucide-react";
+import { Trophy, Settings2, ArrowRight, Crown, UserCog } from "lucide-react";
 
 export default function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState<string | null>(null);
   const [league, setLeague] = useState<LeagueDetailOut | null>(null);
   const [err, setErr] = useState("");
+  // P4-W25: commissioner roster-fiat section state.
+  const [players, setPlayers] = useState<PlayerOut[]>([]);
+  const [moves, setMoves] = useState<RosterMoveOut[]>([]);
+  const [rmTeam, setRmTeam] = useState<number | "">("");
+  const [rmPlayer, setRmPlayer] = useState<number | "">("");
+  const [rmAction, setRmAction] = useState<"add" | "drop">("add");
+  const [rmNote, setRmNote] = useState("");
+  const [rmMsg, setRmMsg] = useState("");
 
   useEffect(() => {
     params.then((p) => setId(p.id));
@@ -24,6 +32,41 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
       .then(setLeague)
       .catch((e) => setErr(e instanceof ApiError ? e.message : "load failed"));
   }, [id]);
+
+  async function loadMoves(lid: string) {
+    const [ps, ms] = await Promise.all([
+      api.listPlayers({ league_id: Number(lid) }).catch(() => [] as PlayerOut[]),
+      api.listRosterMoves(lid).catch(() => [] as RosterMoveOut[]),
+    ]);
+    setPlayers(ps);
+    setMoves(ms);
+  }
+
+  useEffect(() => {
+    if (!id) return;
+    loadMoves(id);
+  }, [id]);
+
+  async function submitMove(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id || rmTeam === "" || rmPlayer === "" || !rmNote.trim()) return;
+    setRmMsg("");
+    try {
+      await api.rosterMove(id, {
+        team_id: rmTeam, player_id: rmPlayer, action: rmAction, note: rmNote.trim(),
+      });
+      setRmMsg("Move recorded in the audit log.");
+      setRmNote("");
+      await loadMoves(id);
+    } catch (e) {
+      setRmMsg(e instanceof ApiError ? e.message : "move failed");
+    }
+  }
+
+  const rmPlayerOptions =
+    rmAction === "add"
+      ? players.filter((p) => p.owned_by_team_id == null)
+      : players.filter((p) => p.owned_by_team_id === rmTeam);
 
   if (err) return <div className="pt-8"><ErrorBox message={err} /></div>;
   if (!league)
@@ -151,6 +194,86 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
           </Link>
         </div>
       </div>
+
+      {/* P4-W25: commissioner roster fiat (audited) */}
+      <section className="mt-5 rounded-xl border border-slate-800 bg-midnight-soft p-5">
+        <h2 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
+          <UserCog className="h-4 w-4 text-zinc-500" /> Commissioner — roster moves
+        </h2>
+        <p className="mb-4 text-xs text-zinc-500">
+          Add or drop a player by fiat. Adds respect league-wide ownership and the 15-man cap;
+          drops also clear the player from saved lineups. Every move needs an audit note.
+        </p>
+        <form onSubmit={submitMove} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <select
+            aria-label="Team"
+            value={rmTeam}
+            onChange={(e) => setRmTeam(Number(e.target.value))}
+            className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-trophy-gold focus:outline-none"
+          >
+            <option value="">Team…</option>
+            {league.standings.map((s) => (
+              <option key={s.team_id} value={s.team_id}>
+                {s.team_name}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Action"
+            value={rmAction}
+            onChange={(e) => setRmAction(e.target.value as "add" | "drop")}
+            className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-trophy-gold focus:outline-none"
+          >
+            <option value="add">Add player</option>
+            <option value="drop">Drop player</option>
+          </select>
+          <select
+            aria-label="Player"
+            value={rmPlayer}
+            onChange={(e) => setRmPlayer(Number(e.target.value))}
+            className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-trophy-gold focus:outline-none"
+          >
+            <option value="">Player…</option>
+            {rmPlayerOptions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.role ?? "—"}, {p.ipl_team_code ?? "—"})
+              </option>
+            ))}
+          </select>
+          <input
+            aria-label="Audit note"
+            value={rmNote}
+            onChange={(e) => setRmNote(e.target.value)}
+            maxLength={200}
+            placeholder="Audit note (required)"
+            className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={rmTeam === "" || rmPlayer === "" || !rmNote.trim()}
+            className="rounded-lg bg-trophy-gold px-3 py-2 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-50"
+          >
+            Record move
+          </button>
+        </form>
+        {rmMsg && <p className="mt-2 text-xs text-pitch-green">{rmMsg}</p>}
+        {moves.length > 0 && (
+          <ul className="mt-4 space-y-1.5 border-t border-slate-800 pt-3 text-sm">
+            {moves.map((m) => (
+              <li key={m.id} className="flex flex-wrap items-baseline gap-x-2 text-zinc-400">
+                <span className={m.kind === "roster_add" ? "font-bold text-pitch-green" : "font-bold text-brick-red"}>
+                  {m.kind === "roster_add" ? "ADD" : "DROP"}
+                </span>
+                <span className="text-zinc-200">{m.player_name}</span>
+                <span>→ {m.team_name}</span>
+                <span className="text-xs text-zinc-600">
+                  {m.created_at} · “{m.note}”
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
