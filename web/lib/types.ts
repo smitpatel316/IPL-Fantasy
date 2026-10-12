@@ -222,6 +222,8 @@ export interface LineupOut {
   overseas_starters: number;
   valid: boolean;
   carried_over_from_week: number | null;
+  locked: boolean;
+  lock_at: string | null;
 }
 
 export interface WaiverRunResultOut {

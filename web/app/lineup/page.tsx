@@ -44,6 +44,8 @@ export default function LineupPage() {
   const [roster, setRoster] = useState<PlayerOut[]>([]);
   const [slots, setSlots] = useState<Record<string, number[]>>({});
   const [carriedFrom, setCarriedFrom] = useState<number | null>(null);
+  const [locked, setLocked] = useState(false);
+  const [lockAt, setLockAt] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [saving, setSaving] = useState(false);
@@ -74,10 +76,14 @@ export default function LineupPage() {
       .then((l) => {
         setSlots(l.slots ?? {});
         setCarriedFrom(l.carried_over_from_week ?? null);
+        setLocked(l.locked);
+        setLockAt(l.lock_at);
       })
       .catch(() => {
         setSlots({});
         setCarriedFrom(null);
+        setLocked(false);
+        setLockAt(null);
       });
   }, [teamId, week]);
 
@@ -103,6 +109,7 @@ export default function LineupPage() {
     try {
       const out = await api.setLineup(teamId, week, slots);
       setCarriedFrom(null);
+      setLockAt(out.lock_at);
       setMsg(`Lineup saved · ${out.overseas_starters}/${OVERSEAS_CAP} overseas starters`);
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "save failed");
@@ -198,7 +205,7 @@ export default function LineupPage() {
           </div>
           <button
             onClick={save}
-            disabled={saving || !teamId}
+            disabled={saving || !teamId || locked}
             className="ml-auto inline-flex items-center gap-2 rounded-lg bg-trophy-gold px-5 py-2 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
@@ -212,7 +219,21 @@ export default function LineupPage() {
         )}
       </div>
 
-      {carriedFrom != null && (
+      {locked ? (
+        <p className="mb-4 rounded-lg border border-brick-red/40 bg-brick-red/10 px-4 py-2.5 text-sm text-red-200">
+          Week {week} is locked — lineups lock at the week&apos;s first ball
+          {lockAt ? ` (${new Date(lockAt).toLocaleString()})` : ""}. This lineup can no
+          longer be changed.
+        </p>
+      ) : (
+        lockAt && (
+          <p className="mb-4 text-xs text-zinc-500">
+            Week {week} lineups lock at the first ball —{" "}
+            {new Date(lockAt).toLocaleString()}.
+          </p>
+        )
+      )}
+      {carriedFrom != null && !locked && (
         <p className="mb-4 rounded-lg border border-slate-800 bg-midnight-soft px-4 py-2.5 text-sm text-zinc-400">
           No lineup saved for week {week} yet — this is your week {carriedFrom} lineup carried
           forward. Review it and save to lock it in for week {week}.
