@@ -576,6 +576,9 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
                     );
                   })}
                 </ol>
+              </div>
+            </section>
+
             <section className={`${tab === "chat" ? "" : "hidden"} lg:block`} aria-label="Room chat">
               <div className="rounded-xl border border-slate-800 bg-midnight-soft/70 p-4">
                 <h2 className="mb-3 font-semibold text-white">Room chat</h2>
