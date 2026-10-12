@@ -23,6 +23,7 @@ import type {
   TeamOut,
   TradeOut,
   WaiverClaimOut,
+  WaiverRunResultOut,
 } from "./types";
 
 const BASE =
@@ -144,6 +145,11 @@ export const api = {
     ),
   claimsHistory: (league_id: number, week_no: number) =>
     req<WaiverClaimOut[]>(`/waivers/history?league_id=${league_id}&week_no=${week_no}`),
+  runWaivers: (league_id: number, week_no: number) =>
+    req<WaiverRunResultOut[]>(`/waivers/run?league_id=${league_id}&week_no=${week_no}`, {
+      method: "POST",
+    }),
+>>>>>>> origin/ipl/web/waiver-run-trigger
 
   // trades
   proposeTrade: (body: { league_id: number; from_team_id: number; to_team_id: number; gives: number[]; receives: number[] }) =>

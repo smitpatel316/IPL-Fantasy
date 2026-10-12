@@ -36,7 +36,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `POST /api/waivers/claim` | **live (P3-A2)** | `{league_id, team_id, add_player_id, drop_player_id?, bid}` — blind FAAB, budget enforced |
 | `GET /api/waivers/pending?league_id=&week_no=&team_id=` | live | pending claims for the week; blind (D6): pass team_id for that team's own claims with amounts — without it, amounts are sealed (bid=null) |
 | `GET /api/waivers/history?league_id=&week_no=` | **live (P4-W14)** | resolved claims (status != pending) for a league+week; bids are public record once the run resolves them |
-| `POST /api/waivers/run?league_id=&week_no=` | **live (P3-A2)** | blind-bid run; winners swap into the drop's roster/week-1 slot; FAAB deducted |
+| `POST /api/waivers/run?league_id=&week_no=` | **live (P3-A2)** | blind-bid run; winners swap into the drop's roster/week-1 slot; FAAB deducted. **Trigger (P4-W16)**: `api/waiver_scheduler.py` sweeps hourly and runs every in-season league-week whose configured run weekday (default Wed) 03:00 PT has passed and which still has pending claims; the waivers page also has a commissioner "Run waivers now" button. Ops alternative: cron this POST per league/week |
 | `POST /api/trades` | **live (P3-A2)** | `{league_id, from_team_id, to_team_id, gives[], receives[]}` — balanced N-for-N enforced |
 | `GET /api/trades?league_id=&status=` | live | filter by proposed/accepted/rejected/vetoed/expired; each trade carries `veto_count` + `proposed_at`/`accepted_at`/`vetoed_at`/`executed_at` (ISO UTC, null until the event happens) |
 | `POST /api/trades/{id}/accept|reject|veto` | **live (P3-A2)** | accept → review window → auto-execute (paired week-1 slot swap); veto by other teams |

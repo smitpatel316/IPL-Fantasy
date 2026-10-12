@@ -60,6 +60,8 @@ export default function WaiversPage() {
   const sorted = useMemo(() => [...teams].sort((a, b) => b.faab_remaining - a.faab_remaining), [teams]);
   const claimsWeek = claims[0]?.week_no;
   const historyWeek = history[0]?.week_no;
+  const [running, setRunning] = useState(false);
+  const [runMsg, setRunMsg] = useState("");
 
   // Blind FAAB (D6): the feed only ever shows the selected team's own
   // claims — rival bids stay sealed until the Wednesday run.
@@ -69,10 +71,29 @@ export default function WaiversPage() {
       return;
     }
     const weeks = await Promise.all(
-      WEEKS.map((w) => api.pendingClaims(1, w, forTeamId).catch(() => [] as WaiverClaimOut[]))
+      WEEKS.map((w) => api.pendingClaims(leagueId, w, forTeamId).catch(() => [] as WaiverClaimOut[]))
     );
     const latest = WEEKS.find((w, i) => weeks[i].length > 0);
     setClaims(latest != null ? weeks[WEEKS.indexOf(latest)] : []);
+  }
+
+  /** Commissioner manual trigger (P4-W16) — the scheduled run lives in
+   *  api/waiver_scheduler.py; this runs the same endpoint immediately. */
+  async function runNow() {
+    if (claimsWeek == null) return;
+    setRunning(true);
+    setRunMsg("");
+    setErr("");
+    try {
+      const results = await api.runWaivers(leagueId, claimsWeek);
+      const won = results.filter((r) => r.winner_team_id != null).length;
+      setRunMsg(`Waivers processed for week ${claimsWeek}: ${won} player(s) claimed.`);
+      await load();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "waiver run failed");
+    } finally {
+      setRunning(false);
+    }
   }
 
   async function load() {
@@ -316,9 +337,21 @@ export default function WaiversPage() {
         </div>
 
         <div>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-300">
-            Your claims{claimsWeek ? ` — week ${claimsWeek}` : ""}
-          </h2>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">
+              Your claims{claimsWeek ? ` — week ${claimsWeek}` : ""}
+            </h2>
+            <button
+              type="button"
+              disabled={running || claims.length === 0 || claimsWeek == null}
+              onClick={runNow}
+              className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-slate-700 disabled:opacity-50"
+              title="Commissioner: process this week's blind bids now instead of waiting for the scheduled run"
+            >
+              {running ? "Running…" : "Run waivers now"}
+            </button>
+          </div>
+          {runMsg && <p className="mb-3 text-xs text-pitch-green">{runMsg}</p>}
           {claims.length === 0 ? (
             <p className="text-sm text-slate-500">You have no bids in yet this week.</p>
           ) : (
