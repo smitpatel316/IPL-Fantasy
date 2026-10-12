@@ -51,6 +51,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
   const wsRef = useRef<WebSocket | null>(null);
   const feedKey = useRef(0);
   const { setLeagueId: setCurrentLeague } = useLeague();
+  const backfilledDraft = useRef<number | null>(null);
 
   // P3-A6: schedule-aware nudges — games per IPL team for the chosen week.
   const sched = useScheduleBadges(leagueId ?? "", 1);
@@ -120,6 +121,29 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
         if (msg.type === "state") {
           const st = msg as unknown as DraftRoomState;
           setSnap(st);
+          // Backfill the pick history once per draft (P4-W12): without
+          // this, joining mid-draft or refreshing shows an empty feed —
+          // the snapshot carries every pick made so far. The current
+          // message's own pick event (if any) is excluded here; it is
+          // pushed by the event handling below.
+          if (backfilledDraft.current !== st.draft.id) {
+            backfilledDraft.current = st.draft.id;
+            const eventPickNo = st.pick?.pick_no ?? Number.POSITIVE_INFINITY;
+            const history = (st.picks ?? [])
+              .filter((p) => p.player_id != null && p.pick_no < eventPickNo)
+              .sort((a, b) => b.pick_no - a.pick_no)
+              .slice(0, 40)
+              .map((p) => {
+                const nm = playerById.get(p.player_id ?? -1)?.name ?? `#${p.player_id}`;
+                const tm = st.draft.teams.find((t) => t.id === p.team_id)?.name ?? `team ${p.team_id}`;
+                return {
+                  key: `hist-${p.pick_no}`,
+                  text: `Pick ${p.pick_no} (R${p.round_no}): ${tm} drafted ${nm}`,
+                  auto: p.is_auto,
+                };
+              });
+            if (history.length > 0) setFeed((f) => [...f, ...history].slice(0, 40));
+          }
           const pick = st.pick;
           if (st.event === "pick" && pick) {
             const nm = playerById.get(pick.player_id ?? -1)?.name ?? `#${pick.player_id}`;
