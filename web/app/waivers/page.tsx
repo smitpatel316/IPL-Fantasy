@@ -37,6 +37,7 @@ export default function WaiversPage() {
   const [teamId, setTeamId] = useState<number | null>(null);
   const [players, setPlayers] = useState<PlayerOut[]>([]);
   const [claims, setClaims] = useState<WaiverClaimOut[]>([]);
+  const [history, setHistory] = useState<WaiverClaimOut[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState("");
@@ -58,6 +59,7 @@ export default function WaiversPage() {
   const teamName = useMemo(() => new Map(teams.map((t) => [t.id, t.name])), [teams]);
   const sorted = useMemo(() => [...teams].sort((a, b) => b.faab_remaining - a.faab_remaining), [teams]);
   const claimsWeek = claims[0]?.week_no;
+  const historyWeek = history[0]?.week_no;
 
   // Blind FAAB (D6): the feed only ever shows the selected team's own
   // claims — rival bids stay sealed until the Wednesday run.
@@ -84,6 +86,10 @@ export default function WaiversPage() {
       const ps = await api.listPlayers({ league_id: leagueId, role: role || undefined, q: q || undefined });
       setPlayers(ps);
       await loadClaims(sel);
+      // Results: resolved claims (won/lost) for the latest week that has any.
+      const histWeeks = await Promise.all(WEEKS.map((w) => api.claimsHistory(leagueId, w).catch(() => [] as WaiverClaimOut[])));
+      const hLatest = WEEKS.find((w, i) => histWeeks[i].length > 0);
+      setHistory(hLatest != null ? histWeeks[WEEKS.indexOf(hLatest)] : []);
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "load failed");
     } finally {
@@ -347,6 +353,40 @@ export default function WaiversPage() {
           <p className="mt-2 text-xs text-slate-500">
             Bids are blind — amounts stay sealed until the Wednesday run. Highest bid wins; ties go to the worse-standing team.
           </p>
+
+          {/* Resolved claims (P4-W14): won/lost stay visible after the run. */}
+          <h2 className="mb-3 mt-8 text-sm font-bold uppercase tracking-wider text-zinc-300">
+            Results{historyWeek ? ` — week ${historyWeek}` : ""}
+          </h2>
+          {history.length === 0 ? (
+            <p className="text-sm text-slate-500">No resolved claims yet — results land after the Wednesday run.</p>
+          ) : (
+            <ul className="space-y-2">
+              {history.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-slate-800 bg-midnight-soft px-4 py-3 text-sm"
+                >
+                  <span className="font-semibold text-white">{teamName.get(c.team_id) ?? `Team ${c.team_id}`}</span>
+                  <span className="inline-flex items-center gap-1.5 text-zinc-300">
+                    adds <span className="font-medium text-white">{playerName.get(c.add_player_id) ?? `#${c.add_player_id}`}</span>
+                  </span>
+                  {c.drop_player_id != null && (
+                    <span className="inline-flex items-center gap-1.5 text-zinc-500">
+                      <ArrowRight className="h-3.5 w-3.5" />
+                      drops {playerName.get(c.drop_player_id) ?? `#${c.drop_player_id}`}
+                    </span>
+                  )}
+                  <span className="ml-auto flex items-center gap-2">
+                    <span className="tabular-nums font-bold text-trophy-gold">${c.bid}</span>
+                    <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-bold uppercase", STATUS_STYLE[c.status] ?? "bg-slate-800 text-zinc-400")}>
+                      {c.status}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 

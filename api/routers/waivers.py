@@ -60,6 +60,28 @@ def pending_claims(league_id: int = Query(...),
     ]
 
 
+@router.get("/history", response_model=list[schemas.WaiverClaimOut])
+def claims_history(league_id: int = Query(...),
+                   week_no: int = Query(..., ge=1, le=TOTAL_WEEKS),
+                   con: sqlite3.Connection = Depends(get_db)):
+    """Resolved claims (won/lost) for a league+week (P4-W14). Pending
+    claims stay on /pending; once the run resolves a claim its bid is
+    public record, so amounts are returned as-is."""
+    get_league(con, league_id)
+    return [
+        schemas.WaiverClaimOut(
+            id=r["id"], week_no=r["week_no"], team_id=r["team_id"],
+            add_player_id=r["add_player_id"], drop_player_id=r["drop_player_id"],
+            bid=r["bid"], status=r["status"],
+        )
+        for r in con.execute(
+            "SELECT * FROM waiver_claims WHERE league_id = ? AND week_no = ? AND status != 'pending'"
+            " ORDER BY created_at",
+            (league_id, week_no),
+        )
+    ]
+
+
 @router.post("/run", response_model=list[schemas.WaiverRunResultOut])
 def run_waivers(league_id: int = Query(...), week_no: int = Query(...),
                 con: sqlite3.Connection = Depends(get_db)):

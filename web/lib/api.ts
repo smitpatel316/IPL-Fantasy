@@ -123,6 +123,8 @@ export const api = {
     req<WaiverClaimOut[]>(
       `/waivers/pending?league_id=${league_id}&week_no=${week_no}${team_id != null ? `&team_id=${team_id}` : ""}`
     ),
+  claimsHistory: (league_id: number, week_no: number) =>
+    req<WaiverClaimOut[]>(`/waivers/history?league_id=${league_id}&week_no=${week_no}`),
 
   // trades
   proposeTrade: (body: { league_id: number; from_team_id: number; to_team_id: number; gives: number[]; receives: number[] }) =>
