@@ -29,6 +29,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `WS /api/drafts/{id}/ws?team_id=` | **live (P3-A3)** | draft room: full `state` snapshot on connect; client `pick`/`dnd_add`/`dnd_remove`/`ping`; server broadcasts `state` (event `pick`/`clock_expired`/`dnd_updated`), `error`, `pong`; 1s clock sweeper auto-picks on expiry |
 | `POST /api/drafts/{id}/dnd` | **live (P3-A3)** | `{team_id, player_id}` — do-not-draft (live draft only); auto-pick skips, manual picks rejected |
 | `DELETE /api/drafts/{id}/dnd` | **live (P3-A3)** | `{team_id, player_id}` — un-block |
+| `GET /api/teams/{id}/ranks` · `PUT /api/teams/{id}/ranks` | **live (P4-W17)** | a team's custom pre-draft ranks (ordered player ids; PUT replaces, empty list clears). Read by the draft engine at build/revive; a PUT during a live draft refreshes the running draft's in-memory ranks so auto-pick follows immediately |
 | `GET /api/leagues/{id}/draft` | **live (P3-A3)** | league's most recent draft (404 if none) |
 | `PUT /api/teams/{id}/lineup` | live | `{week_no, slots}` — validates D7 slots + D8 overseas cap + IL eligibility (422 on violation; IL only for players whose curated `player_roles.status` marks them out — retired/injured/out); **P2-L2 seam**: weekly-lock deadline check goes here (marked in code) |
 | `GET /api/teams/{id}/lineup?week_no=` | live | when no lineup is saved for the week, carries the most recent earlier saved lineup forward (response flags `carried_over_from_week`; players no longer rostered are dropped from the prefill; nothing persists until a PUT) |

@@ -20,6 +20,7 @@ const TABS = [
   { id: "board", label: "Players" },
   { id: "roster", label: "My team" },
   { id: "feed", label: "Feed" },
+  { id: "ranks", label: "My ranks" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -41,6 +42,9 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
   const [snap, setSnap] = useState<DraftRoomState | null>(null);
   const [board, setBoard] = useState<PlayerOut[]>([]);
   const [feed, setFeed] = useState<DraftFeedItem[]>([]);
+  const [rankOrder, setRankOrder] = useState<number[]>([]);
+  const [ranksMsg, setRanksMsg] = useState("");
+  const [ranksSaving, setRanksSaving] = useState(false);
   const [err, setErr] = useState("");
   const [starting, setStarting] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -74,6 +78,54 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
     const saved = localStorage.getItem(`ipl-draft-team-${leagueId}`);
     if (saved) setMyTeamId(Number(saved));
   }, [leagueId]);
+
+  // Custom ranks (P4-W17): seed the editor from the team's saved ranks,
+  // falling back to the board's preseason order; any board players not
+  // yet ranked append in board order.
+  useEffect(() => {
+    if (!myTeamId || board.length === 0) return;
+    let live = true;
+    api
+      .getRanks(myTeamId)
+      .then((r) => {
+        if (!live) return;
+        const boardOrder = [...board]
+          .sort((a, b) => (a.preseason_rank ?? 1e9) - (b.preseason_rank ?? 1e9))
+          .map((p) => p.id);
+        const custom = r.player_ids.filter((id) => boardOrder.includes(id));
+        const rest = boardOrder.filter((id) => !custom.includes(id));
+        setRankOrder([...custom, ...rest]);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [myTeamId, board]);
+
+  function moveRank(idx: number, dir: -1 | 1) {
+    setRanksMsg("");
+    setRankOrder((prev) => {
+      const next = [...prev];
+      const j = idx + dir;
+      if (j < 0 || j >= next.length) return prev;
+      [next[idx], next[j]] = [next[j], next[idx]];
+      return next;
+    });
+  }
+
+  async function saveRanks() {
+    if (!myTeamId) return;
+    setRanksSaving(true);
+    setRanksMsg("");
+    try {
+      await api.setRanks(myTeamId, rankOrder);
+      setRanksMsg("Ranks saved — auto-pick follows this order.");
+    } catch (e) {
+      setRanksMsg(e instanceof ApiError ? e.message : "ranks save failed");
+    } finally {
+      setRanksSaving(false);
+    }
+  }
 
   const teams = useMemo(() => league?.standings.map((s) => ({ id: s.team_id, name: s.team_name })) ?? [], [league]);
 
@@ -452,6 +504,63 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
 
             <section className={`${tab === "feed" ? "" : "hidden"} lg:block`} aria-label="Pick feed">
               <DraftFeed items={feed} />
+            </section>
+
+            <section className={`${tab === "ranks" ? "" : "hidden"} lg:col-span-2`} aria-label="My custom ranks">
+              <div className="rounded-xl border border-slate-800 bg-midnight-soft/70 p-4">
+                <div className="mb-1 flex items-center justify-between gap-3">
+                  <h2 className="font-semibold text-white">My ranks</h2>
+                  <button
+                    type="button"
+                    onClick={saveRanks}
+                    disabled={ranksSaving || !myTeamId || rankOrder.length === 0}
+                    className="rounded-lg bg-trophy-gold px-3 py-1.5 text-xs font-bold text-midnight transition hover:brightness-110 disabled:opacity-50"
+                  >
+                    {ranksSaving ? "Saving…" : "Save ranks"}
+                  </button>
+                </div>
+                <p className="mb-3 text-xs text-zinc-500">
+                  Your personal draft order — auto-pick drafts from the top of this list.
+                  Reorder with the arrows, then save.
+                </p>
+                {ranksMsg && <p className="mb-2 text-xs text-pitch-green">{ranksMsg}</p>}
+                <ol className="max-h-[420px] space-y-1 overflow-y-auto pr-1">
+                  {rankOrder.map((pid, i) => {
+                    const p = playerById.get(pid);
+                    return (
+                      <li
+                        key={pid}
+                        className="flex items-center gap-2 rounded-md bg-slate-900/60 px-2.5 py-1.5 text-sm"
+                      >
+                        <span className="w-7 shrink-0 text-right font-mono text-xs text-zinc-500">{i + 1}</span>
+                        <span className="min-w-0 flex-1 truncate text-zinc-200">
+                          {p?.name ?? `#${pid}`}
+                          <span className="ml-2 text-[11px] text-zinc-500">
+                            {p?.role ?? ""} · {p?.ipl_team_code ?? ""}
+                            {drafted.has(pid) ? " · drafted" : ""}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`Move ${p?.name ?? pid} up`}
+                          onClick={() => moveRank(i, -1)}
+                          className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-zinc-300 hover:bg-slate-700"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Move ${p?.name ?? pid} down`}
+                          onClick={() => moveRank(i, 1)}
+                          className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-zinc-300 hover:bg-slate-700"
+                        >
+                          ↓
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
             </section>
           </div>
         </div>

@@ -18,6 +18,7 @@ import type {
   NotImplementedOut,
   PlayerOut,
   PlayoffsOut,
+  RanksOut,
   ScoreboardOut,
   ScheduleNudgesOut,
   TeamOut,
@@ -125,6 +126,12 @@ export const api = {
     req<DndOut>(`/drafts/${draftId}/dnd`, {
       method: "DELETE",
       body: JSON.stringify({ team_id, player_id }),
+    }),
+  getRanks: (teamId: number | string) => req<RanksOut>(`/teams/${teamId}/ranks`),
+  setRanks: (teamId: number | string, player_ids: number[]) =>
+    req<RanksOut>(`/teams/${teamId}/ranks`, {
+      method: "PUT",
+      body: JSON.stringify({ player_ids }),
     }),
 
   // lineups

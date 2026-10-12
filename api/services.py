@@ -45,7 +45,7 @@ from api.engine.trade_engine import TradeEngine, TradeError
 from api.engine.waiver_engine import WaiverEngine, WaiverError
 
 from . import constants
-from .routers import get_league, owned_map, player_roles_map
+from .routers import get_league, get_team, owned_map, player_roles_map
 
 log = logging.getLogger("api.services")
 
@@ -479,6 +479,53 @@ def set_dnd(con: sqlite3.Connection, draft_id: int, team_id: int,
             dnd.discard(player_id)
         _put_cached("draft", draft_id, draft, con)
         return {"draft_id": draft_id, "team_id": team_id, "dnd": sorted(dnd)}
+
+
+def get_team_ranks(con: sqlite3.Connection, team_id: int) -> list[int]:
+    """A team's custom pre-draft ranks (ordered player ids); [] = none set."""
+    get_team(con, team_id)  # 404 if missing
+    return _team_ranks(con, team_id)
+
+
+def set_team_ranks(con: sqlite3.Connection, team_id: int,
+                   player_ids: list[int]) -> dict:
+    """Replace a team's custom pre-draft ranks (P4-W17).
+
+    The draft engine reads pre_draft_ranks for auto-pick order; until
+    now nothing could write them, so auto-pick always fell back to
+    league preseason ranks. An empty list clears the custom ranks.
+    When the team's league has a live draft, its in-memory ranks are
+    refreshed too (mirroring set_dnd), so the change bites on the
+    very next auto-pick.
+    """
+    team = get_team(con, team_id)  # 404 if missing
+    if len(player_ids) != len(set(player_ids)):
+        raise HTTPException(422, "player_ids contains duplicates")
+    if len(player_ids) > 500:
+        raise HTTPException(422, "rank list too long (max 500)")
+    for pid in player_ids:
+        if not con.execute(
+                "SELECT 1 FROM players WHERE id = ?", (pid,)).fetchone():
+            raise HTTPException(404, f"player {pid} not found")
+    with con:
+        con.execute("DELETE FROM pre_draft_ranks WHERE team_id = ?", (team_id,))
+        con.executemany(
+            "INSERT INTO pre_draft_ranks (team_id, player_id, rank) VALUES (?, ?, ?)",
+            [(team_id, pid, i + 1) for i, pid in enumerate(player_ids)],
+        )
+    # Refresh a live draft's in-memory ranks for this team, if any.
+    row = con.execute(
+        "SELECT id FROM drafts WHERE league_id = ? ORDER BY id DESC LIMIT 1",
+        (team["league_id"],),
+    ).fetchone()
+    if row:
+        draft_row = _draft_row(con, row["id"])
+        if draft_row["status"] == Draft.STATUS_LIVE:
+            with _draft_lock(row["id"]):
+                draft = _revive_draft(con, row["id"])
+                draft.ranks[team_id] = list(player_ids)
+                _put_cached("draft", row["id"], draft, con)
+    return {"team_id": team_id, "player_ids": list(player_ids)}
 
 
 def _week1_slot(con: sqlite3.Connection, team_id: int, player_id: int) -> str | None:
