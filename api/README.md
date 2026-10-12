@@ -15,6 +15,9 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `POST /api/leagues` | live | `{name, commissioner_name}` → league + invite_code |
 | `GET /api/leagues/{id}` | live | league + settings + standings |
 | `POST /api/leagues/{id}/join` | live | `{invite_code, team_name, owner_name}` |
+| `PATCH /api/leagues/{id}/settings` | **live (P4-W15)** | commissioner settings edit: `pick_clock_secs`, `trade_deadline_week`, `waiver_run_weekday` (validated, merged into the settings JSON) |
+| `POST /api/leagues/{id}/adjustments` | **live (P4-W15)** | manual FAAB adjustment `{team_id, faab_delta, note}` — note mandatory, balance clamped at 0, written to `league_adjustments` |
+| `GET /api/leagues/{id}/adjustments` | **live (P4-W15)** | commissioner audit log, newest first (limit 50) |
 | `GET /api/leagues/{id}/teams` | live | |
 | `GET /api/leagues/{id}/schedule-nudges?week_no=` | **live (P3-A6)** | per-IPL-team game counts for a fantasy week; `weeks_available` + `week_start/end` + `source` provenance; powers the draft-room + waiver schedule badges (D10 option 4). Data: `api/schedule_games.py` importer (2026 Cricsheet fixture as dev stand-in; 2027 fixture swaps in ~Feb 2027, no re-architecture) |
 | `POST /api/leagues/{id}/draft/start` | **live (P3-A2)** | snake order (seeded shuffle), league → drafting, engine in `engine_state` |
