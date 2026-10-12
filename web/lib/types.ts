@@ -140,6 +140,12 @@ export interface LineupOut {
   valid: boolean;
 }
 
+export interface CantCutOut {
+  player_ids: number[];
+  source: "custom" | "preseason_top_n" | "off";
+  top_n: number;
+}
+
 export interface WaiverClaimOut {
   id: number;
   week_no: number;

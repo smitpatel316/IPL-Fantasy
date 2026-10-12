@@ -9,6 +9,7 @@ import type {
   DraftOut,
   DraftPickOut,
   HealthOut,
+  CantCutOut,
   LeagueDetailOut,
   LeagueOut,
   LineupOut,
@@ -56,6 +57,7 @@ export const api = {
   createLeague: (name: string, commissioner_name: string) =>
     req<LeagueOut>("/leagues", { method: "POST", body: JSON.stringify({ name, commissioner_name }) }),
   getLeague: (id: number | string) => req<LeagueDetailOut>(`/leagues/${id}`),
+  getCantCut: (leagueId: number | string) => req<CantCutOut>(`/leagues/${leagueId}/cant-cut`),
   joinLeague: (id: number | string, invite_code: string, team_name: string, owner_name: string) =>
     req<TeamOut>(`/leagues/${id}/join`, {
       method: "POST",

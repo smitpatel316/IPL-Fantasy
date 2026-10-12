@@ -35,6 +35,7 @@ export default function WaiversPage() {
   const [teamId, setTeamId] = useState<number | null>(null);
   const [players, setPlayers] = useState<PlayerOut[]>([]);
   const [claims, setClaims] = useState<WaiverClaimOut[]>([]);
+  const [cantCut, setCantCut] = useState<Set<number>>(new Set());
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState("");
@@ -67,6 +68,8 @@ export default function WaiversPage() {
       if (sel !== teamId) setTeamId(sel);
       const ps = await api.listPlayers({ league_id: 1, role: role || undefined, q: q || undefined });
       setPlayers(ps);
+      const cc = await api.getCantCut(1).catch(() => null);
+      setCantCut(new Set(cc?.player_ids ?? []));
       // Claims feed: show the latest week that has any.
       const weeks = await Promise.all(WEEKS.map((w) => api.pendingClaims(1, w).catch(() => [] as WaiverClaimOut[])));
       const latest = WEEKS.find((w, i) => weeks[i].length > 0);
@@ -87,7 +90,8 @@ export default function WaiversPage() {
     setBidTarget(p);
     setBidErr("");
     setBidOk("");
-    setDropId(roster[0] ? String(roster[0].id) : "");
+    const firstDroppable = roster.find((p) => !cantCut.has(p.id)) ?? roster[0];
+    setDropId(firstDroppable ? String(firstDroppable.id) : "");
     setAmount("");
   }
 
@@ -345,11 +349,17 @@ export default function WaiversPage() {
                 <label className="mb-1 block text-xs font-medium text-slate-400">Player to drop (rosters are capped at 14)</label>
                 <select className={cn(input, "w-full")} value={dropId} onChange={(e) => setDropId(e.target.value)}>
                   {roster.map((p) => (
-                    <option key={p.id} value={p.id}>
+                    <option key={p.id} value={p.id} disabled={cantCut.has(p.id)}>
                       {p.name} ({p.role ?? "—"}, {p.ipl_team_code ?? "—"})
+                      {cantCut.has(p.id) ? " — can't cut" : ""}
                     </option>
                   ))}
                 </select>
+                {cantCut.size > 0 && (
+                  <p className="mt-1 text-[11px] text-zinc-600">
+                    Players on the league&apos;s can&apos;t-cut list can&apos;t be dropped.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-400">Bid ($0 – ${faab})</label>

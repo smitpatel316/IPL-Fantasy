@@ -628,6 +628,33 @@ def _revive_waiver(con: sqlite3.Connection, league_id: int) -> WaiverEngine:
     return eng
 
 
+DEFAULT_CANT_CUT_TOP_N = 12
+
+
+def cant_cut_player_ids(con: sqlite3.Connection, league_id: int) -> tuple[set[int], str]:
+    """The league's effective can't-cut set (P4-W22, blueprint §5):
+    the commissioner's custom list (settings.cant_cut_player_ids) when
+    set — an empty list turns the feature off — otherwise the top-N
+    players by preseason rank (settings.cant_cut_top_n, default 12;
+    rank = MIN over the league's teams' pre-draft ranks, as the
+    players list projects it). Returns (player_ids, source)."""
+    league = get_league(con, league_id)
+    settings = league["settings"]
+    custom = settings.get("cant_cut_player_ids")
+    if custom is not None:
+        return {int(p) for p in custom}, "custom"
+    top_n = settings.get("cant_cut_top_n", DEFAULT_CANT_CUT_TOP_N)
+    if not top_n:
+        return set(), "off"
+    rows = con.execute(
+        """SELECT r.player_id, MIN(r.rank) AS rk FROM pre_draft_ranks r
+           JOIN teams t ON t.id = r.team_id WHERE t.league_id = ?
+           GROUP BY r.player_id ORDER BY rk, r.player_id LIMIT ?""",
+        (league_id, int(top_n)),
+    ).fetchall()
+    return {r["player_id"] for r in rows}, "preseason_top_n"
+
+
 def submit_waiver_claim(con: sqlite3.Connection, league_id: int, team_id: int,
                         week_no: int, add_player_id: int,
                         drop_player_id: int | None, bid: int) -> dict:
@@ -635,6 +662,16 @@ def submit_waiver_claim(con: sqlite3.Connection, league_id: int, team_id: int,
     team_ids = {t["id"] for t in _teams(con, league_id)}
     if team_id not in team_ids:
         raise HTTPException(404, f"team {team_id} not found")
+    if drop_player_id is not None:
+        protected, _src = cant_cut_player_ids(con, league_id)
+        if drop_player_id in protected:
+            row = con.execute("SELECT name FROM players WHERE id = ?",
+                              (drop_player_id,)).fetchone()
+            raise HTTPException(
+                422,
+                f"{row['name'] if row else 'that player'} is on the can't-cut "
+                "list and cannot be dropped",
+            )
     eng = _revive_waiver(con, league_id)
     try:
         eng.submit_bid(team_id, week_no, add_player_id, bid,

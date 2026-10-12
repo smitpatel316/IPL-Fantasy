@@ -28,7 +28,8 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `PUT /api/teams/{id}/lineup` | live | `{week_no, slots}` — validates D7 slots + D8 overseas cap (422 on violation); **P2-L2 seam**: weekly-lock deadline check goes here (marked in code) |
 | `GET /api/teams/{id}/lineup?week_no=` | live | |
 | `GET /api/players?league_id=&season=&role=&team=&q=` | live | universe + roles + preseason_rank + owned_by_team_id |
-| `POST /api/waivers/claim` | **live (P3-A2)** | `{league_id, team_id, add_player_id, drop_player_id?, bid}` — blind FAAB, budget enforced |
+| `POST /api/waivers/claim` | **live (P3-A2)** | `{league_id, team_id, add_player_id, drop_player_id?, bid}` — blind FAAB, budget enforced; P4-W22: dropping a can't-cut player 422s |
+| `GET /api/leagues/{id}/cant-cut` · `PUT /api/leagues/{id}/cant-cut` | **live (P4-W22)** | the effective can't-cut list: commissioner `cant_cut_player_ids` when set ([] = off), else top-N preseason ranks (`cant_cut_top_n`, default 12). PUT writes either field; `player_ids: null` clears back to the default |
 | `GET /api/waivers/pending?league_id=&week_no=` | live | pending claims for the week |
 | `POST /api/waivers/run?league_id=&week_no=` | **live (P3-A2)** | blind-bid run; winners swap into the drop's roster/week-1 slot; FAAB deducted |
 | `POST /api/trades` | **live (P3-A2)** | `{league_id, from_team_id, to_team_id, gives[], receives[]}` — balanced N-for-N enforced |
