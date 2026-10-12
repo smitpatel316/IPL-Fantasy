@@ -12,12 +12,17 @@ Protocol (JSON text frames):
     {"type": "pick", "player_id": int}        # draft a player (must be your turn)
     {"type": "dnd_add", "player_id": int}     # do-not-draft this player
     {"type": "dnd_remove", "player_id": int}  # un-block a player
+    {"type": "chat", "text": str}             # room chat (P4-W20)
     {"type": "ping"}
   server -> client:
-    {"type": "state", ...snapshot...}                  # full room state
+    {"type": "state", ...snapshot...}                  # full room state (incl. chat history)
     {"type": "state", "event": "pick"|"clock_expired"|"dnd_updated", ...}
+    {"type": "chat", "message": {...}}                 # one chat message (P4-W20)
     {"type": "error", "detail": str}
     {"type": "pong"}
+
+Chat is in-memory per draft (last 100 messages, process lifetime) —
+lightweight v1; it is not persisted across server restarts.
 
 Identity is the ?team_id= query param (dev: no auth in v1). The engine still
 enforces turn order — a pick from the wrong team gets an error frame.
@@ -42,9 +47,30 @@ log = logging.getLogger("api.draft_ws")
 class DraftRoomManager:
     """draft_id -> set of connected websockets."""
 
+    CHAT_HISTORY = 100  # messages kept per draft (P4-W20)
+
     def __init__(self) -> None:
         self._rooms: dict[int, set[WebSocket]] = {}
+        self._chat: dict[int, list[dict]] = {}
         self._lock = asyncio.Lock()
+
+    def chat_history(self, draft_id: int) -> list[dict]:
+        return list(self._chat.get(draft_id, ()))
+
+    async def post_chat(self, draft_id: int, team_id: int, team_name: str,
+                        text: str) -> dict:
+        async with self._lock:
+            log_ = self._chat.setdefault(draft_id, [])
+            msg = {
+                "seq": (log_[-1]["seq"] + 1) if log_ else 1,
+                "team_id": team_id,
+                "team_name": team_name,
+                "text": text,
+                "at": time.time(),
+            }
+            log_.append(msg)
+            del log_[:-self.CHAT_HISTORY]
+            return msg
 
     async def connect(self, draft_id: int, ws: WebSocket) -> None:
         await ws.accept()
@@ -85,7 +111,15 @@ manager = DraftRoomManager()
 
 def _snapshot(draft_id: int) -> dict:
     with connect() as con:
-        return services.draft_snapshot(con, draft_id)
+        snap = services.draft_snapshot(con, draft_id)
+    snap["chat"] = manager.chat_history(draft_id)
+    return snap
+
+
+def _team_name(team_id: int) -> str:
+    with connect() as con:
+        row = con.execute("SELECT name FROM teams WHERE id = ?", (team_id,)).fetchone()
+    return row["name"] if row else f"Team {team_id}"
 
 
 def _do_pick(draft_id: int, team_id: int, player_id: int) -> dict:
@@ -134,6 +168,16 @@ async def _handle_message(draft_id: int, team_id: int, ws: WebSocket,
             await ws.send_json({"type": "error", "detail": e.detail})
             return
         await _broadcast_state(draft_id, event="pick", pick=pick)
+        return
+    if mtype == "chat":
+        text = msg.get("text")
+        if not isinstance(text, str) or not text.strip():
+            await ws.send_json({"type": "error", "detail": "chat needs non-empty text"})
+            return
+        text = text.strip()[:500]
+        team_name = await asyncio.to_thread(_team_name, team_id)
+        message = await manager.post_chat(draft_id, team_id, team_name, text)
+        await manager.broadcast(draft_id, {"type": "chat", "message": message})
         return
     if mtype in ("dnd_add", "dnd_remove"):
         player_id = msg.get("player_id")

@@ -27,7 +27,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `GET /api/drafts/{id}` | live | draft state (`on_clock_team_id` from the live engine; `current_pick_no` 1-indexed; `draft_order` is the round-1 team order — even rounds snake) |
 | `GET /api/drafts/{id}/picks` | live | pick list |
 | `POST /api/drafts/{id}/pick` | **live (P3-A2)** | `{team_id, player_id}`; clock expiry auto-fires on the next pick request; league → in_season when complete |
-| `WS /api/drafts/{id}/ws?team_id=` | **live (P3-A3)** | draft room: full `state` snapshot on connect; client `pick`/`dnd_add`/`dnd_remove`/`ping`; server broadcasts `state` (event `pick`/`clock_expired`/`dnd_updated`), `error`, `pong`; 1s clock sweeper auto-picks on expiry |
+| `WS /api/drafts/{id}/ws?team_id=` | **live (P3-A3)** | draft room: full `state` snapshot on connect; client `pick`/`dnd_add`/`dnd_remove`/`ping`; server broadcasts `state` (event `pick`/`clock_expired`/`dnd_updated`), `error`, `pong`; 1s clock sweeper auto-picks on expiry; P4-W20 adds room chat: client `chat {text}`, server broadcasts `chat {message}`, history (last 100, in-memory) rides every `state` snapshot as `chat` |
 | `POST /api/drafts/{id}/dnd` | **live (P3-A3)** | `{team_id, player_id}` — do-not-draft (live draft only); auto-pick skips, manual picks rejected |
 | `DELETE /api/drafts/{id}/dnd` | **live (P3-A3)** | `{team_id, player_id}` — un-block |
 | `GET /api/teams/{id}/ranks` · `PUT /api/teams/{id}/ranks` | **live (P4-W17)** | a team's custom pre-draft ranks (ordered player ids; PUT replaces, empty list clears). Read by the draft engine at build/revive; a PUT during a live draft refreshes the running draft's in-memory ranks so auto-pick follows immediately |
@@ -36,7 +36,6 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `GET /api/teams/{id}/lineup?week_no=` | live | when no lineup is saved for the week, carries the most recent earlier saved lineup forward (response flags `carried_over_from_week`; players no longer rostered are dropped from the prefill; nothing persists until a PUT) |
 | `GET /api/players?league_id=&season=&role=&team=&q=` | live | universe + roles + preseason_rank + owned_by_team_id; P4-W19 adds `avg_points` (null until scoring lands) + `ownership_pct` (% of leagues rostered) |
 | `GET /api/players/{id}?league_id=` | **live (P4-W19)** | player detail: profile + owners across all leagues + match-by-match log from `player_match_stats` (empty until scoring lands) |
->>>>>>> origin/ipl/web/player-detail
 | `POST /api/waivers/claim` | **live (P3-A2)** | `{league_id, team_id, add_player_id, drop_player_id?, bid}` — blind FAAB, budget enforced |
 | `GET /api/waivers/pending?league_id=&week_no=&team_id=` | live | pending claims for the week; blind (D6): pass team_id for that team's own claims with amounts — without it, amounts are sealed (bid=null) |
 | `GET /api/waivers/history?league_id=&week_no=` | **live (P4-W14)** | resolved claims (status != pending) for a league+week; bids are public record once the run resolves them |

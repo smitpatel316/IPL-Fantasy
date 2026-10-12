@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, draftWsUrl } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
-import { ApiError, type DraftRoomState, type LeagueDetailOut, type PlayerOut } from "@/lib/types";
+import { ApiError, type ChatMessage, type DraftRoomState, type LeagueDetailOut, type PlayerOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { DraftClock } from "@/components/DraftClock";
 import { DraftPlayerCard } from "@/components/DraftPlayerCard";
@@ -21,6 +21,7 @@ const TABS = [
   { id: "roster", label: "My team" },
   { id: "feed", label: "Feed" },
   { id: "ranks", label: "My ranks" },
+  { id: "chat", label: "Chat" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -56,6 +57,9 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
   const feedKey = useRef(0);
   const { setLeagueId: setCurrentLeague } = useLeague();
   const backfilledDraft = useRef<number | null>(null);
+  // P4-W20: room chat (history from state snapshots, live frames appended).
+  const [chat, setChat] = useState<ChatMessage[]>([]);
+  const [chatText, setChatText] = useState("");
 
   // P3-A6: schedule-aware nudges — games per IPL team for the chosen week.
   const sched = useScheduleBadges(leagueId ?? "", 1);
@@ -173,6 +177,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
         if (msg.type === "state") {
           const st = msg as unknown as DraftRoomState;
           setSnap(st);
+<<<<<<< HEAD
           // Backfill the pick history once per draft (P4-W12): without
           // this, joining mid-draft or refreshing shows an empty feed —
           // the snapshot carries every pick made so far. The current
@@ -196,6 +201,9 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
               });
             if (history.length > 0) setFeed((f) => [...f, ...history].slice(0, 40));
           }
+=======
+          if (st.chat) setChat(st.chat);
+>>>>>>> origin/ipl/web/draft-chat
           const pick = st.pick;
           if (st.event === "pick" && pick) {
             const nm = playerById.get(pick.player_id ?? -1)?.name ?? `#${pick.player_id}`;
@@ -209,6 +217,9 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
             const tm = st.draft.teams.find((t) => t.id === st.dnd_updated!.team_id)?.name ?? "a team";
             pushFeed(`${tm} updated their do-not-draft list`);
           }
+        } else if (msg.type === "chat") {
+          const m = msg.message as ChatMessage;
+          setChat((prev) => (prev.some((x) => x.seq === m.seq) ? prev : [...prev, m]));
         } else if (msg.type === "error") {
           setErr(String(msg.detail ?? "draft room error"));
         }
@@ -245,6 +256,14 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
 
   function send(msg: object) {
     wsRef.current?.send(JSON.stringify(msg));
+  }
+
+  function sendChat(e: React.FormEvent) {
+    e.preventDefault();
+    const text = chatText.trim();
+    if (!text) return;
+    send({ type: "chat", text });
+    setChatText("");
   }
 
   const drafted = useMemo(() => {
@@ -506,6 +525,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
               <DraftFeed items={feed} />
             </section>
 
+<<<<<<< HEAD
             <section className={`${tab === "ranks" ? "" : "hidden"} lg:col-span-2`} aria-label="My custom ranks">
               <div className="rounded-xl border border-slate-800 bg-midnight-soft/70 p-4">
                 <div className="mb-1 flex items-center justify-between gap-3">
@@ -560,6 +580,41 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
                     );
                   })}
                 </ol>
+=======
+            <section className={`${tab === "chat" ? "" : "hidden"} lg:block`} aria-label="Room chat">
+              <div className="rounded-xl border border-slate-800 bg-midnight-soft/70 p-4">
+                <h2 className="mb-3 font-semibold text-white">Room chat</h2>
+                <div className="mb-3 max-h-64 space-y-2 overflow-y-auto pr-1">
+                  {chat.length === 0 && (
+                    <p className="text-xs text-zinc-600">No messages yet — say something nice about someone&apos;s last pick.</p>
+                  )}
+                  {chat.map((m) => (
+                    <p key={m.seq} className="text-sm">
+                      <span className={m.team_id === myTeamId ? "font-bold text-trophy-gold" : "font-bold text-zinc-300"}>
+                        {m.team_name}
+                      </span>{" "}
+                      <span className="text-zinc-300">{m.text}</span>
+                    </p>
+                  ))}
+                </div>
+                <form onSubmit={sendChat} className="flex gap-2">
+                  <input
+                    value={chatText}
+                    onChange={(e) => setChatText(e.target.value)}
+                    maxLength={500}
+                    placeholder="Message the room…"
+                    aria-label="Chat message"
+                    className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!connected || !chatText.trim()}
+                    className="rounded-lg bg-trophy-gold px-3 py-2 text-xs font-bold text-midnight transition hover:brightness-110 disabled:opacity-50"
+                  >
+                    Send
+                  </button>
+                </form>
+>>>>>>> origin/ipl/web/draft-chat
               </div>
             </section>
           </div>
