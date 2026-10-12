@@ -182,7 +182,11 @@ def current_week(con: sqlite3.Connection, league_id: int) -> int:
         "SELECT MAX(week_no) FROM matchups WHERE league_id = ? AND status = 'final'",
         (league_id,),
     ).fetchone()
-    return (row[0] or 0) + 1
+    # P4-W28: cap at TOTAL_WEEKS — after the week-8 final there is no
+    # week 9. Without the cap, current_week returned 9 and waiver
+    # claims were filed into an invisible week (reads bound week_no
+    # <= TOTAL_WEEKS) that the unbounded run endpoint could execute.
+    return min((row[0] or 0) + 1, constants.TOTAL_WEEKS)
 
 
 def standings_best_first(con: sqlite3.Connection, league_id: int) -> list[int]:
@@ -726,6 +730,29 @@ def submit_waiver_claim(con: sqlite3.Connection, league_id: int, team_id: int,
                         week_no: int, add_player_id: int,
                         drop_player_id: int | None, bid: int) -> dict:
     get_league(con, league_id)
+    # P4-W28: no new claims past the season. A target week beyond
+    # TOTAL_WEEKS is out of range, and once the final week
+    # (TOTAL_WEEKS) itself is final the season is over — even though
+    # current_week is capped at TOTAL_WEEKS, a claim must not be
+    # re-filed into that already-final week.
+    if not 1 <= week_no <= constants.TOTAL_WEEKS:
+        raise HTTPException(
+            422,
+            f"week_no must be 1..{constants.TOTAL_WEEKS}: the season is "
+            f"complete after week {constants.TOTAL_WEEKS}, so no new "
+            "waiver claims are accepted",
+        )
+    final_week = con.execute(
+        "SELECT MAX(week_no) FROM matchups WHERE league_id = ?"
+        " AND status = 'final'",
+        (league_id,),
+    ).fetchone()[0] or 0
+    if final_week >= constants.TOTAL_WEEKS:
+        raise HTTPException(
+            422,
+            f"season is complete: week {constants.TOTAL_WEEKS} is "
+            "final, so no new waiver claims are accepted",
+        )
     team_ids = {t["id"] for t in _teams(con, league_id)}
     if team_id not in team_ids:
         raise HTTPException(404, f"team {team_id} not found")
@@ -760,6 +787,12 @@ def submit_waiver_claim(con: sqlite3.Connection, league_id: int, team_id: int,
 
 def run_waivers(con: sqlite3.Connection, league_id: int, week_no: int) -> list[dict]:
     get_league(con, league_id)
+    # P4-W28: bound the run like the reads — a week-9 run must never
+    # execute phantom post-season claims (defence in depth behind the
+    # router's Query(ge=1, le=TOTAL_WEEKS) validation).
+    if not 1 <= week_no <= constants.TOTAL_WEEKS:
+        raise HTTPException(
+            422, f"week_no must be 1..{constants.TOTAL_WEEKS}")
     eng = _revive_waiver(con, league_id)
     try:
         results = eng.run_week(week_no, standings_best_first(con, league_id))

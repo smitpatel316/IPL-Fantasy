@@ -24,6 +24,9 @@ def submit_claim(body: schemas.WaiverClaimCreate, request: Request,
     get_league(con, body.league_id)
     require_team_actor(con, body.team_id, request)  # P4-W18 claim-code gate
     # 15-man rosters have no open slots: a drop is required (422 otherwise).
+    # P4-W28: current_week is capped at TOTAL_WEEKS, and
+    # services.submit_waiver_claim rejects new claims (422) once the
+    # final week is final — no phantom week-9 claims.
     week_no = services.current_week(con, body.league_id)
     return schemas.WaiverClaimOut(**services.submit_waiver_claim(
         con, body.league_id, body.team_id, week_no,
@@ -83,7 +86,8 @@ def claims_history(league_id: int = Query(...),
 
 
 @router.post("/run", response_model=list[schemas.WaiverRunResultOut])
-def run_waivers(league_id: int = Query(...), week_no: int = Query(...),
+def run_waivers(league_id: int = Query(...),
+                week_no: int = Query(..., ge=1, le=TOTAL_WEEKS),
                 con: sqlite3.Connection = Depends(get_db)):
     get_league(con, league_id)
     # The Wednesday ~3am PT blind-bid run (commissioner-triggerable).
