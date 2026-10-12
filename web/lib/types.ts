@@ -178,6 +178,41 @@ export interface MatchupOut {
   status: string;
 }
 
+export interface PlayoffSeedOut {
+  seed: number;
+  team_id: number;
+  team_name: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  points_for: number;
+}
+
+export interface PlayoffGameOut {
+  label: string;
+  week_no: number;
+  team_a_id: number | null;
+  team_a_label: string;
+  team_b_id: number | null;
+  team_b_label: string;
+  score_a: number | null;
+  score_b: number | null;
+  status: string; // projected | scheduled | final
+  winner_team_id: number | null;
+}
+
+export interface PlayoffsOut {
+  league_id: number;
+  stage: string; // regular_season | semifinals | final | complete
+  seeds_final: boolean;
+  seeds: PlayoffSeedOut[];
+  semifinals: PlayoffGameOut[];
+  final: PlayoffGameOut | null;
+  third_place: PlayoffGameOut | null;
+  champion_team_id: number | null;
+  champion_team_name: string | null;
+}
+
 export interface PlayerScoreOut {
   player_name: string;
   fantasy_points: number;
