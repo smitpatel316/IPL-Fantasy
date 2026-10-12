@@ -114,6 +114,8 @@ export const api = {
   // waivers
   submitClaim: (body: { league_id: number; team_id: number; add_player_id: number; drop_player_id?: number; bid: number }) =>
     req<WaiverClaimOut>("/waivers/claim", { method: "POST", body: JSON.stringify(body) }),
+  claimsHistory: (league_id: number, week_no: number) =>
+    req<WaiverClaimOut[]>(`/waivers/history?league_id=${league_id}&week_no=${week_no}`),
   pendingClaims: (league_id: number, week_no: number) =>
     req<WaiverClaimOut[]>(`/waivers/pending?league_id=${league_id}&week_no=${week_no}`),
 
