@@ -145,7 +145,12 @@ CREATE TABLE IF NOT EXISTS trades (
     status          TEXT NOT NULL DEFAULT 'proposed',
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
     review_deadline TEXT,
-    engine_id       INTEGER  -- api.engine.trade_engine trade id (Phase 3)
+    engine_id       INTEGER,  -- api.engine.trade_engine trade id (Phase 3)
+    veto_count      INTEGER NOT NULL DEFAULT 0,  -- history detail (P4-W1)
+    proposed_at     TEXT,     -- ISO UTC lifecycle timestamps (P4-W1)
+    accepted_at     TEXT,
+    vetoed_at       TEXT,
+    executed_at     TEXT
 );
 
 -- Phase 3: persisted engine snapshots (api/services.py).

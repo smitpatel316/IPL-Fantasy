@@ -32,7 +32,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `GET /api/waivers/pending?league_id=&week_no=` | live | pending claims for the week |
 | `POST /api/waivers/run?league_id=&week_no=` | **live (P3-A2)** | blind-bid run; winners swap into the drop's roster/week-1 slot; FAAB deducted |
 | `POST /api/trades` | **live (P3-A2)** | `{league_id, from_team_id, to_team_id, gives[], receives[]}` — balanced N-for-N enforced |
-| `GET /api/trades?league_id=&status=` | live | filter by proposed/accepted/rejected/vetoed/expired |
+| `GET /api/trades?league_id=&status=` | live | filter by proposed/accepted/rejected/vetoed/expired; each trade carries `veto_count` + `proposed_at`/`accepted_at`/`vetoed_at`/`executed_at` (ISO UTC, null until the event happens) |
 | `POST /api/trades/{id}/accept|reject|veto` | **live (P3-A2)** | accept → review window → auto-execute (paired week-1 slot swap); veto by other teams |
 | `GET /api/matchups?league_id=&week_no=` | **live (P3-A2)** | schedule generated at draft completion (weeks 1–6; byes for odd team counts) |
 | `GET /api/matchups/scoreboard/{match_id}` | live | per-player points + breakdowns (empty until Phase 3 poller) |

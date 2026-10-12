@@ -25,6 +25,11 @@ const btnGhost =
 const btnDanger =
   "rounded-md border border-brick-red/50 px-3 py-1.5 text-xs font-semibold text-brick-red hover:bg-brick-red/10 disabled:opacity-40 disabled:cursor-not-allowed";
 
+function fmtTs(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
+}
+
 function PlayerChips({ ids, names }: { ids: number[]; names: Map<number, string> }) {
   if (ids.length === 0) return <span className="text-xs text-zinc-600">—</span>;
   return (
@@ -88,10 +93,23 @@ function TradeCard({
           <PlayerChips ids={trade.receives} names={playerName} />
         </div>
       </div>
-      {trade.review_deadline && trade.status === "accepted" && (
+      {trade.review_deadline && trade.status === "accepted" && !trade.executed_at && (
         <p className="mt-3 flex items-center gap-1.5 text-xs text-zinc-500">
-          <Clock className="h-3.5 w-3.5" /> Commissioner review until {trade.review_deadline}
+          <Clock className="h-3.5 w-3.5" /> Commissioner review until {fmtTs(trade.review_deadline)}
         </p>
+      )}
+      {(trade.proposed_at || trade.veto_count > 0) && (
+        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500">
+          {trade.proposed_at && <span>Proposed {fmtTs(trade.proposed_at)}</span>}
+          {trade.accepted_at && <span>Accepted {fmtTs(trade.accepted_at)}</span>}
+          {trade.executed_at && <span>Executed {fmtTs(trade.executed_at)}</span>}
+          {trade.vetoed_at && <span>Vetoed {fmtTs(trade.vetoed_at)}</span>}
+          {trade.veto_count > 0 && (
+            <span>
+              {trade.veto_count} {trade.veto_count === 1 ? "veto" : "vetoes"} cast
+            </span>
+          )}
+        </div>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
         {isOfferee && (
