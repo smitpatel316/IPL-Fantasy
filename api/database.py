@@ -48,7 +48,12 @@ def init_db() -> None:
         cols = {r["name"] for r in con.execute("PRAGMA table_info(player_roles)")}
         if "status" not in cols:
             con.execute("ALTER TABLE player_roles ADD COLUMN status TEXT")
-            con.commit()
+        # P4-W18: claim_code predates nothing — add it to team tables
+        # created before the column existed (idempotent).
+        cols = {r[1] for r in con.execute("PRAGMA table_info(teams)")}
+        if "claim_code" not in cols:
+            con.execute("ALTER TABLE teams ADD COLUMN claim_code TEXT")
+        con.commit()
     log.info(f"db ready at {db_path()}")
 
 

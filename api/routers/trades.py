@@ -12,11 +12,11 @@ Engine 'under_review' and 'executed' both project to 'accepted'."""
 import sqlite3
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from .. import schemas, services
 from ..database import get_db
-from . import get_league
+from . import get_league, require_team_actor
 
 router = APIRouter()
 
@@ -26,9 +26,10 @@ def _trade_out(t: dict) -> schemas.TradeOut:
 
 
 @router.post("", response_model=schemas.TradeOut)
-def propose_trade(body: schemas.TradeCreate,
+def propose_trade(body: schemas.TradeCreate, request: Request,
                   con: sqlite3.Connection = Depends(get_db)):
     get_league(con, body.league_id)
+    require_team_actor(con, body.from_team_id, request)  # P4-W18
     return _trade_out(services.propose_trade(
         con, body.league_id, body.from_team_id, body.to_team_id,
         body.gives, body.receives))
@@ -42,31 +43,39 @@ def list_trades(league_id: int = Query(...), status: Optional[str] = Query(None)
 
 
 @router.post("/{trade_id}/accept", response_model=schemas.TradeOut)
-def accept_trade(trade_id: int, con: sqlite3.Connection = Depends(get_db)):
-    row = con.execute("SELECT league_id FROM trades WHERE id = ?",
+def accept_trade(trade_id: int, request: Request,
+                 con: sqlite3.Connection = Depends(get_db)):
+    row = con.execute("SELECT league_id, to_team_id FROM trades WHERE id = ?",
                       (trade_id,)).fetchone()
     if not row:
         raise HTTPException(404, f"trade {trade_id} not found")
-    # Only the receiving (offeree) team may accept; the engine enforces it.
+    # Only the receiving (offeree) team may accept — and if that team is
+    # claimed, only with its claim code (P4-W18).
+    require_team_actor(con, row["to_team_id"], request)
     return _trade_out(services.respond_trade(con, row["league_id"], trade_id, "accept"))
 
 
 @router.post("/{trade_id}/reject", response_model=schemas.TradeOut)
-def reject_trade(trade_id: int, con: sqlite3.Connection = Depends(get_db)):
-    row = con.execute("SELECT league_id FROM trades WHERE id = ?",
+def reject_trade(trade_id: int, request: Request,
+                 con: sqlite3.Connection = Depends(get_db)):
+    row = con.execute("SELECT league_id, to_team_id FROM trades WHERE id = ?",
                       (trade_id,)).fetchone()
     if not row:
         raise HTTPException(404, f"trade {trade_id} not found")
+    require_team_actor(con, row["to_team_id"], request)  # P4-W18
     return _trade_out(services.respond_trade(con, row["league_id"], trade_id, "reject"))
 
 
 @router.post("/{trade_id}/veto", response_model=schemas.TradeOut)
-def veto_trade(trade_id: int, team_id: Optional[int] = Query(None),
+def veto_trade(trade_id: int, request: Request, team_id: Optional[int] = Query(None),
                con: sqlite3.Connection = Depends(get_db)):
     row = con.execute("SELECT league_id FROM trades WHERE id = ?",
                       (trade_id,)).fetchone()
     if not row:
         raise HTTPException(404, f"trade {trade_id} not found")
-    # Veto is cast by a non-party team during the 2-day review window.
+    # Veto is cast by a non-party team during the 2-day review window;
+    # the casting team must present its claim code if claimed (P4-W18).
+    if team_id is not None:
+        require_team_actor(con, team_id, request)
     return _trade_out(services.respond_trade(
         con, row["league_id"], trade_id, "veto", team_id=team_id))

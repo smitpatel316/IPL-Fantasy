@@ -241,8 +241,8 @@ export default function TradesPage() {
     setActionErr("");
     setBusyAction(true);
     try {
-      if (action === "accept") await api.tradeAccept(trade.id);
-      else if (action === "reject") await api.tradeReject(trade.id);
+      if (action === "accept") await api.tradeAccept(trade.id, teamId!);
+      else if (action === "reject") await api.tradeReject(trade.id, teamId!);
       else await api.tradeVeto(trade.id, teamId!);
       await load();
     } catch (e) {

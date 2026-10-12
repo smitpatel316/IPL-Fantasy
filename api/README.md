@@ -15,10 +15,11 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `POST /api/leagues` | live | `{name, commissioner_name}` → league + invite_code |
 | `GET /api/leagues` | **live (P4-W7)** | league summaries (id, name, season, status, team_count) for the web league switcher |
 | `GET /api/leagues/{id}` | live | league + settings + standings |
-| `POST /api/leagues/{id}/join` | live | `{invite_code, team_name, owner_name}` |
+| `POST /api/leagues/{id}/join` | live | `{invite_code, team_name, owner_name}` — joining auto-claims the team (P4-W18): the response carries its one-time `claim_code` |
 | `PATCH /api/leagues/{id}/settings` | **live (P4-W15)** | commissioner settings edit: `pick_clock_secs`, `trade_deadline_week`, `waiver_run_weekday` (validated, merged into the settings JSON) |
 | `POST /api/leagues/{id}/adjustments` | **live (P4-W15)** | manual FAAB adjustment `{team_id, faab_delta, note}` — note mandatory, balance clamped at 0, written to `league_adjustments` |
 | `GET /api/leagues/{id}/adjustments` | **live (P4-W15)** | commissioner audit log, newest first (limit 50) |
+| `POST /api/teams/{id}/claim` · `POST /api/teams/{id}/reset-claim` | **live (P4-W18)** | claim an unclaimed team (returns its code once; 409 if already claimed) / commissioner reset (clears the code). Once claimed, team-scoped mutations (lineup PUT, waiver claim, trade propose/accept/reject/veto) require the `X-Team-Claim` header; unclaimed teams stay honor-system |
 | `GET /api/leagues/{id}/teams` | live | |
 | `GET /api/leagues/{id}/playoffs` | **live (P4-W6)** | bracket projection of the P2-L6 engine: top-4 seeds from regular-season (weeks 1–6) standings, 1v4/2v3 semifinals, final + third-place game, champion; `seeds_final` false until every week-6 game is final; week-7/8 matchup rows are adopted (scores/status/winner, ties to the higher seed) as scoring lands them |
 | `GET /api/leagues/{id}/schedule-nudges?week_no=` | **live (P3-A6)** | per-IPL-team game counts for a fantasy week; `weeks_available` + `week_start/end` + `source` provenance; powers the draft-room + waiver schedule badges (D10 option 4). Data: `api/schedule_games.py` importer (2026 Cricsheet fixture as dev stand-in; 2027 fixture swaps in ~Feb 2027, no re-architecture) |

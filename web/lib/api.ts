@@ -4,7 +4,9 @@
    body — the UI renders the track tag so users know which build owns it. */
 
 import { ApiError } from "./types";
+import { claimHeaders } from "./identity";
 import type {
+  ClaimOut,
   DndOut,
   DraftOut,
   DraftPickOut,
@@ -134,10 +136,17 @@ export const api = {
       body: JSON.stringify({ player_ids }),
     }),
 
+  // identity (P4-W18): claim/reset a team's claim code
+  claimTeam: (teamId: number) =>
+    req<ClaimOut>(`/teams/${teamId}/claim`, { method: "POST" }),
+  resetClaim: (teamId: number) =>
+    req<TeamOut>(`/teams/${teamId}/reset-claim`, { method: "POST" }),
+
   // lineups
   setLineup: (teamId: number | string, week_no: number, slots: Record<string, number[]>) =>
     req<LineupOut>(`/teams/${teamId}/lineup`, {
       method: "PUT",
+      headers: claimHeaders(Number(teamId)),
       body: JSON.stringify({ week_no, slots }),
     }),
   getLineup: (teamId: number | string, week_no: number) =>
@@ -145,7 +154,11 @@ export const api = {
 
   // waivers
   submitClaim: (body: { league_id: number; team_id: number; add_player_id: number; drop_player_id?: number; bid: number }) =>
-    req<WaiverClaimOut>("/waivers/claim", { method: "POST", body: JSON.stringify(body) }),
+    req<WaiverClaimOut>("/waivers/claim", {
+      method: "POST",
+      headers: claimHeaders(body.team_id),
+      body: JSON.stringify(body),
+    }),
   pendingClaims: (league_id: number, week_no: number, team_id?: number) =>
     req<WaiverClaimOut[]>(
       `/waivers/pending?league_id=${league_id}&week_no=${week_no}${team_id != null ? `&team_id=${team_id}` : ""}`
@@ -156,17 +169,31 @@ export const api = {
     req<WaiverRunResultOut[]>(`/waivers/run?league_id=${league_id}&week_no=${week_no}`, {
       method: "POST",
     }),
->>>>>>> origin/ipl/web/waiver-run-trigger
 
   // trades
   proposeTrade: (body: { league_id: number; from_team_id: number; to_team_id: number; gives: number[]; receives: number[] }) =>
-    req<TradeOut>("/trades", { method: "POST", body: JSON.stringify(body) }),
+    req<TradeOut>("/trades", {
+      method: "POST",
+      headers: claimHeaders(body.from_team_id),
+      body: JSON.stringify(body),
+    }),
   listTrades: (league_id: number, status?: string) =>
     req<TradeOut[]>(`/trades?league_id=${league_id}${status ? `&status=${status}` : ""}`),
-  tradeAccept: (tradeId: number) => req<TradeOut>(`/trades/${tradeId}/accept`, { method: "POST" }),
-  tradeReject: (tradeId: number) => req<TradeOut>(`/trades/${tradeId}/reject`, { method: "POST" }),
+  tradeAccept: (tradeId: number, actorTeamId: number) =>
+    req<TradeOut>(`/trades/${tradeId}/accept`, {
+      method: "POST",
+      headers: claimHeaders(actorTeamId),
+    }),
+  tradeReject: (tradeId: number, actorTeamId: number) =>
+    req<TradeOut>(`/trades/${tradeId}/reject`, {
+      method: "POST",
+      headers: claimHeaders(actorTeamId),
+    }),
   tradeVeto: (tradeId: number, teamId: number) =>
-    req<TradeOut>(`/trades/${tradeId}/veto?team_id=${teamId}`, { method: "POST" }),
+    req<TradeOut>(`/trades/${tradeId}/veto?team_id=${teamId}`, {
+      method: "POST",
+      headers: claimHeaders(teamId),
+    }),
 
   // matchups / scoring
   listMatchups: (league_id: number, week_no: number) =>

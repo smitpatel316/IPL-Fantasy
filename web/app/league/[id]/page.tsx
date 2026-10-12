@@ -4,16 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
+import { clearTeamClaim, getTeamClaim, setTeamClaim } from "@/lib/identity";
 import { ApiError, type AdjustmentOut, type LeagueDetailOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { Trophy, Settings2, ArrowRight, Crown } from "lucide-react";
+import { Trophy, Settings2, ArrowRight, Crown, KeyRound } from "lucide-react";
 
 export default function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState<string | null>(null);
   const [league, setLeague] = useState<LeagueDetailOut | null>(null);
   const [err, setErr] = useState("");
   const { setLeagueId } = useLeague();
+  // P4-W18: team ids this browser holds claim codes for.
+  const [mine, setMine] = useState<Set<number>>(new Set());
+  const [claimMsg, setClaimMsg] = useState("");
 
   useEffect(() => {
     params.then((p) => {
@@ -24,18 +28,64 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
     });
   }, [params, setLeagueId]);
 
-  function refresh() {
-    if (!id) return;
-    api
-      .getLeague(id)
-      .then(setLeague)
-      .catch((e) => setErr(e instanceof ApiError ? e.message : "load failed"));
+  async function refresh(lid?: string) {
+    const target = lid ?? id;
+    if (!target) return;
+    const l = await api.getLeague(target);
+    setLeague(l);
+    setMine(new Set(l.standings.filter((s) => getTeamClaim(s.team_id)).map((s) => s.team_id)));
   }
 
   useEffect(() => {
-    refresh();
+    if (!id) return;
+    refresh(id).catch((e) => setErr(e instanceof ApiError ? e.message : "load failed"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  async function doClaim(teamId: number) {
+    setClaimMsg("");
+    try {
+      const r = await api.claimTeam(teamId);
+      setTeamClaim(teamId, r.claim_code);
+      setClaimMsg("Team claimed — this browser can now act for it. Keep the code safe; the commissioner can reset it if lost.");
+      if (id) await refresh(id);
+    } catch (e) {
+      setClaimMsg(e instanceof ApiError ? e.message : "claim failed");
+    }
+  }
+
+  async function doRelease(teamId: number) {
+    setClaimMsg("");
+    try {
+      await api.resetClaim(teamId);
+      clearTeamClaim(teamId);
+      if (id) await refresh(id);
+    } catch (e) {
+      setClaimMsg(e instanceof ApiError ? e.message : "release failed");
+    }
+  }
+
+  function claimControl(s: { team_id: number; claimed: boolean }) {
+    if (mine.has(s.team_id))
+      return (
+        <span className="mt-0.5 flex items-center gap-2 text-[11px]">
+          <span className="font-bold text-trophy-gold">Yours</span>
+          <button type="button" onClick={() => doRelease(s.team_id)} className="text-zinc-500 underline hover:text-zinc-300">
+            release
+          </button>
+        </span>
+      );
+    if (s.claimed) return <span className="mt-0.5 block text-[11px] text-zinc-600">Claimed</span>;
+    return (
+      <button
+        type="button"
+        onClick={() => doClaim(s.team_id)}
+        className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold text-pitch-green hover:underline"
+      >
+        <KeyRound className="h-3 w-3" /> Claim this team
+      </button>
+    );
+  }
 
   if (err) return <div className="pt-8"><ErrorBox message={err} /></div>;
   if (!league)
@@ -91,7 +141,10 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
                       {i + 1}
                     </span>
                   </td>
-                  <td className="px-2 py-3 font-semibold text-white">{s.team_name}</td>
+                  <td className="px-2 py-3 font-semibold text-white">
+                    {s.team_name}
+                    {claimControl(s)}
+                  </td>
                   <td className="hidden px-2 py-3 text-zinc-400 md:table-cell">{s.owner_name ?? "—"}</td>
                   <td className="px-2 py-3 text-center tabular-nums">
                     <span className="font-semibold text-pitch-green">{s.wins}</span>
@@ -121,6 +174,7 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
                     <span className="text-pitch-green">{s.wins}W</span>–<span className="text-brick-red">{s.losses}L</span>
                     {" · "}{s.points_for.toFixed(0)} PF
                   </p>
+                  {claimControl(s)}
                 </div>
                 <span className="shrink-0 text-sm font-bold tabular-nums text-trophy-gold">${s.faab_remaining}</span>
               </li>
@@ -129,7 +183,9 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
           <p className="border-t border-slate-800 px-5 py-3 text-[11px] text-zinc-600">
             <Crown className="mr-1 inline h-3 w-3 text-trophy-gold/70" />
             Top {playoffTeams} make the fantasy playoffs (weeks 7–8).
+            {" "}Claim your team to lock its lineups, bids and trades to this browser.
           </p>
+          {claimMsg && <p className="border-t border-slate-800 px-5 py-2 text-[11px] text-pitch-green">{claimMsg}</p>}
         </section>
 
         {/* Side column */}

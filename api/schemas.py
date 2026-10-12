@@ -56,6 +56,7 @@ class TeamStandingOut(BaseModel):
     ties: int = 0
     points_for: float = 0.0
     faab_remaining: int
+    claimed: bool = False  # P4-W18: a claim code is set for this team
 
 
 class JoinLeagueIn(BaseModel):
@@ -100,6 +101,15 @@ class TeamOut(BaseModel):
     name: str
     owner_name: Optional[str]
     faab_remaining: int
+    claimed: bool = False
+    # Only ever populated on the join + claim responses (the moment the
+    # owner receives their code) — never on list/read endpoints.
+    claim_code: Optional[str] = None
+
+
+class ClaimOut(BaseModel):
+    team_id: int
+    claim_code: str
 
 
 # ---------- players ----------

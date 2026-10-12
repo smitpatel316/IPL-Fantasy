@@ -8,21 +8,21 @@ waiver_claims, teams.faab_remaining, and roster_slots."""
 
 import sqlite3
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
 from .. import schemas, services
 from ..constants import TOTAL_WEEKS
 from ..database import get_db
-from . import get_league, get_team
+from . import get_league, require_team_actor
 
 router = APIRouter()
 
 
 @router.post("/claim", response_model=schemas.WaiverClaimOut)
-def submit_claim(body: schemas.WaiverClaimCreate,
+def submit_claim(body: schemas.WaiverClaimCreate, request: Request,
                  con: sqlite3.Connection = Depends(get_db)):
     get_league(con, body.league_id)
-    get_team(con, body.team_id)
+    require_team_actor(con, body.team_id, request)  # P4-W18 claim-code gate
     # 15-man rosters have no open slots: a drop is required (422 otherwise).
     week_no = services.current_week(con, body.league_id)
     return schemas.WaiverClaimOut(**services.submit_waiver_claim(
