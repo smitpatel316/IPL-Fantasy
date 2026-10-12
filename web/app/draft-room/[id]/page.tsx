@@ -197,7 +197,14 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
   const clockLeft = deadline != null ? deadline - now / 1000 : null;
   const complete = snap?.draft.status === "complete";
 
-  const roundNo = snap && snap.picks.length > 0 ? snap.picks[snap.picks.length - 1].round_no : 1;
+  // Round of the pick currently on the clock — deriving it from the
+  // LAST completed pick lagged one round-boundary behind (P4-W13).
+  const roundNo = snap
+    ? Math.min(
+        snap.draft.rounds,
+        Math.max(1, Math.ceil(snap.current_pick_no / Math.max(1, snap.draft.teams.length))),
+      )
+    : 1;
   const pickPct = snap ? Math.min(100, ((snap.current_pick_no - 1) / Math.max(1, snap.total_picks)) * 100) : 0;
   const onClockName = snap?.draft.teams.find((t) => t.id === onClock)?.name ?? "—";
   const upcoming = snap && !complete ? upcomingTeams(snap, 6) : [];
