@@ -123,6 +123,9 @@ class LineupOut(BaseModel):
     slots: dict[str, list[int]]
     overseas_starters: int
     valid: bool
+    # Set on GET when no lineup is saved for week_no yet: the slots are
+    # carried over from this earlier week's saved lineup (P4-W5).
+    carried_over_from_week: Optional[int] = None
 
 
 # ---------- waivers ----------
