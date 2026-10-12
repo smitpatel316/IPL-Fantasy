@@ -20,6 +20,7 @@ import type {
   TeamOut,
   TradeOut,
   WaiverClaimOut,
+  WaiverRunResultOut,
 } from "./types";
 
 const BASE =
@@ -116,6 +117,10 @@ export const api = {
     req<WaiverClaimOut>("/waivers/claim", { method: "POST", body: JSON.stringify(body) }),
   pendingClaims: (league_id: number, week_no: number) =>
     req<WaiverClaimOut[]>(`/waivers/pending?league_id=${league_id}&week_no=${week_no}`),
+  runWaivers: (league_id: number, week_no: number) =>
+    req<WaiverRunResultOut[]>(`/waivers/run?league_id=${league_id}&week_no=${week_no}`, {
+      method: "POST",
+    }),
 
   // trades
   proposeTrade: (body: { league_id: number; from_team_id: number; to_team_id: number; gives: number[]; receives: number[] }) =>

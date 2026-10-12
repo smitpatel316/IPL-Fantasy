@@ -48,8 +48,12 @@ async def lifespan(app: FastAPI):
             seed_if_empty(con)
     log.info(f"IPL Fantasy API {APP_VERSION} started sandbox={_sandbox_mode()}")
     sweeper = draft_ws.start_sweeper()
+    from api import waiver_scheduler
+
+    waiver_sweeper = waiver_scheduler.start_sweeper()
     yield
     sweeper.cancel()
+    waiver_sweeper.cancel()
 
 
 app = FastAPI(

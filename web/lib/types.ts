@@ -140,6 +140,14 @@ export interface LineupOut {
   valid: boolean;
 }
 
+export interface WaiverRunResultOut {
+  player_id: number;
+  winner_team_id: number | null;
+  amount: number | null;
+  drop_player_id: number | null;
+  forfeited_by: number[];
+}
+
 export interface WaiverClaimOut {
   id: number;
   week_no: number;

@@ -56,6 +56,27 @@ export default function WaiversPage() {
   const teamName = useMemo(() => new Map(teams.map((t) => [t.id, t.name])), [teams]);
   const sorted = useMemo(() => [...teams].sort((a, b) => b.faab_remaining - a.faab_remaining), [teams]);
   const claimsWeek = claims[0]?.week_no;
+  const [running, setRunning] = useState(false);
+  const [runMsg, setRunMsg] = useState("");
+
+  /** Commissioner manual trigger (P4-W16) — the scheduled run lives in
+   *  api/waiver_scheduler.py; this runs the same endpoint immediately. */
+  async function runNow() {
+    if (claimsWeek == null) return;
+    setRunning(true);
+    setRunMsg("");
+    setErr("");
+    try {
+      const results = await api.runWaivers(1, claimsWeek);
+      const won = results.filter((r) => r.winner_team_id != null).length;
+      setRunMsg(`Waivers processed for week ${claimsWeek}: ${won} player(s) claimed.`);
+      await load();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "waiver run failed");
+    } finally {
+      setRunning(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -291,9 +312,21 @@ export default function WaiversPage() {
         </div>
 
         <div>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-300">
-            Claims{claimsWeek ? ` — week ${claimsWeek}` : ""}
-          </h2>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">
+              Claims{claimsWeek ? ` — week ${claimsWeek}` : ""}
+            </h2>
+            <button
+              type="button"
+              disabled={running || claims.length === 0 || claimsWeek == null}
+              onClick={runNow}
+              className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-slate-700 disabled:opacity-50"
+              title="Commissioner: process this week's blind bids now instead of waiting for the scheduled run"
+            >
+              {running ? "Running…" : "Run waivers now"}
+            </button>
+          </div>
+          {runMsg && <p className="mb-3 text-xs text-pitch-green">{runMsg}</p>}
           {claims.length === 0 ? (
             <p className="text-sm text-slate-500">No bids in yet this week.</p>
           ) : (
