@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS player_roles (
     is_overseas  INTEGER NOT NULL DEFAULT 0,
     ipl_team_code TEXT,
     source       TEXT,
+    status       TEXT,  -- availability designation (P4-W4): 'retired' | 'injured' | 'out' marks the player IL-eligible (D7); NULL/'active' = available
     PRIMARY KEY (player_id, season)
 );
 

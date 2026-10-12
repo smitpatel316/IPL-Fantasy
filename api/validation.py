@@ -46,6 +46,14 @@ def validate_lineup(lineup: dict[str, list[int]], roles: dict[int, dict]) -> dic
                 raise LineupError(
                     f"player {pid} (role {info['role']}) not eligible for {slot}"
                 )
+            if slot == "IL" and not info.get("il_eligible"):
+                # D7: IL is only for players who have missed or are
+                # expected to miss a game (designated via curated status).
+                raise LineupError(
+                    f"player {pid} is not IL-eligible: the IL slot is only "
+                    f"for players who have missed or are expected to miss "
+                    f"a game (D7)"
+                )
             if slot in STARTER_SLOTS:
                 starters.append(pid)
 

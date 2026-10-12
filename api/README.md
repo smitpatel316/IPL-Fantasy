@@ -25,7 +25,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `POST /api/drafts/{id}/dnd` | **live (P3-A3)** | `{team_id, player_id}` — do-not-draft (live draft only); auto-pick skips, manual picks rejected |
 | `DELETE /api/drafts/{id}/dnd` | **live (P3-A3)** | `{team_id, player_id}` — un-block |
 | `GET /api/leagues/{id}/draft` | **live (P3-A3)** | league's most recent draft (404 if none) |
-| `PUT /api/teams/{id}/lineup` | live | `{week_no, slots}` — validates D7 slots + D8 overseas cap (422 on violation); **P2-L2 seam**: weekly-lock deadline check goes here (marked in code) |
+| `PUT /api/teams/{id}/lineup` | live | `{week_no, slots}` — validates D7 slots + D8 overseas cap + IL eligibility (422 on violation; IL only for players whose curated `player_roles.status` marks them out — retired/injured/out); **P2-L2 seam**: weekly-lock deadline check goes here (marked in code) |
 | `GET /api/teams/{id}/lineup?week_no=` | live | |
 | `GET /api/players?league_id=&season=&role=&team=&q=` | live | universe + roles + preseason_rank + owned_by_team_id |
 | `POST /api/waivers/claim` | **live (P3-A2)** | `{league_id, team_id, add_player_id, drop_player_id?, bid}` — blind FAAB, budget enforced |
