@@ -194,6 +194,42 @@ class MatchupOut(BaseModel):
     status: str  # scheduled | live | final
 
 
+class PlayoffSeedOut(BaseModel):
+    seed: int
+    team_id: int
+    team_name: str
+    wins: int
+    losses: int
+    ties: int
+    points_for: float
+
+
+class PlayoffGameOut(BaseModel):
+    label: str  # "Semifinal 1" | "Semifinal 2" | "Final" | "Third-place game"
+    week_no: int
+    team_a_id: Optional[int] = None
+    team_a_label: str  # team name, or "Winner of Semifinal 1" while undecided
+    team_b_id: Optional[int] = None
+    team_b_label: str
+    score_a: Optional[float] = None
+    score_b: Optional[float] = None
+    status: str  # projected | scheduled | final
+    winner_team_id: Optional[int] = None
+
+
+class PlayoffsOut(BaseModel):
+    league_id: int
+    # regular_season | semifinals | final | complete
+    stage: str
+    seeds_final: bool  # False while the regular season is still running
+    seeds: list[PlayoffSeedOut]
+    semifinals: list[PlayoffGameOut]
+    final: Optional[PlayoffGameOut] = None
+    third_place: Optional[PlayoffGameOut] = None
+    champion_team_id: Optional[int] = None
+    champion_team_name: Optional[str] = None
+
+
 class PlayerScoreOut(BaseModel):
     player_name: str
     fantasy_points: int
