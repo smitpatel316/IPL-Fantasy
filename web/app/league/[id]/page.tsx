@@ -5,10 +5,10 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
 import { clearTeamClaim, getTeamClaim, setTeamClaim } from "@/lib/identity";
-import { ApiError, type AdjustmentOut, type LeagueDetailOut } from "@/lib/types";
+import { ApiError, type AdjustmentOut, type LeagueDetailOut, type MatchupOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { Trophy, Settings2, ArrowRight, Crown, KeyRound } from "lucide-react";
+import { Trophy, Settings2, ArrowRight, Crown, KeyRound, Swords } from "lucide-react";
 
 export default function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState<string | null>(null);
@@ -18,6 +18,9 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
   // P4-W18: team ids this browser holds claim codes for.
   const [mine, setMine] = useState<Set<number>>(new Set());
   const [claimMsg, setClaimMsg] = useState("");
+  // P4-W21: "my matchup" strip state.
+  const [myTeamId, setMyTeamId] = useState<number | null>(null);
+  const [myMatchup, setMyMatchup] = useState<MatchupOut | null>(null);
 
   useEffect(() => {
     params.then((p) => {
@@ -87,6 +90,41 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
     );
   }
 
+  // Resolve "my team": the page picker (persisted per league), else a
+  // team this browser has claimed (P4-W18 storage), else the first team.
+  useEffect(() => {
+    if (!league || myTeamId !== null) return;
+    let pick: number | null = null;
+    try {
+      const stored = window.localStorage.getItem(`ipl-my-team-${league.id}`);
+      if (stored && league.standings.some((s) => s.team_id === Number(stored))) pick = Number(stored);
+      if (pick === null) {
+        const claimed = league.standings.find((s) => window.localStorage.getItem(`ipl-claim-${s.team_id}`));
+        pick = claimed?.team_id ?? league.standings[0]?.team_id ?? null;
+      }
+    } catch {
+      pick = league.standings[0]?.team_id ?? null;
+    }
+    setMyTeamId(pick);
+  }, [league, myTeamId]);
+
+  useEffect(() => {
+    if (!league || myTeamId === null) return;
+    api
+      .listMatchups(league.id, league.current_week)
+      .then((ms) => setMyMatchup(ms.find((m) => m.team_a_id === myTeamId || m.team_b_id === myTeamId) ?? null))
+      .catch(() => setMyMatchup(null));
+  }, [league, myTeamId]);
+
+  function chooseTeam(teamId: number) {
+    setMyTeamId(teamId);
+    try {
+      window.localStorage.setItem(`ipl-my-team-${league?.id}`, String(teamId));
+    } catch {
+      /* ignore */
+    }
+  }
+
   if (err) return <div className="pt-8"><ErrorBox message={err} /></div>;
   if (!league)
     return (
@@ -105,6 +143,68 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
         title={league.name}
         sub={`Season ${league.season} · invite code ${league.invite_code} · ${league.status}`}
       />
+
+      {/* P4-W21: my-matchup strip for the current week */}
+      {myMatchup && (
+        <section
+          aria-label="My matchup"
+          className="mb-5 rounded-xl border border-trophy-gold/30 bg-midnight-soft px-5 py-4"
+        >
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
+              <Swords className="h-4 w-4 text-trophy-gold" /> Week {league.current_week} · Your matchup
+            </h2>
+            <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[11px] font-bold uppercase text-zinc-300">
+              {myMatchup.status}
+            </span>
+            <span className="ml-auto flex items-center gap-2">
+              <label htmlFor="my-team-picker" className="text-[11px] uppercase tracking-wider text-zinc-500">
+                My team
+              </label>
+              <select
+                id="my-team-picker"
+                value={myTeamId ?? ""}
+                onChange={(e) => chooseTeam(Number(e.target.value))}
+                className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-zinc-200 focus:border-trophy-gold focus:outline-none"
+              >
+                {league.standings.map((s) => (
+                  <option key={s.team_id} value={s.team_id}>
+                    {s.team_name}
+                  </option>
+                ))}
+              </select>
+            </span>
+          </div>
+          <div className="flex items-center gap-3 text-base sm:text-lg">
+            <span
+              className={cn(
+                "min-w-0 flex-1 truncate text-right font-semibold",
+                myMatchup.status === "final" && myMatchup.score_a > myMatchup.score_b ? "text-white" : "text-zinc-300",
+                myMatchup.team_a_id === myTeamId && "text-trophy-gold",
+              )}
+            >
+              {myMatchup.team_a_name}
+            </span>
+            <span className="shrink-0 font-mono font-bold tabular-nums text-white">
+              {myMatchup.score_a.toFixed(1)} – {myMatchup.score_b.toFixed(1)}
+            </span>
+            <span
+              className={cn(
+                "min-w-0 flex-1 truncate font-semibold",
+                myMatchup.status === "final" && myMatchup.score_b > myMatchup.score_a ? "text-white" : "text-zinc-300",
+                myMatchup.team_b_id === myTeamId && "text-trophy-gold",
+              )}
+            >
+              {myMatchup.team_b_name}
+            </span>
+          </div>
+          <p className="mt-2 text-right">
+            <Link href="/matchup" className="text-xs font-semibold text-pitch-green hover:underline">
+              View all matchups →
+            </Link>
+          </p>
+        </section>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Standings */}

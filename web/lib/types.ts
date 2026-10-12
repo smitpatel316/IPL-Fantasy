@@ -68,6 +68,7 @@ export interface LeagueSummaryOut {
 
 export interface LeagueDetailOut extends LeagueOut {
   standings: TeamStandingOut[];
+  current_week: number;
 }
 
 export interface TeamOut {
