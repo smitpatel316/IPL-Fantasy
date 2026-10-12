@@ -218,6 +218,13 @@ def _build_draft(con: sqlite3.Connection, league_id: int) -> Draft:
         for pid, meta in player_roles_map(con, season).items()
     }
     pool = _pool_ranked(con, league_id, season)
+    picks_needed = len(teams) * constants.DRAFT_ROUNDS
+    if len(pool) < picks_needed:
+        raise HTTPException(
+            409,
+            f"player pool too small to complete the draft: {len(pool)} "
+            f"players available, {picks_needed} picks required "
+            f"({len(teams)} teams x {constants.DRAFT_ROUNDS} rounds)")
     ranks = {t["id"]: _team_ranks(con, t["id"]) for t in teams}
     settings = league.get("settings") or {}
     cfg = DraftConfig(
@@ -319,7 +326,8 @@ def _draft_row(con: sqlite3.Connection, draft_id: int) -> dict:
     # never derive it from the round-1 order with index arithmetic.
     try:
         eng = _revive_draft(con, draft_id)
-        on_clock = eng.on_clock_team_id if eng.status == Draft.STATUS_LIVE else None
+        on_clock = eng.on_clock_team_id if (
+            eng.status == Draft.STATUS_LIVE and d["status"] == "live") else None
     except HTTPException:
         on_clock = None
     return {
@@ -396,12 +404,27 @@ def expire_pick(con: sqlite3.Connection, draft_id: int) -> dict | None:
     by the draft-room WebSocket clock sweeper). Returns the auto-pick, or None
     when the draft isn't live or the clock hasn't expired yet."""
     with _draft_lock(draft_id):
+        row = con.execute(
+            "SELECT status FROM drafts WHERE id = ?", (draft_id,)).fetchone()
+        if row and row["status"] == "stalled":
+            return None  # terminal: pool exhausted, see below
         draft = _revive_draft(con, draft_id)
         if draft.status != Draft.STATUS_LIVE or draft.pick_deadline is None:
             return None
         try:
             pick = draft.expire_pick()
         except ClockNotExpired:
+            return None
+        except PoolExhausted as e:
+            # The draft can never advance — no eligible players remain for
+            # the on-clock team. Park it in a terminal 'stalled' state with
+            # the reason logged, instead of leaving a 'live' draft whose
+            # clock the sweeper retries (and warns about) every second.
+            with con:
+                con.execute(
+                    "UPDATE drafts SET status = 'stalled', pick_deadline = NULL"
+                    " WHERE id = ?", (draft_id,))
+            log.error("draft %s stalled: %s", draft_id, e)
             return None
         except DraftError as e:
             raise _draft_error_to_http(e)
