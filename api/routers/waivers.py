@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from .. import schemas, services
 from ..constants import TOTAL_WEEKS
 from ..database import get_db
-from . import get_league, require_team_actor
+from . import get_league, get_team, require_team_actor
 
 router = APIRouter()
 
