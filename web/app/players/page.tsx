@@ -23,12 +23,14 @@ export default function PlayersPage() {
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function load() {
+  async function load(overrides?: { role?: string; q?: string }) {
+    const roleArg = overrides?.role ?? role;
+    const qArg = overrides?.q ?? q;
     setLoading(true);
     setErr("");
     try {
       const [ps, ts] = await Promise.all([
-        api.listPlayers({ league_id: 1, role: role || undefined, q: q || undefined }),
+        api.listPlayers({ league_id: 1, role: roleArg || undefined, q: qArg || undefined }),
         api.listTeams(1).catch(() => [] as TeamOut[]),
       ]);
       setPlayers(ps);
@@ -77,7 +79,12 @@ export default function PlayersPage() {
               <button
                 key={r}
                 type="button"
-                onClick={() => setRole(r)}
+                onClick={() => {
+                  setRole(r);
+                  // Refetch immediately — the highlighted pill must never
+                  // disagree with the rows on screen (P4-W11).
+                  load({ role: r });
+                }}
                 className={cn(
                   "rounded-md px-2.5 py-2 text-xs font-semibold transition",
                   role === r ? "bg-trophy-gold text-midnight" : "bg-slate-800 text-zinc-400 hover:text-white",
