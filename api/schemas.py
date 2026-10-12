@@ -37,6 +37,9 @@ class LeagueOut(BaseModel):
 
 class LeagueDetailOut(LeagueOut):
     standings: list["TeamStandingOut"]
+    # P4-W21: the week the league is currently playing (last final + 1,
+    # capped at TOTAL_WEEKS) — drives the dashboard "my matchup" strip.
+    current_week: int = 1
 
 
 class TeamStandingOut(BaseModel):

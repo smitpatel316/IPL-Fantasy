@@ -8,7 +8,7 @@ import string
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from .. import schemas, services
-from ..constants import FAAB_BUDGET
+from ..constants import FAAB_BUDGET, TOTAL_WEEKS
 from ..database import get_db
 from . import get_league, get_team, row_dict
 
@@ -87,6 +87,7 @@ def get_league_detail(league_id: int, con: sqlite3.Connection = Depends(get_db))
         id=league["id"], name=league["name"], invite_code=league["invite_code"],
         season=league["season"], status=league["status"], settings=league["settings"],
         standings=standings,
+        current_week=min(services.current_week(con, league_id), TOTAL_WEEKS),
     )
 
 
