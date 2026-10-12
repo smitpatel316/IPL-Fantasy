@@ -235,6 +235,19 @@ class WaiverClaimOut(BaseModel):
     status: str  # pending | won | lost
 
 
+class CantCutOut(BaseModel):
+    player_ids: list[int]
+    source: str  # custom | preseason_top_n | off
+    top_n: int
+
+
+class CantCutIn(BaseModel):
+    # Fields actually sent are written; player_ids=null clears the
+    # custom list (back to the top-N default), [] turns the list off.
+    player_ids: Optional[list[int]] = None
+    top_n: Optional[int] = None
+
+
 class WaiverRunResultOut(BaseModel):
     player_id: int
     winner_team_id: Optional[int]

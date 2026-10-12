@@ -12,6 +12,7 @@ import type {
   DraftPickOut,
   HealthOut,
   AdjustmentOut,
+  CantCutOut,
   LeagueDetailOut,
   LeagueOut,
   LeagueSummaryOut,
@@ -83,6 +84,7 @@ export const api = {
     }),
   listAdjustments: (id: number | string) =>
     req<AdjustmentOut[]>(`/leagues/${id}/adjustments`),
+  getCantCut: (leagueId: number | string) => req<CantCutOut>(`/leagues/${leagueId}/cant-cut`),
   joinLeague: (id: number | string, invite_code: string, team_name: string, owner_name: string) =>
     req<TeamOut>(`/leagues/${id}/join`, {
       method: "POST",

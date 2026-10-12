@@ -167,6 +167,48 @@ def list_adjustments(league_id: int, con: sqlite3.Connection = Depends(get_db)):
             (league_id,),
         )
     ]
+def _cant_cut_out(con: sqlite3.Connection, league_id: int) -> schemas.CantCutOut:
+    ids, source = services.cant_cut_player_ids(con, league_id)
+    league = get_league(con, league_id)
+    return schemas.CantCutOut(
+        player_ids=sorted(ids), source=source,
+        top_n=league["settings"].get("cant_cut_top_n", services.DEFAULT_CANT_CUT_TOP_N),
+    )
+
+
+@router.get("/{league_id}/cant-cut", response_model=schemas.CantCutOut)
+def get_cant_cut(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+    """The effective can't-cut list (P4-W22): commissioner custom list
+    when set, else the top-N preseason ranks."""
+    get_league(con, league_id)
+    return _cant_cut_out(con, league_id)
+
+
+@router.put("/{league_id}/cant-cut", response_model=schemas.CantCutOut)
+def set_cant_cut(league_id: int, body: schemas.CantCutIn,
+                 con: sqlite3.Connection = Depends(get_db)):
+    """Commissioner control for the can't-cut list. Send player_ids to
+    set a custom list ([] = feature off), player_ids=null to clear back
+    to the top-N default, and/or top_n (0-50) to size the default."""
+    league = get_league(con, league_id)
+    settings = dict(league["settings"])
+    sent = body.model_fields_set
+    if "top_n" in sent and body.top_n is not None:
+        if not 0 <= body.top_n <= 50:
+            raise HTTPException(422, "top_n must be 0..50")
+        settings["cant_cut_top_n"] = body.top_n
+    if "player_ids" in sent:
+        if body.player_ids is None:
+            settings.pop("cant_cut_player_ids", None)
+        else:
+            for pid in body.player_ids:
+                if not con.execute("SELECT 1 FROM players WHERE id = ?", (pid,)).fetchone():
+                    raise HTTPException(404, f"player {pid} not found")
+            settings["cant_cut_player_ids"] = list(dict.fromkeys(body.player_ids))
+    con.execute("UPDATE leagues SET settings = ? WHERE id = ?",
+                (json.dumps(settings), league_id))
+    con.commit()
+    return _cant_cut_out(con, league_id)
 
 
 @router.post("/{league_id}/join", response_model=schemas.TeamOut)
