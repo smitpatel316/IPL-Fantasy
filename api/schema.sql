@@ -135,6 +135,18 @@ CREATE TABLE IF NOT EXISTS waiver_claims (
     created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Commissioner manual adjustments (P4-W15): every fiat change is audited.
+CREATE TABLE IF NOT EXISTS league_adjustments (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    league_id       INTEGER NOT NULL REFERENCES leagues(id) ON DELETE CASCADE,
+    team_id         INTEGER NOT NULL REFERENCES teams(id),
+    kind            TEXT NOT NULL DEFAULT 'faab',
+    faab_delta      INTEGER NOT NULL DEFAULT 0,
+    faab_after      INTEGER NOT NULL,
+    note            TEXT NOT NULL,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- status ∈ {proposed,accepted,rejected,vetoed,expired}
 CREATE TABLE IF NOT EXISTS trades (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,

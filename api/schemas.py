@@ -64,6 +64,36 @@ class JoinLeagueIn(BaseModel):
     owner_name: str = Field(min_length=1, max_length=80)
 
 
+class LeagueSettingsPatch(BaseModel):
+    """Commissioner-editable settings (P4-W15). Only keys that stay
+    meaningful after league creation are patchable; structural choices
+    (rounds, roster slots, scoring table) are creation-time decisions."""
+    pick_clock_secs: Optional[int] = Field(default=None, ge=0, le=600)
+    trade_deadline_week: Optional[int] = Field(default=None, ge=1, le=8)
+    waiver_run_weekday: Optional[str] = Field(
+        default=None,
+        pattern="^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$",
+    )
+
+
+class AdjustmentCreate(BaseModel):
+    team_id: int
+    faab_delta: int = Field(ge=-1000, le=1000)
+    note: str = Field(min_length=1, max_length=200)
+
+
+class AdjustmentOut(BaseModel):
+    id: int
+    league_id: int
+    team_id: int
+    team_name: str
+    kind: str
+    faab_delta: int
+    faab_after: int
+    note: str
+    created_at: str
+
+
 class TeamOut(BaseModel):
     id: int
     league_id: int
