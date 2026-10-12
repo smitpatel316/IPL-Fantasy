@@ -1,19 +1,43 @@
-"""Lineups: weekly XI. Slot + overseas-cap validation is real (D7/D8 locked);
-the weekly-lock deadline enforcement is the P2-L2 seam (marked below)."""
+"""Lineups: weekly XI. Slot + overseas-cap validation is real (D7/D8
+locked), and the weekly lock (D5) is enforced on PUT: lineups lock at
+the week's first ball (P4-W8, closing the P2-L2 seam)."""
 
 import sqlite3
+from datetime import datetime, time, timezone
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from .. import schemas
+from .. import schedule_games, schemas
 from ..constants import STARTER_SLOTS, TOTAL_WEEKS
 from ..database import get_db
+from ..engine.matchup_scheduler import FANTASY_WEEKS
 from ..validation import LineupError, validate_lineup
-from . import get_team, player_roles_map
+from . import get_league, get_team, player_roles_map
 
 router = APIRouter()
 
 TRACK = "P2-L2"
+
+# D5: lineups lock at the week's first ball. The fixture data carries
+# dates only (team_weekly_games), so the lock instant is the week's
+# Monday at 19:30 IST — the standard IPL evening start — as a stand-in
+# until the real 2027 fixture (with start times) imports ~Feb 2027.
+_FIRST_BALL = time(19, 30)
+_IST = ZoneInfo("Asia/Kolkata")
+
+
+def lineup_lock_at(con: sqlite3.Connection, league_id: int, week_no: int) -> datetime | None:
+    """The week's lock instant (aware, UTC), or None if the week has no
+    known start date. The date comes from the imported fixture table
+    for the league's season when present, else the engine calendar."""
+    season = get_league(con, league_id)["season"]
+    week = schedule_games.fetch_week(con, season, week_no)
+    start = week.get("week_start") or (FANTASY_WEEKS.get(week_no) or (None, None))[0]
+    if not start:
+        return None
+    day = datetime.fromisoformat(str(start)).date()
+    return datetime.combine(day, _FIRST_BALL, tzinfo=_IST).astimezone(timezone.utc)
 
 
 @router.put("/teams/{team_id}/lineup", response_model=schemas.LineupOut)
@@ -22,10 +46,14 @@ def set_lineup(team_id: int, body: schemas.LineupSet, con: sqlite3.Connection = 
     if not 1 <= body.week_no <= TOTAL_WEEKS:
         raise HTTPException(422, f"week_no must be 1..{TOTAL_WEEKS}")
 
-    # P2-L2 SEAM: enforce the weekly lock deadline here (D5 — lineup locks at the
-    # first ball of the fantasy week; before that, edits are free). Scaffold
-    # accepts edits unconditionally; the deadline check slots in here.
-    # if _lineup_locked(team["league_id"], body.week_no): raise HTTPException(409, "lineup locked")
+    # D5 weekly lock: no edits once the week's first ball is due.
+    lock = lineup_lock_at(con, team["league_id"], body.week_no)
+    if lock is not None and datetime.now(timezone.utc) >= lock:
+        raise HTTPException(
+            422,
+            f"lineup for week {body.week_no} is locked — lineups lock at the"
+            f" week's first ball ({lock.isoformat()}, D5)",
+        )
 
     roles = player_roles_map(con)
     try:
@@ -61,7 +89,7 @@ def set_lineup(team_id: int, body: schemas.LineupSet, con: sqlite3.Connection = 
 
 @router.get("/teams/{team_id}/lineup", response_model=schemas.LineupOut)
 def get_lineup(team_id: int, week_no: int, con: sqlite3.Connection = Depends(get_db)):
-    get_team(con, team_id)
+    team = get_team(con, team_id)
     slots: dict[str, list[int]] = {}
     for r in con.execute(
         "SELECT slot, player_id FROM roster_slots WHERE team_id = ? AND week_no = ?",
@@ -74,7 +102,10 @@ def get_lineup(team_id: int, week_no: int, con: sqlite3.Connection = Depends(get
         1 for slot, pids in slots.items() if slot in STARTER_SLOTS for pid in pids
         if roles.get(pid, {}).get("is_overseas")
     )
+    lock = lineup_lock_at(con, team["league_id"], week_no)
     return schemas.LineupOut(
         team_id=team_id, week_no=week_no, slots=slots,
         overseas_starters=overseas, valid=bool(slots),
+        locked=lock is not None and datetime.now(timezone.utc) >= lock,
+        lock_at=lock.isoformat() if lock else None,
     )

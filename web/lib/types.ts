@@ -138,6 +138,8 @@ export interface LineupOut {
   slots: Record<string, number[]>;
   overseas_starters: number;
   valid: boolean;
+  locked: boolean;
+  lock_at: string | null;
 }
 
 export interface WaiverClaimOut {

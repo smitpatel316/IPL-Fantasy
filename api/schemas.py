@@ -123,6 +123,10 @@ class LineupOut(BaseModel):
     slots: dict[str, list[int]]
     overseas_starters: int
     valid: bool
+    # D5 weekly lock state for this week (P4-W8): lock_at is the week's
+    # first-ball instant (ISO, UTC) when known.
+    locked: bool = False
+    lock_at: Optional[str] = None
 
 
 # ---------- waivers ----------

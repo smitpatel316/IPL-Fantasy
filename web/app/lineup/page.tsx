@@ -41,6 +41,8 @@ export default function LineupPage() {
   const [week, setWeek] = useState(1);
   const [roster, setRoster] = useState<PlayerOut[]>([]);
   const [slots, setSlots] = useState<Record<string, number[]>>({});
+  const [locked, setLocked] = useState(false);
+  const [lockAt, setLockAt] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [saving, setSaving] = useState(false);
@@ -67,8 +69,16 @@ export default function LineupPage() {
     // Prefill from any saved lineup for this team+week.
     api
       .getLineup(teamId, week)
-      .then((l) => setSlots(l.slots ?? {}))
-      .catch(() => setSlots({}));
+      .then((l) => {
+        setSlots(l.slots ?? {});
+        setLocked(l.locked);
+        setLockAt(l.lock_at);
+      })
+      .catch(() => {
+        setSlots({});
+        setLocked(false);
+        setLockAt(null);
+      });
   }, [teamId, week]);
 
   function toggle(slot: string, pid: number) {
@@ -187,7 +197,7 @@ export default function LineupPage() {
           </div>
           <button
             onClick={save}
-            disabled={saving || !teamId}
+            disabled={saving || !teamId || locked}
             className="ml-auto inline-flex items-center gap-2 rounded-lg bg-trophy-gold px-5 py-2 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
@@ -201,6 +211,20 @@ export default function LineupPage() {
         )}
       </div>
 
+      {locked ? (
+        <p className="mb-4 rounded-lg border border-brick-red/40 bg-brick-red/10 px-4 py-2.5 text-sm text-red-200">
+          Week {week} is locked — lineups lock at the week&apos;s first ball
+          {lockAt ? ` (${new Date(lockAt).toLocaleString()})` : ""}. This lineup can no
+          longer be changed.
+        </p>
+      ) : (
+        lockAt && (
+          <p className="mb-4 text-xs text-zinc-500">
+            Week {week} lineups lock at the first ball —{" "}
+            {new Date(lockAt).toLocaleString()}.
+          </p>
+        )
+      )}
       {err && <div className="mb-4"><ErrorBox message={err} /></div>}
       {msg && (
         <p className="mb-4 flex items-center gap-1.5 text-sm text-pitch-green">
