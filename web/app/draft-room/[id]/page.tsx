@@ -177,7 +177,6 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
         if (msg.type === "state") {
           const st = msg as unknown as DraftRoomState;
           setSnap(st);
-<<<<<<< HEAD
           // Backfill the pick history once per draft (P4-W12): without
           // this, joining mid-draft or refreshing shows an empty feed —
           // the snapshot carries every pick made so far. The current
@@ -201,9 +200,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
               });
             if (history.length > 0) setFeed((f) => [...f, ...history].slice(0, 40));
           }
-=======
           if (st.chat) setChat(st.chat);
->>>>>>> origin/ipl/web/draft-chat
           const pick = st.pick;
           if (st.event === "pick" && pick) {
             const nm = playerById.get(pick.player_id ?? -1)?.name ?? `#${pick.player_id}`;
@@ -525,7 +522,6 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
               <DraftFeed items={feed} />
             </section>
 
-<<<<<<< HEAD
             <section className={`${tab === "ranks" ? "" : "hidden"} lg:col-span-2`} aria-label="My custom ranks">
               <div className="rounded-xl border border-slate-800 bg-midnight-soft/70 p-4">
                 <div className="mb-1 flex items-center justify-between gap-3">
@@ -580,7 +576,6 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
                     );
                   })}
                 </ol>
-=======
             <section className={`${tab === "chat" ? "" : "hidden"} lg:block`} aria-label="Room chat">
               <div className="rounded-xl border border-slate-800 bg-midnight-soft/70 p-4">
                 <h2 className="mb-3 font-semibold text-white">Room chat</h2>
@@ -614,7 +609,6 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
                     Send
                   </button>
                 </form>
->>>>>>> origin/ipl/web/draft-chat
               </div>
             </section>
           </div>
