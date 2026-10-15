@@ -821,6 +821,15 @@ def submit_waiver_claim(con: sqlite3.Connection, league_id: int, team_id: int,
     except WaiverError as e:
         raise HTTPException(422, str(e))
     cur = con.execute(
+        # P4-W34: upsert semantics — the engine overwrites the bid for
+        # (team, week, player), so mirror that here: a resubmission
+        # replaces the pending row instead of duplicating it in the
+        # claims feed. Resolved (won/lost) rows are history and stay.
+        "DELETE FROM waiver_claims WHERE league_id = ? AND week_no = ?"
+        " AND team_id = ? AND add_player_id = ? AND status = 'pending'",
+        (league_id, week_no, team_id, add_player_id),
+    )
+    cur = con.execute(
         "INSERT INTO waiver_claims (league_id, week_no, team_id, add_player_id,"
         " drop_player_id, bid, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')",
         (league_id, week_no, team_id, add_player_id, drop_player_id, bid),
