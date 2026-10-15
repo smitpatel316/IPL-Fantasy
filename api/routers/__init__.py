@@ -96,3 +96,28 @@ def owned_map(con: sqlite3.Connection, league_id: int) -> dict[int, int]:
     ):
         out[r["player_id"]] = r["team_id"]
     return out
+
+
+def avg_points_map(con: sqlite3.Connection) -> dict[int, float]:
+    """Average fantasy points per player from scored matches (empty
+    until the scoring pipeline lands rows in player_match_stats)."""
+    return {
+        r["player_id"]: round(r["a"], 1)
+        for r in con.execute(
+            "SELECT player_id, AVG(fantasy_points) AS a FROM player_match_stats"
+            " WHERE player_id IS NOT NULL GROUP BY player_id")
+    }
+
+
+def ownership_pct_map(con: sqlite3.Connection) -> dict[int, float]:
+    """Per player: % of leagues where they sit on a construction roster."""
+    total = con.execute("SELECT COUNT(*) FROM leagues").fetchone()[0]
+    if not total:
+        return {}
+    return {
+        r["player_id"]: round(100.0 * r["n"] / total, 1)
+        for r in con.execute(
+            """SELECT rs.player_id, COUNT(DISTINCT t.league_id) AS n
+               FROM roster_slots rs JOIN teams t ON t.id = rs.team_id
+               WHERE rs.week_no IS NULL GROUP BY rs.player_id""")
+    }

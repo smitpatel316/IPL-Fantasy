@@ -275,6 +275,23 @@ class LineupOut(BaseModel):
     lock_at: Optional[str] = None
 
 
+# ---------- watchlist (P5-W2) ----------
+class WatchlistCreate(BaseModel):
+    league_id: int
+    team_id: int
+    player_id: int
+
+
+class WatchlistEntryOut(PlayerOut):
+    """A watched player, shaped like PlayerOut (same ownership/avg
+    derivation as the players list — numbers always agree) plus the
+    watchlist row id + when it was starred."""
+    watch_id: int
+    league_id: int
+    team_id: int
+    created_at: str
+
+
 # ---------- waivers ----------
 class WaiverClaimCreate(BaseModel):
     league_id: int

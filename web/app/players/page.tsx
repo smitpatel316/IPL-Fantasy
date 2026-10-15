@@ -6,8 +6,10 @@ import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
 import { ApiError, type PlayerOut, type TeamOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
+import { useWatchlist, WatchToggle } from "@/components/Watchlist";
+import { GameCountBadge, ScheduleWeekPicker, useScheduleBadges } from "@/components/ScheduleBadges";
 import { cn } from "@/lib/utils";
-import { Plane, Search, Users } from "lucide-react";
+import { Plane, Search, Star, Users } from "lucide-react";
 
 const ROLES = ["", "WK", "BAT", "AR", "BOWL"];
 const ROLE_BADGE: Record<string, string> = {
@@ -21,10 +23,15 @@ export default function PlayersPage() {
   const { leagueId } = useLeague();
   const [players, setPlayers] = useState<PlayerOut[]>([]);
   const [teams, setTeams] = useState<TeamOut[]>([]);
+  const [teamId, setTeamId] = useState<number | null>(null);
   const [err, setErr] = useState("");
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // P5-W2: the watchlist is scoped to the managing-as team (P4-W18).
+  const watch = useWatchlist(leagueId, teamId);
+  const sched = useScheduleBadges(leagueId, 1);
 
   async function load(overrides?: { role?: string; q?: string }) {
     const roleArg = overrides?.role ?? role;
@@ -38,6 +45,7 @@ export default function PlayersPage() {
       ]);
       setPlayers(ps);
       setTeams(ts);
+      setTeamId((prev) => (ts.some((t) => t.id === prev) ? prev : (ts[0]?.id ?? null)));
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "load failed");
     } finally {
@@ -112,11 +120,78 @@ export default function PlayersPage() {
 
       {err && <div className="mb-4"><ErrorBox message={err} onRetry={load} /></div>}
 
+      {/* P5-W2: per-team watchlist, scoped to the managing-as identity. */}
+      <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
+            <Star className="h-4 w-4 fill-trophy-gold text-trophy-gold" /> Watched
+          </h2>
+          <div className="ml-auto flex flex-wrap items-center gap-3">
+            <ScheduleWeekPicker weeks={sched.weeks} week={sched.week} setWeek={sched.setWeek} />
+            <label className="flex items-center gap-2 text-xs font-medium text-slate-400">
+              Managing as
+              <select
+                className={input}
+                value={teamId ?? ""}
+                onChange={(e) => setTeamId(Number(e.target.value))}
+              >
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+        {watch.error && <p className="mb-3 text-xs text-brick-red">{watch.error}</p>}
+        {watch.entries.length === 0 ? (
+          <p className="text-sm text-zinc-500">
+            No players watched yet — tap the star on any player below (or on the waiver wire) and
+            they&apos;ll show up here with their ownership, average points, and schedule.
+          </p>
+        ) : (
+          <ul className="divide-y divide-slate-800/60">
+            {watch.entries.map((p) => (
+              <li key={p.watch_id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2.5">
+                <WatchToggle watched onToggle={() => watch.toggle(p.id)} playerName={p.name} />
+                <Link href={`/players/${p.id}`} className="font-medium text-white hover:text-trophy-gold hover:underline">
+                  {p.name}
+                </Link>
+                {p.role && (
+                  <span className={cn("rounded px-1.5 py-0.5 text-xs font-bold", ROLE_BADGE[p.role])}>{p.role}</span>
+                )}
+                {p.ipl_team_code && sched.map.size > 0 && (
+                  <GameCountBadge code={p.ipl_team_code} games={sched.map.get(p.ipl_team_code) ?? 0} />
+                )}
+                <span className="text-xs text-zinc-500">
+                  {p.owned_by_team_id
+                    ? (teamName.get(p.owned_by_team_id) ?? `Team ${p.owned_by_team_id}`)
+                    : "Free agent"}
+                </span>
+                <span className="ml-auto flex items-center gap-4 text-sm tabular-nums">
+                  <span className="text-zinc-300">
+                    {p.avg_points != null ? `${p.avg_points.toFixed(1)} avg` : "— avg"}
+                  </span>
+                  <span className="text-zinc-400">
+                    {p.ownership_pct != null ? `${p.ownership_pct.toFixed(0)}% owned` : "—"}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {sched.range && watch.entries.length > 0 && (
+          <p className="mt-2 text-[11px] text-slate-500">
+            Schedule badges: games in fantasy week {sched.week} ({sched.range}).
+          </p>
+        )}
+      </section>
+
       {/* Desktop table */}
       <div className="hidden overflow-hidden rounded-xl border border-slate-800 md:block">
         <table className="w-full text-sm">
           <thead className="bg-midnight-soft">
             <tr className="text-left text-[11px] uppercase tracking-wider text-zinc-500">
+              <th className="px-2 py-3 font-semibold"><span className="sr-only">Watch</span></th>
               <th className="px-4 py-3 font-semibold">#</th>
               <th className="px-4 py-3 font-semibold">Player</th>
               <th className="px-4 py-3 font-semibold">Role</th>
@@ -130,6 +205,13 @@ export default function PlayersPage() {
           <tbody>
             {players.map((p) => (
               <tr key={p.id} className="border-t border-slate-800/60 transition hover:bg-slate-800/30">
+                <td className="px-2 py-2.5">
+                  <WatchToggle
+                    watched={watch.watchedIds.has(p.id)}
+                    onToggle={() => watch.toggle(p.id)}
+                    playerName={p.name}
+                  />
+                </td>
                 <td className="px-4 py-2.5 tabular-nums text-zinc-500">{p.preseason_rank ?? "–"}</td>
                 <td className="px-4 py-2.5 font-medium text-white">
                   <Link href={`/players/${p.id}`} className="hover:text-trophy-gold hover:underline">
@@ -202,6 +284,11 @@ export default function PlayersPage() {
             ) : (
               <span className="shrink-0 rounded bg-pitch-green/15 px-1.5 py-0.5 text-xs font-bold text-pitch-green">FA</span>
             )}
+            <WatchToggle
+              watched={watch.watchedIds.has(p.id)}
+              onToggle={() => watch.toggle(p.id)}
+              playerName={p.name}
+            />
           </Link>
         ))}
         {!loading && players.length === 0 && !err && (

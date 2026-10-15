@@ -6,6 +6,7 @@ import { useLeague } from "@/lib/league-context";
 import { ApiError, type PlayerOut, type TeamOut, type WaiverClaimOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { GameCountBadge, ScheduleWeekPicker, useScheduleBadges } from "@/components/ScheduleBadges";
+import { useWatchlist, WatchToggle } from "@/components/Watchlist";
 import { cn } from "@/lib/utils";
 import { Gavel, CircleDollarSign, Timer, Scale, ArrowRight } from "lucide-react";
 
@@ -184,6 +185,10 @@ export default function WaiversPage() {
   // P3-A6: schedule-aware nudge — games per IPL team per fantasy week.
   const sched = useScheduleBadges(leagueId, 1);
 
+  // P5-W2: watch toggles on the waiver wire, same per-team watchlist
+  // as the players page (scoped to the managing-as team).
+  const watch = useWatchlist(leagueId, teamId);
+
   return (
     <div>
       <PageHeader title="Waivers" sub="Weekly blind FAAB · $100 season budget · runs Wednesday ~3am PT" />
@@ -296,6 +301,7 @@ export default function WaiversPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-zinc-300">Free agents</h2>
+          {watch.error && <p className="mb-2 text-xs text-brick-red">{watch.error}</p>}
           {freeAgents.length === 0 ? (
             <p className="text-sm text-slate-500">No free agents match{loading ? " (loading)…" : "."}</p>
           ) : (
@@ -303,6 +309,7 @@ export default function WaiversPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-midnight-soft text-left text-xs uppercase text-slate-400">
+                    <th className="px-2 py-2"><span className="sr-only">Watch</span></th>
                     <th className="px-3 py-2">Rank</th>
                     <th className="px-3 py-2">Player</th>
                     <th className="px-3 py-2">Role</th>
@@ -313,6 +320,13 @@ export default function WaiversPage() {
                 <tbody>
                   {freeAgents.map((p) => (
                     <tr key={p.id} className="border-t border-slate-800/60 hover:bg-slate-900/50">
+                      <td className="px-2 py-2">
+                        <WatchToggle
+                          watched={watch.watchedIds.has(p.id)}
+                          onToggle={() => watch.toggle(p.id)}
+                          playerName={p.name}
+                        />
+                      </td>
                       <td className="px-3 py-2 text-slate-500">{p.preseason_rank ?? "—"}</td>
                       <td className="px-3 py-2 font-medium text-white">
                         {p.name}

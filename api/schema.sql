@@ -223,3 +223,14 @@ CREATE TABLE IF NOT EXISTS team_weekly_games (
     source        TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (season, week_no, ipl_team_code)
 );
+
+-- P5-W2: per-team player watchlist (starred players). Scoped to
+-- league+team; writes are claim-aware (P4-W18 require_team_actor).
+CREATE TABLE IF NOT EXISTS watchlist (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    league_id   INTEGER NOT NULL REFERENCES leagues(id) ON DELETE CASCADE,
+    team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    player_id   INTEGER NOT NULL REFERENCES players(id),
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (league_id, team_id, player_id)
+);

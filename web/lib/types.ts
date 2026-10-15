@@ -113,6 +113,14 @@ export interface PlayerOut {
   ownership_pct: number | null;
 }
 
+/** P5-W2: a watched player — PlayerOut plus the watchlist row. */
+export interface WatchlistEntryOut extends PlayerOut {
+  watch_id: number;
+  league_id: number;
+  team_id: number;
+  created_at: string;
+}
+
 export interface PlayerOwnerOut {
   league_id: number;
   league_name: string;
