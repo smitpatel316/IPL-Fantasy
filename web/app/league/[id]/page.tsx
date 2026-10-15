@@ -5,10 +5,10 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
 import { clearTeamClaim, getTeamClaim, setTeamClaim } from "@/lib/identity";
-import { ApiError, type AdjustmentOut, type LeagueDetailOut, type MatchupOut, type PlayerOut, type RosterMoveOut } from "@/lib/types";
+import { ApiError, type AdjustmentOut, type DraftRecapOut, type LeagueDetailOut, type MatchupOut, type PlayerOut, type RosterMoveOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { Trophy, Settings2, ArrowRight, Crown, KeyRound, Swords, UserCog, Dices } from "lucide-react";
+import { Trophy, Settings2, ArrowRight, Crown, KeyRound, Swords, UserCog, Dices, GraduationCap } from "lucide-react";
 
 export default function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState<string | null>(null);
@@ -21,6 +21,8 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
   // P4-W21: "my matchup" strip state.
   const [myTeamId, setMyTeamId] = useState<number | null>(null);
   const [myMatchup, setMyMatchup] = useState<MatchupOut | null>(null);
+  // P5-W4: draft recap + grades (null until loaded / on error).
+  const [recap, setRecap] = useState<DraftRecapOut | null>(null);
   // P4-W25: commissioner roster-fiat section state.
   const [players, setPlayers] = useState<PlayerOut[]>([]);
   const [moves, setMoves] = useState<RosterMoveOut[]>([]);
@@ -115,6 +117,11 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
     }
     setMyTeamId(pick);
   }, [league, myTeamId]);
+
+  useEffect(() => {
+    if (!league) return;
+    api.getDraftRecap(league.id).then(setRecap).catch(() => setRecap(null));
+  }, [league]);
 
   useEffect(() => {
     if (!league || myTeamId === null) return;
@@ -267,6 +274,9 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
           </p>
         </section>
       )}
+
+      {/* P5-W4: draft recap + grades */}
+      {recap && <DraftRecapSection recap={recap} />}
 
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Standings */}
@@ -630,6 +640,100 @@ function CommissionerTools({
           </ul>
         </div>
       )}
+    </section>
+  );
+}
+
+/** P5-W4: draft recap + grades — deterministic grades from the
+ * completed draft vs consensus pre-draft ranks (server-computed at
+ * GET /leagues/{id}/draft-recap). Pre-draft this is the honest empty
+ * state; grades land when the draft completes. */
+const GRADE_STYLE: Record<string, string> = {
+  A: "bg-pitch-green/15 text-pitch-green",
+  B: "bg-emerald-900/40 text-emerald-300",
+  C: "bg-slate-800 text-zinc-300",
+  D: "bg-amber-950/50 text-amber-300",
+  F: "bg-red-950/50 text-red-300",
+};
+
+function DraftRecapSection({ recap }: { recap: DraftRecapOut }) {
+  if (recap.status !== "complete") {
+    return (
+      <section
+        aria-label="Draft recap"
+        className="mb-5 rounded-xl border border-dashed border-slate-800 px-5 py-4"
+      >
+        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
+          <GraduationCap className="h-4 w-4 text-trophy-gold" /> Draft recap
+        </h2>
+        <p className="mt-1 text-sm text-zinc-500">
+          Grades land when the draft completes — every team gets a grade, its biggest
+          steal, and its biggest reach, all from consensus pre-draft ranks.
+        </p>
+      </section>
+    );
+  }
+  const steal = recap.headline_biggest_steal;
+  const best = recap.headline_best_pick;
+  return (
+    <section
+      aria-label="Draft recap"
+      className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-5"
+    >
+      <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
+        <GraduationCap className="h-4 w-4 text-trophy-gold" /> Draft recap &amp; grades
+      </h2>
+      {(steal || best) && (
+        <p className="mt-2 text-sm text-zinc-400">
+          {best && (
+            <>
+              Best pick: <span className="font-semibold text-white">{best.player_name}</span>{" "}
+              (consensus #{best.consensus_rank}) to {best.team_name} at pick #{best.pick_no}.{" "}
+            </>
+          )}
+          {steal && (
+            <>
+              Biggest steal: <span className="font-semibold text-white">{steal.player_name}</span>{" "}
+              (ranked #{steal.consensus_rank}, taken #{steal.pick_no}) by {steal.team_name}.
+            </>
+          )}
+        </p>
+      )}
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {recap.teams.map((t) => (
+          <div key={t.team_id} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3.5">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="truncate font-semibold text-white">{t.team_name}</h3>
+              <span
+                className={cn(
+                  "rounded-md px-2 py-0.5 text-lg font-black leading-none",
+                  GRADE_STYLE[t.grade] ?? GRADE_STYLE.C,
+                )}
+              >
+                {t.grade}
+              </span>
+            </div>
+            <p className="mt-1.5 text-xs text-zinc-500">
+              Drafted value {t.projected_value} vs {t.expected_value} expected (
+              {t.value_ratio.toFixed(2)}×) · {t.picks_made} picks
+              {t.unranked_picks > 0 && <> · {t.unranked_picks} unranked</>}
+            </p>
+            {t.biggest_steal && (
+              <p className="mt-2 text-xs text-zinc-400">
+                Steal: <span className="text-zinc-200">{t.biggest_steal.player_name}</span>{" "}
+                (#{t.biggest_steal.consensus_rank} at pick {t.biggest_steal.pick_no})
+              </p>
+            )}
+            {t.biggest_reach && (
+              <p className="mt-1 text-xs text-zinc-400">
+                Reach: <span className="text-zinc-200">{t.biggest_reach.player_name}</span>{" "}
+                (#{t.biggest_reach.consensus_rank} at pick {t.biggest_reach.pick_no})
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[11px] text-slate-500">{recap.basis}</p>
     </section>
   );
 }

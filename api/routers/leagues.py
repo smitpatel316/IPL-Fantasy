@@ -344,3 +344,122 @@ def get_league_draft(league_id: int, con: sqlite3.Connection = Depends(get_db)):
         draft_order=d["draft_order"],
         on_clock_team_id=d.get("on_clock_team_id"),
     )
+
+
+_RECAP_BASIS = (
+    "Grades compare each team's drafted players against consensus "
+    "pre-draft ranks (best rank any team gave the player). A player's "
+    "value is (ranked pool size - rank + 1); a team's grade compares "
+    "the value it drafted with the value its pick positions were "
+    "'expected' to return. Deterministic: same draft + ranks -> "
+    "same grades."
+)
+
+
+def _grade(ratio: float) -> str:
+    if ratio >= 1.10:
+        return "A"
+    if ratio >= 1.03:
+        return "B"
+    if ratio >= 0.97:
+        return "C"
+    if ratio >= 0.90:
+        return "D"
+    return "F"
+
+
+@router.get("/{league_id}/draft-recap", response_model=schemas.DraftRecapOut)
+def get_draft_recap(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+    """P5-W4: post-draft recap + grades. Read-only and deterministic;
+    computed from draft_picks + pre_draft_ranks only (no engine state).
+    Until the draft completes, returns the draft's status with no
+    teams — the UI shows the honest 'grades land when the draft
+    completes' empty state."""
+    get_league(con, league_id)  # 404 if missing
+    d = services.get_league_draft(con, league_id)
+    if d is None:
+        return schemas.DraftRecapOut(
+            league_id=league_id, status="no_draft", basis=_RECAP_BASIS)
+    if d["status"] != "complete":
+        return schemas.DraftRecapOut(
+            league_id=league_id, status=d["status"], draft_id=d["id"],
+            basis=_RECAP_BASIS)
+
+    team_names = {
+        r["id"]: r["name"]
+        for r in con.execute(
+            "SELECT id, name FROM teams WHERE league_id = ?", (league_id,))
+    }
+    consensus = {
+        r["player_id"]: r["c_rank"]
+        for r in con.execute(
+            """SELECT r.player_id, MIN(r.rank) AS c_rank
+               FROM pre_draft_ranks r JOIN teams t ON t.id = r.team_id
+               WHERE t.league_id = ? GROUP BY r.player_id""", (league_id,))
+    }
+    pool = len(consensus)
+
+    def value(rank: int) -> int:
+        return pool - rank + 1
+
+    picks = con.execute(
+        """SELECT dp.pick_no, dp.team_id, dp.player_id, p.name AS player_name
+           FROM draft_picks dp JOIN players p ON p.id = dp.player_id
+           WHERE dp.draft_id = ? AND dp.player_id IS NOT NULL
+           ORDER BY dp.pick_no""", (d["id"],)).fetchall()
+
+    per_team: dict[int, dict] = {
+        tid: {"projected": 0, "expected": 0, "made": 0, "unranked": 0,
+              "steal": None, "reach": None}
+        for tid in team_names
+    }
+    all_ranked: list[schemas.RecapPickOut] = []
+    for r in picks:
+        agg = per_team.setdefault(
+            r["team_id"],
+            {"projected": 0, "expected": 0, "made": 0, "unranked": 0,
+             "steal": None, "reach": None})
+        agg["made"] += 1
+        agg["expected"] += max(value(r["pick_no"]), 1)
+        rank = consensus.get(r["player_id"])
+        if rank is None:
+            agg["unranked"] += 1
+            continue
+        agg["projected"] += value(rank)
+        entry = schemas.RecapPickOut(
+            player_id=r["player_id"], player_name=r["player_name"],
+            team_id=r["team_id"], team_name=team_names.get(r["team_id"], ""),
+            pick_no=r["pick_no"], consensus_rank=rank,
+            delta=r["pick_no"] - rank)
+        all_ranked.append(entry)
+        if entry.delta > 0 and (
+                agg["steal"] is None or entry.delta > agg["steal"].delta):
+            agg["steal"] = entry
+        if entry.delta < 0 and (
+                agg["reach"] is None or entry.delta < agg["reach"].delta):
+            agg["reach"] = entry
+
+    teams_out = []
+    for tid, name in team_names.items():
+        agg = per_team[tid]
+        expected = agg["expected"] or 1
+        ratio = round(agg["projected"] / expected, 3)
+        teams_out.append(schemas.RecapTeamOut(
+            team_id=tid, team_name=name, grade=_grade(ratio),
+            projected_value=agg["projected"], expected_value=agg["expected"],
+            value_ratio=ratio, picks_made=agg["made"],
+            unranked_picks=agg["unranked"],
+            biggest_steal=agg["steal"], biggest_reach=agg["reach"]))
+    # Best draft first; team name breaks ties deterministically.
+    teams_out.sort(key=lambda t: (-t.value_ratio, t.team_name))
+
+    headline_steal = max(
+        all_ranked, key=lambda e: (e.delta, -e.pick_no), default=None)
+    if headline_steal is not None and headline_steal.delta <= 0:
+        headline_steal = None
+    best_pick = min(
+        all_ranked, key=lambda e: (e.consensus_rank, e.pick_no), default=None)
+    return schemas.DraftRecapOut(
+        league_id=league_id, status="complete", draft_id=d["id"],
+        teams=teams_out, headline_biggest_steal=headline_steal,
+        headline_best_pick=best_pick, basis=_RECAP_BASIS)

@@ -9,6 +9,7 @@ import type {
   ClaimOut,
   DndOut,
   DraftOut,
+  DraftRecapOut,
   DraftPickOut,
   HealthOut,
   AdjustmentOut,
@@ -144,6 +145,8 @@ export const api = {
       if (e instanceof ApiError && e.status === 404) return null;
       throw e;
     }),
+  getDraftRecap: (leagueId: number | string) =>
+    req<DraftRecapOut>(`/leagues/${leagueId}/draft-recap`),
   listPicks: (id: number | string) => req<DraftPickOut[]>(`/drafts/${id}/picks`),
   startDraft: (leagueId: number | string) =>
     req<DraftOut>(`/leagues/${leagueId}/draft/start`, { method: "POST" }),
