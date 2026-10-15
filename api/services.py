@@ -844,17 +844,23 @@ def run_waivers(con: sqlite3.Connection, league_id: int, week_no: int) -> list[d
     # P4-W31: a run for a week with zero pending claims is a NO-OP —
     # return [] (processed 0, same list shape as a normal run) without
     # recording the week as run, so later claims for that week are
-    # still accepted instead of BidClosed. Weeks that genuinely ran
-    # are NOT short-circuited: they fall through to the engine, whose
-    # WeekAlreadyRun keeps a re-run safe (no duplicate effects).
+    # still accepted instead of BidClosed.
+    # P4-W33: the no-op short-circuit must not swallow a genuine re-run.
+    # A week that processed bids is recorded in the engine's _runs
+    # (persisted in engine_state); re-running it raises 422 like the
+    # engine's WeekAlreadyRun, so clients can tell "already ran, week
+    # is closed" apart from "never ran, still open". A never-run week
+    # with no claims stays a silent [].
     pending = con.execute(
         "SELECT COUNT(*) FROM waiver_claims WHERE league_id = ?"
         " AND week_no = ? AND status = 'pending'",
         (league_id, week_no),
     ).fetchone()[0]
-    if pending == 0:
-        return []
     eng = _revive_waiver(con, league_id)
+    if pending == 0:
+        if week_no in eng._runs:
+            raise HTTPException(422, f"week {week_no} waivers already ran")
+        return []
     # D8 re-check at run time (P4-W30, mirroring the trade settle
     # re-check in _settle_trades): rosters can change between bid and
     # run, so a claim that was fieldable at submission may brick the
