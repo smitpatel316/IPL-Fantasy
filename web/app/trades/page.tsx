@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
-import { ApiError, type PlayerOut, type TeamOut, type TradeOut } from "@/lib/types";
+import { ApiError, type PlayerOut, type TeamOut, type TradeAnalysisOut, type TradeOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { ArrowLeftRight, ArrowRight, Clock, Plus } from "lucide-react";
@@ -47,6 +47,115 @@ function PlayerChips({ ids, names }: { ids: number[]; names: Map<number, string>
   );
 }
 
+function TradeAnalysisBox({
+  leagueId,
+  fromTeamId,
+  toTeamId,
+  gives,
+  receives,
+  teamName,
+}: {
+  leagueId: number;
+  fromTeamId: number;
+  toTeamId: number;
+  gives: number[];
+  receives: number[];
+  teamName: Map<number, string>;
+}) {
+  const [analysis, setAnalysis] = useState<TradeAnalysisOut | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const key = JSON.stringify({
+    fromTeamId,
+    toTeamId,
+    gives: [...gives].sort((a, b) => a - b),
+    receives: [...receives].sort((a, b) => a - b),
+  });
+
+  useEffect(() => {
+    if (gives.length === 0 || receives.length === 0) {
+      setAnalysis(null);
+      setErr("");
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const a = await api.analyzeTrade({
+          league_id: leagueId,
+          from_team_id: fromTeamId,
+          to_team_id: toTeamId,
+          gives,
+          receives,
+        });
+        if (!cancelled) {
+          setAnalysis(a);
+          setErr("");
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setAnalysis(null);
+          setErr(e instanceof ApiError ? e.message : "analysis failed");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, leagueId]);
+
+  if (gives.length === 0 || receives.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-trophy-gold/30 bg-trophy-gold/5 p-3">
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-trophy-gold">Trade analyzer</p>
+      {loading && !analysis && <p className="text-xs text-zinc-500">Analyzing…</p>}
+      {err && <p className="text-xs text-brick-red">{err}</p>}
+      {analysis && (
+        <>
+          <p className="text-sm font-semibold text-white">{analysis.summary}</p>
+          <ul className="mt-2 space-y-1 text-xs text-zinc-400">
+            {analysis.sides.map((s) => (
+              <li key={s.team_id}>
+                <span className="font-semibold text-zinc-200">
+                  {teamName.get(s.team_id) ?? `Team ${s.team_id}`}
+                </span>
+                {" — "}
+                {s.rank_delta == null ? (
+                  "no rank data"
+                ) : (
+                  <>
+                    rank value {s.rank_delta >= 0 ? "+" : ""}
+                    {s.rank_delta}
+                  </>
+                )}
+                {s.unranked_players > 0 && ` (${s.unranked_players} unranked)`}
+                {" · "}
+                {s.net_games_next_3w == null ? (
+                  "no schedule data"
+                ) : (
+                  <>
+                    {s.net_games_next_3w >= 0 ? "+" : ""}
+                    {s.net_games_next_3w} net games
+                    {analysis.weeks.length > 0 && ` (weeks ${analysis.weeks.join(", ")})`}
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[11px] leading-relaxed text-zinc-600">{analysis.basis}</p>
+        </>
+      )}
+    </div>
+  );
+}
+
 function TradeCard({
   trade,
   teamName,
@@ -54,6 +163,7 @@ function TradeCard({
   managingAs,
   onAction,
   busy,
+  analysis,
 }: {
   trade: TradeOut;
   teamName: Map<number, string>;
@@ -61,6 +171,7 @@ function TradeCard({
   managingAs: number | null;
   onAction: (action: "accept" | "reject" | "veto") => void;
   busy: boolean;
+  analysis?: React.ReactNode;
 }) {
   const isOfferee = managingAs != null && trade.status === "proposed" && trade.to_team_id === managingAs;
   const isParty = managingAs != null && (trade.from_team_id === managingAs || trade.to_team_id === managingAs);
@@ -99,6 +210,7 @@ function TradeCard({
           <Clock className="h-3.5 w-3.5" /> Commissioner review until {fmtTs(trade.review_deadline)}
         </p>
       )}
+      {analysis && <div className="mt-3">{analysis}</div>}
       {(trade.proposed_at || trade.veto_count > 0) && (
         <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500">
           {trade.proposed_at && <span>Proposed {fmtTs(trade.proposed_at)}</span>}
@@ -293,6 +405,16 @@ export default function TradesPage() {
                   managingAs={teamId}
                   busy={busyAction}
                   onAction={(a) => doAction(t, a)}
+                  analysis={
+                    <TradeAnalysisBox
+                      leagueId={leagueId}
+                      fromTeamId={t.from_team_id}
+                      toTeamId={t.to_team_id}
+                      gives={t.gives}
+                      receives={t.receives}
+                      teamName={teamName}
+                    />
+                  }
                 />
               ))}
             </ul>
@@ -388,6 +510,18 @@ export default function TradesPage() {
             {propErr && (
               <div className="mt-3">
                 <ErrorBox message={propErr} />
+              </div>
+            )}
+            {teamId != null && partnerId !== "" && (
+              <div className="mt-4">
+                <TradeAnalysisBox
+                  leagueId={leagueId}
+                  fromTeamId={teamId}
+                  toTeamId={Number(partnerId)}
+                  gives={gives}
+                  receives={receives}
+                  teamName={teamName}
+                />
               </div>
             )}
             {propOk && <p className="mt-3 text-sm text-green-300">{propOk}</p>}

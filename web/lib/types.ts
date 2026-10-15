@@ -266,6 +266,27 @@ export interface TradeOut {
   executed_at: string | null;
 }
 
+// P5-W1 trade analyzer (read-only projection from pre_draft_ranks + fixture game counts)
+export interface TradeSideAnalysisOut {
+  team_id: number;
+  rank_delta: number | null; // + = incoming rank value better than outgoing (NOT a points projection)
+  ranked_players: number;
+  unranked_players: number;
+  net_games_next_3w: number | null; // + = incoming players play more games
+}
+
+export interface TradeAnalysisOut {
+  league_id: number;
+  from_team_id: number;
+  to_team_id: number;
+  gives: number[];
+  receives: number[];
+  weeks: number[];
+  sides: TradeSideAnalysisOut[];
+  summary: string;
+  basis: string;
+}
+
 export interface MatchupOut {
   id: number;
   week_no: number;

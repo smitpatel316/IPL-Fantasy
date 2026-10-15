@@ -27,6 +27,7 @@ import type {
   ScoreboardOut,
   ScheduleNudgesOut,
   TeamOut,
+  TradeAnalysisOut,
   TradeOut,
   WaiverClaimOut,
   WaiverRunResultOut,
@@ -207,6 +208,16 @@ export const api = {
       method: "POST",
       headers: claimHeaders(teamId),
     }),
+  analyzeTrade: (args: {
+    league_id: number;
+    from_team_id: number;
+    to_team_id: number;
+    gives: number[];
+    receives: number[];
+  }) =>
+    req<TradeAnalysisOut>(
+      `/trades/analyze?league_id=${args.league_id}&from_team_id=${args.from_team_id}&to_team_id=${args.to_team_id}&gives=${args.gives.join(",")}&receives=${args.receives.join(",")}`
+    ),
 
   // matchups / scoring
   listMatchups: (league_id: number, week_no: number) =>
