@@ -48,6 +48,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `GET /api/matchups?league_id=&week_no=` | **live (P3-A2)** | schedule generated at draft completion (weeks 1–6; byes for odd team counts) |
 | `GET /api/matchups/scoreboard/{match_id}` | live | per-player points + breakdowns (empty until Phase 3 poller) |
 | `POST /api/admin/score-match` | stub **P3-data** | `{match_id}` — idempotent trigger; scorer is `phase1/scorer.py` |
+| `POST /api/mock-draft/{league_id}` | **live (P5-L1)** | ephemeral practice draft — `{"bots": [{"name, difficulty: casual\|sharp}], "seed"}` (both optional: defaults = 8 bots alternating sharp/casual, seed 42). Reads the league's players/roles/consensus ranks + weeks-1–3 schedule data, runs the draft in memory via `api/engine/mock_draft.py` (bots draft through `Draft.auto_pick`, so every pick is D8-guardrailed), and returns the full pick log + per-team rosters + avg consensus rank per bot. **Zero DB writes** — the live league is untouched. Bot ladder is locked at two levels (Atlas product call); `schedule_weighted` reports whether fixture data existed |
 
 ## Pure helpers (importable, no DB)
 - `api/validation.py::validate_lineup(lineup, roles)` → raises `LineupError`; used by PUT lineup and P2-L2.

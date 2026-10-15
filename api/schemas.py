@@ -201,6 +201,44 @@ class DndIn(BaseModel):
     player_id: int
 
 
+# ---------- mock draft (P5-L1) ----------
+class MockBotIn(BaseModel):
+    name: str
+    difficulty: str  # "casual" | "sharp" (locked ladder, engine-validated)
+
+
+class MockDraftIn(BaseModel):
+    bots: list[MockBotIn] = []  # empty -> 8 default bots (sharp/casual alternating)
+    seed: Optional[int] = None  # None -> 42 (deterministic default)
+
+
+class MockPickOut(BaseModel):
+    pick_no: int
+    round_no: int
+    team_name: str
+    difficulty: str
+    player_id: int
+    player_name: str
+    slot: str
+
+
+class MockTeamOut(BaseModel):
+    name: str
+    difficulty: str
+    avg_consensus_rank: float
+    roster: dict[str, list[str]]  # slot -> player names
+
+
+class MockDraftOut(BaseModel):
+    league_id: int
+    seed: int
+    rounds: int
+    draft_order: list[str]
+    teams: list[MockTeamOut]
+    picks: list[MockPickOut]
+    schedule_weighted: bool  # False when no fixture data existed (honest no-data)
+
+
 class DndOut(BaseModel):
     draft_id: int
     team_id: int

@@ -22,7 +22,7 @@ from fastapi.responses import JSONResponse  # noqa: E402
 from api import draft_ws, schemas  # noqa: E402
 from api.constants import SANDBOX_LEAGUE_NAME, SCORING_TABLE_VERSION  # noqa: E402
 from api.database import init_db  # noqa: E402
-from api.routers import admin, drafts, identity, leagues, lineups, matchups, players, playoffs, ranks, trades, waivers  # noqa: E402
+from api.routers import admin, drafts, identity, leagues, lineups, matchups, players, playoffs, ranks, trades, waivers, mock_draft  # noqa: E402
 from api.sandbox import seed_if_empty  # noqa: E402
 
 APP_VERSION = "0.1.0-scaffold"
@@ -116,6 +116,7 @@ app.include_router(waivers.router, prefix="/api/waivers", tags=["waivers"])
 app.include_router(trades.router, prefix="/api/trades", tags=["trades"])
 app.include_router(matchups.router, prefix="/api/matchups", tags=["matchups"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(mock_draft.router, prefix="/api/mock-draft", tags=["mock-draft"])
 
 
 @app.websocket("/api/drafts/{draft_id}/ws")
