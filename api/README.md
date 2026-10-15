@@ -45,6 +45,7 @@ Base URL: `{BACKEND}/api` · interactive docs: `{BACKEND}/api/docs`
 | `POST /api/trades` | **live (P3-A2)** | `{league_id, from_team_id, to_team_id, gives[], receives[]}` — balanced N-for-N enforced |
 | `GET /api/trades?league_id=&status=` | live | filter by proposed/accepted/rejected/vetoed/expired; each trade carries `veto_count` + `proposed_at`/`accepted_at`/`vetoed_at`/`executed_at` (ISO UTC, null until the event happens) |
 | `POST /api/trades/{id}/accept|reject|veto` | **live (P3-A2)** | accept → review window → auto-execute (paired week-1 slot swap); veto by other teams |
+| `GET /api/trades/analyze?league_id=&from_team_id=&to_team_id=&gives=&receives=` | **live (P5-W1)** | read-only trade impact projection: per-side rank-implied delta (league pre_draft_ranks ADP proxy — NOT a points projection), net games each side's swapped players play over the next 3 fantasy weeks (P3-A6 game-count table), one-line "who wins" summary. Pure read — no engine, no writes |
 | `GET /api/matchups?league_id=&week_no=` | **live (P3-A2)** | schedule generated at draft completion (weeks 1–6; byes for odd team counts) |
 | `GET /api/matchups/scoreboard/{match_id}` | live | per-player points + breakdowns (empty until Phase 3 poller) |
 | `POST /api/admin/score-match` | stub **P3-data** | `{match_id}` — idempotent trigger; scorer is `phase1/scorer.py` |

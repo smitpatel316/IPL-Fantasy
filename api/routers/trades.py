@@ -25,6 +25,33 @@ def _trade_out(t: dict) -> schemas.TradeOut:
     return schemas.TradeOut(**t)
 
 
+def _csv_ids(value: str, label: str) -> list[int]:
+    try:
+        ids = [int(x) for x in value.split(",") if x.strip()]
+    except ValueError:
+        raise HTTPException(422, f"{label} must be a comma-separated list of player ids")
+    if not ids:
+        raise HTTPException(422, f"{label} must list at least one player")
+    return ids
+
+
+@router.get("/analyze", response_model=schemas.TradeAnalysisOut)
+def analyze_trade(league_id: int = Query(...),
+                 from_team_id: int = Query(...),
+                 to_team_id: int = Query(...),
+                 gives: str = Query(..., description="comma-separated player ids from_team sends"),
+                 receives: str = Query(..., description="comma-separated player ids from_team gets"),
+                 con: sqlite3.Connection = Depends(get_db)):
+    """Read-only trade impact projection (P5-W1).
+
+    Computed server-side from pre_draft_ranks (league ADP proxy) and the
+    P3-A6 fixture game-count table. No engine involvement, no writes."""
+    get_league(con, league_id)
+    return schemas.TradeAnalysisOut(**services.analyze_trade(
+        con, league_id, from_team_id, to_team_id,
+        _csv_ids(gives, "gives"), _csv_ids(receives, "receives")))
+
+
 @router.post("", response_model=schemas.TradeOut)
 def propose_trade(body: schemas.TradeCreate, request: Request,
                   con: sqlite3.Connection = Depends(get_db)):

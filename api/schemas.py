@@ -304,6 +304,38 @@ class TradeOut(BaseModel):
 
 
 # ---------- matchups / scoring ----------
+
+
+class TradeSideAnalysis(BaseModel):
+    """One side's read-only projection (P5-W1)."""
+
+    team_id: int
+    # Rank-implied value swing: sum(preseason rank of outgoing) minus
+    # sum(preseason rank of incoming). Lower rank = better, so a positive
+    # delta means the team trades UP in rank value. Rank-based only —
+    # no scoring model exists yet, so this is NOT a points projection.
+    rank_delta: Optional[int] = None
+    ranked_players: int = 0
+    unranked_players: int = 0
+    # Schedule luck: (games incoming players play) - (games outgoing players
+    # play) over the next 3 fantasy weeks, from the P3-A6 game-count table.
+    net_games_next_3w: Optional[int] = None
+
+
+class TradeAnalysisOut(BaseModel):
+    """Read-only trade impact projection (P5-W1)."""
+
+    league_id: int
+    from_team_id: int
+    to_team_id: int
+    gives: list[int]
+    receives: list[int]
+    weeks: list[int]
+    sides: list[TradeSideAnalysis]
+    summary: str
+    basis: str
+
+
 class MatchupOut(BaseModel):
     id: int
     week_no: int

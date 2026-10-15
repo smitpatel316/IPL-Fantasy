@@ -1273,6 +1273,153 @@ def propose_trade(con: sqlite3.Connection, league_id: int, from_team_id: int,
     return out
 
 
+def analyze_trade(con: sqlite3.Connection, league_id: int, from_team_id: int,
+                  to_team_id: int, gives: list[int], receives: list[int]) -> dict:
+    """Read-only trade impact projection (P5-W1).
+
+    Pure read: never writes, never touches the trade engine. Numbers derive
+    from two existing data sources only —
+      1. pre_draft_ranks (league-wide MIN(rank) = the league's ADP proxy):
+         rank-implied value swing per side;
+      2. the P3-A6 team_weekly_games table (schedule-nudges game counts):
+         net games each side's swapped players play over the next 3 weeks.
+    There is no scoring model yet (player avg_points is null until scoring
+    lands), so rank_delta is a RANK delta, not a points projection — the
+    `basis` string says so in plain language for the UI.
+    """
+    league_row = con.execute(
+        "SELECT id, season FROM leagues WHERE id = ?", (league_id,)).fetchone()
+    if not league_row:
+        raise HTTPException(404, f"league {league_id} not found")
+    season = league_row["season"]
+    team_rows = {r["id"]: r["league_id"] for r in con.execute(
+        "SELECT id, league_id FROM teams WHERE id IN (?, ?)",
+        (from_team_id, to_team_id))}
+    for tid, label in ((from_team_id, "from_team_id"), (to_team_id, "to_team_id")):
+        if tid not in team_rows:
+            raise HTTPException(404, f"team {tid} ({label}) not found")
+        if team_rows[tid] != league_id:
+            raise HTTPException(422, f"team {tid} ({label}) is not in league {league_id}")
+    if from_team_id == to_team_id:
+        raise HTTPException(422, "cannot trade with yourself")
+    if not gives or not receives:
+        raise HTTPException(422, "gives and receives must each list at least one player")
+    for pid in gives + receives:
+        if not con.execute("SELECT 1 FROM players WHERE id = ?",
+                           (pid,)).fetchone():
+            raise HTTPException(404, f"player {pid} not found")
+
+    # 1. League preseason ranks (ADP proxy): MIN(rank) across the league's teams.
+    all_ids = list(dict.fromkeys(gives + receives))  # de-dupe, keep order
+    ph = ",".join("?" for _ in all_ids)
+    rank_of: dict[int, int] = {}
+    for row in con.execute(
+            f"""SELECT r.player_id AS pid, MIN(r.rank) AS rk
+                FROM pre_draft_ranks r JOIN teams t ON t.id = r.team_id
+                WHERE t.league_id = ? AND r.player_id IN ({ph})
+                GROUP BY r.player_id""",
+            (league_id, *all_ids)):
+        rank_of[row["pid"]] = row["rk"]
+
+    # 2. Schedule data: IPL team -> game counts for the next 3 fantasy weeks.
+    wk = current_week(con, league_id)
+    weeks = [w for w in (wk, wk + 1, wk + 2) if w <= constants.TOTAL_WEEKS]
+    games_of: dict[str, int] = {}
+    schedule_ok = False
+    if weeks:
+        wp = ",".join("?" for _ in weeks)
+        for row in con.execute(
+                f"""SELECT ipl_team_code, SUM(games) AS g FROM team_weekly_games
+                    WHERE season = ? AND week_no IN ({wp})
+                    GROUP BY ipl_team_code""",
+                (season, *weeks)):
+            if row["g"]:
+                schedule_ok = True
+            games_of[row["ipl_team_code"]] = row["g"] or 0
+    # Player -> IPL team (season-scoped role registry).
+    team_of: dict[int, str] = {}
+    for row in con.execute(
+            f"SELECT player_id, ipl_team_code FROM player_roles "
+            f"WHERE season = ? AND player_id IN ({ph})",
+            (season, *all_ids)):
+        if row["ipl_team_code"]:
+            team_of[row["player_id"]] = row["ipl_team_code"]
+
+    def side(team_id: int, outgoing: list[int], incoming: list[int]) -> dict:
+        ranked = unranked = 0
+        delta = 0
+        for pid in outgoing:
+            if pid in rank_of:
+                ranked += 1
+                delta += rank_of[pid]
+            else:
+                unranked += 1
+        for pid in incoming:
+            if pid in rank_of:
+                ranked += 1
+                delta -= rank_of[pid]
+            else:
+                unranked += 1
+        net_games: int | None
+        if schedule_ok:
+            net_games = (sum(games_of.get(team_of.get(pid, ""), 0) for pid in incoming)
+                         - sum(games_of.get(team_of.get(pid, ""), 0) for pid in outgoing))
+        else:
+            net_games = None
+        return {"team_id": team_id,
+                "rank_delta": delta if ranked else None,
+                "ranked_players": ranked,
+                "unranked_players": unranked,
+                "net_games_next_3w": net_games}
+
+    sides = [side(from_team_id, gives, receives),
+             side(to_team_id, receives, gives)]
+
+    def name(tid: int) -> str:
+        row = con.execute("SELECT name FROM teams WHERE id = ?", (tid,)).fetchone()
+        return row["name"] if row else f"Team {tid}"
+
+    # 3. One-line "who wins" summary, honest about what the numbers mean.
+    bits: list[str] = []
+    d0, d1 = sides[0]["rank_delta"], sides[1]["rank_delta"]
+    if d0 is not None and d1 is not None and (d0 != 0 or d1 != 0):
+        winner = sides[0] if d0 >= d1 else sides[1]
+        loser_delta = d1 if winner is sides[0] else d0
+        margin = winner["rank_delta"] - loser_delta
+        bits.append(f"{name(winner['team_id'])} wins on preseason rank "
+                    f"(+{winner['rank_delta']} vs {loser_delta:+}, margin +{margin})")
+    elif d0 is not None or d1 is not None:
+        bits.append("preseason rank value is even")
+    else:
+        bits.append("no preseason ranks for these players yet")
+    g0, g1 = sides[0]["net_games_next_3w"], sides[1]["net_games_next_3w"]
+    if g0 is not None and g1 is not None and (g0 != 0 or g1 != 0):
+        gainer = sides[0] if g0 >= g1 else sides[1]
+        bits.append(f"{name(gainer['team_id'])} gains {gainer['net_games_next_3w']:+d} "
+                    f"net games over the next 3 weeks")
+    elif schedule_ok:
+        bits.append("schedule is a wash over the next 3 weeks")
+    else:
+        bits.append("no fixture game counts yet")
+    week_label = (f"weeks {weeks[0]}–{weeks[-1]}" if weeks
+                  else "no upcoming weeks")
+
+    return {
+        "league_id": league_id,
+        "from_team_id": from_team_id,
+        "to_team_id": to_team_id,
+        "gives": list(gives),
+        "receives": list(receives),
+        "weeks": weeks,
+        "sides": sides,
+        "summary": "; ".join(bits) + ".",
+        "basis": ("Rank-implied value from the league's pre_draft_ranks (ADP proxy; "
+                  "lower rank = better) and net games from the imported fixture "
+                  f"game counts ({week_label}). No scoring model exists yet, so "
+                  "this is not a fantasy-points projection."),
+    }
+
+
 def _db_engine_id(con: sqlite3.Connection, league_id: int, trade_id: int) -> int:
     """DB trade id -> engine trade id."""
     row = con.execute(
