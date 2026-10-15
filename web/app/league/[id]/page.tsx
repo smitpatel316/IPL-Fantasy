@@ -8,7 +8,7 @@ import { clearTeamClaim, getTeamClaim, setTeamClaim } from "@/lib/identity";
 import { ApiError, type AdjustmentOut, type LeagueDetailOut, type MatchupOut, type PlayerOut, type RosterMoveOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { Trophy, Settings2, ArrowRight, Crown, KeyRound, Swords, UserCog } from "lucide-react";
+import { Trophy, Settings2, ArrowRight, Crown, KeyRound, Swords, UserCog, Dices } from "lucide-react";
 
 export default function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState<string | null>(null);
@@ -186,6 +186,25 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
         title={league.name}
         sub={`Season ${league.season} · invite code ${league.invite_code} · ${league.status}`}
       />
+
+      {/* P5-W3: practice-draft entry — ephemeral mock drafts vs bots. */}
+      <section
+        aria-label="Practice draft"
+        className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-midnight-soft px-5 py-4"
+      >
+        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
+          <Dices className="h-4 w-4 text-trophy-gold" /> Practice draft
+        </h2>
+        <p className="text-sm text-zinc-400">
+          Run a mock draft against sharp and casual bots — your live league is never touched.
+        </p>
+        <Link
+          href="/mock-draft"
+          className="ml-auto flex items-center gap-1.5 rounded-md bg-trophy-gold px-3 py-1.5 text-sm font-bold text-midnight transition hover:bg-trophy-gold/90"
+        >
+          Start a mock <ArrowRight className="h-4 w-4" />
+        </Link>
+      </section>
 
       {/* P4-W21: my-matchup strip for the current week */}
       {myMatchup && (

@@ -295,6 +295,39 @@ export interface TradeAnalysisOut {
   basis: string;
 }
 
+/** P5-L1/P5-W3: ephemeral practice (mock) draft result. */
+export interface MockBotIn {
+  name: string;
+  difficulty: "casual" | "sharp";
+}
+
+export interface MockPickOut {
+  pick_no: number;
+  round_no: number;
+  team_name: string;
+  difficulty: string;
+  player_id: number;
+  player_name: string;
+  slot: string;
+}
+
+export interface MockTeamOut {
+  name: string;
+  difficulty: string;
+  avg_consensus_rank: number;
+  roster: Record<string, string[]>; // slot -> player names
+}
+
+export interface MockDraftOut {
+  league_id: number;
+  seed: number;
+  rounds: number;
+  draft_order: string[];
+  teams: MockTeamOut[];
+  picks: MockPickOut[];
+  schedule_weighted: boolean;
+}
+
 export interface MatchupOut {
   id: number;
   week_no: number;
