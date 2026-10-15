@@ -18,6 +18,8 @@ import type {
   LeagueSummaryOut,
   LineupOut,
   MatchupOut,
+  MockBotIn,
+  MockDraftOut,
   NotImplementedOut,
   PlayerDetailOut,
   PlayerOut,
@@ -218,6 +220,14 @@ export const api = {
     req<TradeAnalysisOut>(
       `/trades/analyze?league_id=${args.league_id}&from_team_id=${args.from_team_id}&to_team_id=${args.to_team_id}&gives=${args.gives.join(",")}&receives=${args.receives.join(",")}`
     ),
+
+  // mock draft (P5-L1/P5-W3): ephemeral practice draft — POST runs it
+  // in memory on the server; zero writes to the live league.
+  runMockDraft: (leagueId: number, body?: { bots?: MockBotIn[]; seed?: number }) =>
+    req<MockDraftOut>(`/mock-draft/${leagueId}`, {
+      method: "POST",
+      body: JSON.stringify(body ?? {}),
+    }),
 
   // matchups / scoring
   listMatchups: (league_id: number, week_no: number) =>
