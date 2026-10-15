@@ -239,6 +239,40 @@ class MockDraftOut(BaseModel):
     schedule_weighted: bool  # False when no fixture data existed (honest no-data)
 
 
+# ---------- draft recap + grades (P5-W4) ----------
+class RecapPickOut(BaseModel):
+    player_id: int
+    player_name: str
+    team_id: int
+    team_name: str
+    pick_no: int
+    consensus_rank: int
+    delta: int  # pick_no - consensus_rank; + = steal, - = reach
+
+
+class RecapTeamOut(BaseModel):
+    team_id: int
+    team_name: str
+    grade: str  # A-F, from value_ratio bands (see routers/leagues.py)
+    projected_value: int
+    expected_value: int
+    value_ratio: float
+    picks_made: int
+    unranked_picks: int
+    biggest_steal: Optional[RecapPickOut] = None
+    biggest_reach: Optional[RecapPickOut] = None
+
+
+class DraftRecapOut(BaseModel):
+    league_id: int
+    status: str  # no_draft | scheduled | live | complete
+    draft_id: Optional[int] = None
+    teams: list[RecapTeamOut] = []
+    headline_biggest_steal: Optional[RecapPickOut] = None
+    headline_best_pick: Optional[RecapPickOut] = None
+    basis: str = ""
+
+
 class DndOut(BaseModel):
     draft_id: int
     team_id: int

@@ -287,6 +287,40 @@ export interface TradeAnalysisOut {
   basis: string;
 }
 
+/** P5-W4: draft recap + grades (deterministic, from draft + ranks). */
+export interface RecapPickOut {
+  player_id: number;
+  player_name: string;
+  team_id: number;
+  team_name: string;
+  pick_no: number;
+  consensus_rank: number;
+  delta: number; // pick_no - consensus_rank; + = steal, - = reach
+}
+
+export interface RecapTeamOut {
+  team_id: number;
+  team_name: string;
+  grade: string;
+  projected_value: number;
+  expected_value: number;
+  value_ratio: number;
+  picks_made: number;
+  unranked_picks: number;
+  biggest_steal: RecapPickOut | null;
+  biggest_reach: RecapPickOut | null;
+}
+
+export interface DraftRecapOut {
+  league_id: number;
+  status: string; // no_draft | scheduled | live | complete
+  draft_id: number | null;
+  teams: RecapTeamOut[];
+  headline_biggest_steal: RecapPickOut | null;
+  headline_best_pick: RecapPickOut | null;
+  basis: string;
+}
+
 export interface MatchupOut {
   id: number;
   week_no: number;
