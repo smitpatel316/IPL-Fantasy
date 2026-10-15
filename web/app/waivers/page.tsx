@@ -115,7 +115,7 @@ export default function WaiversPage() {
       const cc = await api.getCantCut(leagueId).catch(() => null);
       setCantCut(new Set(cc?.player_ids ?? []));
       // Claims feed: show the latest week that has any.
-      const weeks = await Promise.all(WEEKS.map((w) => api.pendingClaims(1, w).catch(() => [] as WaiverClaimOut[])));
+      const weeks = await Promise.all(WEEKS.map((w) => api.pendingClaims(leagueId, w).catch(() => [] as WaiverClaimOut[])));
       const latest = WEEKS.find((w, i) => weeks[i].length > 0);
       setClaims(latest != null ? weeks[WEEKS.indexOf(latest)] : []);
     } catch (e) {
