@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useLeague } from "@/lib/league-context";
 import { ApiError, type PlayerDetailOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ const ROLE_BADGE: Record<string, string> = {
 };
 
 export default function PlayerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { leagueId } = useLeague();
   const [id, setId] = useState<string | null>(null);
   const [player, setPlayer] = useState<PlayerDetailOut | null>(null);
   const [err, setErr] = useState("");
@@ -27,10 +29,10 @@ export default function PlayerDetailPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     if (!id) return;
     api
-      .getPlayer(id, 1)
+      .getPlayer(id, leagueId)
       .then(setPlayer)
       .catch((e) => setErr(e instanceof ApiError ? e.message : "load failed"));
-  }, [id]);
+  }, [id, leagueId]);
 
   if (err) return <div className="pt-8"><ErrorBox message={err} /></div>;
   if (!player)
