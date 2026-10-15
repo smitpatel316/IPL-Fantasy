@@ -31,6 +31,7 @@ import type {
   TradeOut,
   WaiverClaimOut,
   WaiverRunResultOut,
+  WatchlistEntryOut,
 } from "./types";
 
 const BASE =
@@ -117,6 +118,22 @@ export const api = {
   },
   getPlayer: (playerId: number | string, league_id: number) =>
     req<PlayerDetailOut>(`/players/${playerId}?league_id=${league_id}`),
+
+  // watchlist (P5-W2): per-team starred players. Reads open; writes
+  // carry the acting team's claim header like other mutations.
+  listWatchlist: (league_id: number, team_id: number) =>
+    req<WatchlistEntryOut[]>(`/watchlist?league_id=${league_id}&team_id=${team_id}`),
+  starPlayer: (body: { league_id: number; team_id: number; player_id: number }) =>
+    req<WatchlistEntryOut>("/watchlist", {
+      method: "POST",
+      headers: claimHeaders(body.team_id),
+      body: JSON.stringify(body),
+    }),
+  unstarPlayer: (league_id: number, team_id: number, player_id: number) =>
+    req<void>(`/watchlist?league_id=${league_id}&team_id=${team_id}&player_id=${player_id}`, {
+      method: "DELETE",
+      headers: claimHeaders(team_id),
+    }),
 
   // drafts
   getDraft: (id: number | string) => req<DraftOut>(`/drafts/${id}`),

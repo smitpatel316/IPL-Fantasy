@@ -8,34 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from .. import schemas
 from ..database import get_db
-from . import get_league, owned_map
+from . import avg_points_map, get_league, owned_map, ownership_pct_map
 
 router = APIRouter()
-
-
-def _avg_points(con: sqlite3.Connection) -> dict[int, float]:
-    """Average fantasy points per player from scored matches (empty
-    until the scoring pipeline lands rows in player_match_stats)."""
-    return {
-        r["player_id"]: round(r["a"], 1)
-        for r in con.execute(
-            "SELECT player_id, AVG(fantasy_points) AS a FROM player_match_stats"
-            " WHERE player_id IS NOT NULL GROUP BY player_id")
-    }
-
-
-def _ownership_pct(con: sqlite3.Connection) -> dict[int, float]:
-    """Per player: % of leagues where they sit on a construction roster."""
-    total = con.execute("SELECT COUNT(*) FROM leagues").fetchone()[0]
-    if not total:
-        return {}
-    return {
-        r["player_id"]: round(100.0 * r["n"] / total, 1)
-        for r in con.execute(
-            """SELECT rs.player_id, COUNT(DISTINCT t.league_id) AS n
-               FROM roster_slots rs JOIN teams t ON t.id = rs.team_id
-               WHERE rs.week_no IS NULL GROUP BY rs.player_id""")
-    }
 
 
 @router.get("", response_model=list[schemas.PlayerOut])
@@ -67,8 +42,8 @@ def list_players(
         sql += " AND p.name LIKE :q"
         params["q"] = f"%{q}%"
     sql += " ORDER BY preseason_rank NULLS LAST, p.name"
-    avgs = _avg_points(con)
-    own_pct = _ownership_pct(con)
+    avgs = avg_points_map(con)
+    own_pct = ownership_pct_map(con)
     out = []
     for r in con.execute(sql, params):
         out.append(schemas.PlayerOut(
@@ -129,8 +104,8 @@ def get_player(player_id: int, league_id: int = Query(...),
                ORDER BY m.match_date_ist, s.match_id""",
             (player_id,))
     ]
-    avgs = _avg_points(con)
-    own_pct = _ownership_pct(con)
+    avgs = avg_points_map(con)
+    own_pct = ownership_pct_map(con)
     return schemas.PlayerDetailOut(
         id=row["id"], name=row["name"], season=row["season"], role=row["role"],
         is_overseas=bool(row["is_overseas"] or 0),
