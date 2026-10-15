@@ -19,6 +19,8 @@ import type {
   LeagueSummaryOut,
   LineupOut,
   MatchupOut,
+  MessageBoardOut,
+  MessageOut,
   MockBotIn,
   MockDraftOut,
   NotImplementedOut,
@@ -247,6 +249,22 @@ export const api = {
     req<MockDraftOut>(`/mock-draft/${leagueId}`, {
       method: "POST",
       body: JSON.stringify(body ?? {}),
+    }),
+
+  // message board (P5-W5): persistent league posts. Reads open;
+  // post/delete carry the acting team's claim header (P4-W18).
+  getMessageBoard: (leagueId: number, limit = 50, offset = 0) =>
+    req<MessageBoardOut>(`/leagues/${leagueId}/messages?limit=${limit}&offset=${offset}`),
+  postMessage: (leagueId: number, team_id: number, body: string) =>
+    req<MessageOut>(`/leagues/${leagueId}/messages`, {
+      method: "POST",
+      headers: claimHeaders(team_id),
+      body: JSON.stringify({ team_id, body }),
+    }),
+  deleteMessage: (leagueId: number, messageId: number, team_id: number) =>
+    req<void>(`/leagues/${leagueId}/messages/${messageId}?team_id=${team_id}`, {
+      method: "DELETE",
+      headers: claimHeaders(team_id),
     }),
 
   // matchups / scoring

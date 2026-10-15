@@ -7,6 +7,7 @@ import { useLeague } from "@/lib/league-context";
 import { clearTeamClaim, getTeamClaim, setTeamClaim } from "@/lib/identity";
 import { ApiError, type AdjustmentOut, type DraftRecapOut, type LeagueDetailOut, type MatchupOut, type PlayerOut, type RosterMoveOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
+import { MessageBoard } from "@/components/MessageBoard";
 import { cn } from "@/lib/utils";
 import { Trophy, Settings2, ArrowRight, Crown, KeyRound, Swords, UserCog, Dices, GraduationCap } from "lucide-react";
 
@@ -277,6 +278,17 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
 
       {/* P5-W4: draft recap + grades */}
       {recap && <DraftRecapSection recap={recap} />}
+
+      {/* P5-W5: persistent league message board */}
+      {league && (
+        <MessageBoard
+          leagueId={league.id}
+          myTeamId={myTeamId}
+          myTeamName={
+            league.standings.find((s) => s.team_id === myTeamId)?.team_name ?? null
+          }
+        />
+      )}
 
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Standings */}

@@ -234,3 +234,15 @@ CREATE TABLE IF NOT EXISTS watchlist (
     created_at  TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE (league_id, team_id, player_id)
 );
+
+-- P5-W5: persistent league message board (trash talk). Posts are
+-- gated by team identity (P4-W18); commissioner soft-delete via
+-- deleted_at (rows are never hard-deleted).
+CREATE TABLE IF NOT EXISTS league_messages (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    league_id   INTEGER NOT NULL REFERENCES leagues(id) ON DELETE CASCADE,
+    team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    body        TEXT NOT NULL,
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at  TEXT
+);

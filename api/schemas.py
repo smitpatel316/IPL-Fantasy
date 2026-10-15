@@ -273,6 +273,28 @@ class DraftRecapOut(BaseModel):
     basis: str = ""
 
 
+# ---------- league message board (P5-W5) ----------
+class MessageCreate(BaseModel):
+    team_id: int
+    body: str = Field(min_length=1, max_length=500)
+
+
+class MessageOut(BaseModel):
+    id: int
+    league_id: int
+    team_id: int
+    team_name: str
+    body: str
+    created_at: str
+
+
+class MessageBoardOut(BaseModel):
+    league_id: int
+    commissioner_team_id: Optional[int] = None
+    total: int
+    messages: list[MessageOut] = []
+
+
 class DndOut(BaseModel):
     draft_id: int
     team_id: int
