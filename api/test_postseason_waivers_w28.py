@@ -30,8 +30,17 @@ SCHEMA = Path(__file__).resolve().parent / "schema.sql"
 
 
 def _seed_league(con, name, final_weeks):
-    """One league, 2 teams (1 rostered player each), 1 free agent.
-    Returns (league_id, team_a, team_b, drop_a, free_player)."""
+    """Two teams with realistic 14-man rosters + role metadata, 1 free agent.
+    Returns (league_id, team_a, team_b, drop_a, free_player).
+
+    The full rosters exist because the P4-W30 D8 guard checks the post-swap
+    roster can still field a D8-legal XI (d8_reachable at picks_remaining=0)
+    — a 1-player roster can never pass, so the in-season probe seeds a
+    fieldable composition instead. Composition WK1/BAT5/AR4/BOWL4 (all
+    domestic): rigid needs (WK1/BAT3/AR2/BOWL3) covered, 13 BAT/AR/BOWL
+    flex bodies >= 10, 0 forced overseas. drop_a is a BAT and the free
+    agent is a BAT, so the swap leaves the composition legal.
+    """
     con.execute("INSERT INTO users (name) VALUES (?)", (f"{name}-owner",))
     cur = con.execute(
         "INSERT INTO leagues (name, invite_code, commissioner_id, season,"
@@ -39,6 +48,7 @@ def _seed_league(con, name, final_weeks):
         (name, f"CODE-{name}"),
     )
     league_id = cur.lastrowid
+    roles = ["BAT"] * 5 + ["WK"] + ["AR"] * 4 + ["BOWL"] * 4  # 14, drop-first is BAT
     team_ids = []
     drop_ids = []
     for label in ("A", "B"):
@@ -48,20 +58,32 @@ def _seed_league(con, name, final_weeks):
             (league_id, f"{name}-{label}"),
         ).lastrowid
         team_ids.append(t)
-        p = con.execute(
-            "INSERT INTO players (name, season) VALUES (?, '2027')",
-            (f"{name}-drop-{label}",),
-        ).lastrowid
-        drop_ids.append(p)
-        con.execute(
-            "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
-            " VALUES (?, ?, 'BN', NULL)",
-            (t, p),
-        )
+        for i, role in enumerate(roles):
+            p = con.execute(
+                "INSERT INTO players (name, season) VALUES (?, '2027')",
+                (f"{name}-{label}-p{i:02d}",),
+            ).lastrowid
+            con.execute(
+                "INSERT INTO player_roles (player_id, season, role,"
+                " is_overseas) VALUES (?, '2027', ?, 0)",
+                (p, role),
+            )
+            con.execute(
+                "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
+                " VALUES (?, ?, 'BN', NULL)",
+                (t, p),
+            )
+            if i == 0:
+                drop_ids.append(p)
     free = con.execute(
         "INSERT INTO players (name, season) VALUES (?, '2027')",
         (f"{name}-free",),
     ).lastrowid
+    con.execute(
+        "INSERT INTO player_roles (player_id, season, role, is_overseas)"
+        " VALUES (?, '2027', 'BAT', 0)",
+        (free,),
+    )
     for wk in final_weeks:
         con.execute(
             "INSERT INTO matchups (league_id, week_no, team_a_id, team_b_id,"
