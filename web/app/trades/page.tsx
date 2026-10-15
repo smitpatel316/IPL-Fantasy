@@ -64,7 +64,7 @@ function TradeCard({
 }) {
   const isOfferee = managingAs != null && trade.status === "proposed" && trade.to_team_id === managingAs;
   const isParty = managingAs != null && (trade.from_team_id === managingAs || trade.to_team_id === managingAs);
-  const canVeto = managingAs != null && trade.status === "accepted" && !isParty;
+  const canVeto = managingAs != null && trade.status === "accepted" && !isParty && !trade.executed_at;
   return (
     <li className="rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-center gap-2">
