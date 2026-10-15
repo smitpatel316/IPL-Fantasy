@@ -223,3 +223,15 @@ CREATE TABLE IF NOT EXISTS team_weekly_games (
     source        TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (season, week_no, ipl_team_code)
 );
+
+-- P5-W5: persistent league message board (trash talk). Posts are
+-- gated by team identity (P4-W18); commissioner soft-delete via
+-- deleted_at (rows are never hard-deleted).
+CREATE TABLE IF NOT EXISTS league_messages (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    league_id   INTEGER NOT NULL REFERENCES leagues(id) ON DELETE CASCADE,
+    team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    body        TEXT NOT NULL,
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at  TEXT
+);

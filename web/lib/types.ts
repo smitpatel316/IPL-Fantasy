@@ -287,6 +287,23 @@ export interface TradeAnalysisOut {
   basis: string;
 }
 
+/** P5-W5: league message board. */
+export interface MessageOut {
+  id: number;
+  league_id: number;
+  team_id: number;
+  team_name: string;
+  body: string;
+  created_at: string;
+}
+
+export interface MessageBoardOut {
+  league_id: number;
+  commissioner_team_id: number | null;
+  total: number;
+  messages: MessageOut[];
+}
+
 export interface MatchupOut {
   id: number;
   week_no: number;
