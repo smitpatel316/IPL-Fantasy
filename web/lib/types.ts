@@ -554,6 +554,21 @@ export interface TeamGameCount {
   games: number;
 }
 
+/** P5-W15: one row of the schedule matrix (games_by_week[0] = week 1). */
+export interface ScheduleMatrixRowOut {
+  ipl_team_code: string;
+  games_by_week: number[];
+  total: number;
+}
+
+export interface ScheduleMatrixOut {
+  league_id: number;
+  season: string;
+  source: string;
+  weeks_available: number[];
+  rows: ScheduleMatrixRowOut[];
+}
+
 export interface ScheduleNudgesOut {
   league_id: number;
   season: string;

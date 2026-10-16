@@ -316,6 +316,39 @@ def schedule_nudges(league_id: int, week_no: int = Query(1, ge=1),
     return schemas.ScheduleNudgesOut(league_id=league_id, **data)
 
 
+@router.get("/{league_id}/schedule-matrix",
+            response_model=schemas.ScheduleMatrixOut)
+def schedule_matrix(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+    """P5-W15: IPL team x fantasy week game-count matrix — the
+    schedule-nudges table for every week at once, cell-for-cell the
+    same values GET /schedule-nudges serves per week. A team with no
+    row in a week where the fixture exists counts 0 (bye). Empty rows
+    until the fixture imports."""
+    league = get_league(con, league_id)  # 404 if missing
+    from .. import schedule_games
+    from ..constants import TOTAL_WEEKS
+    per_team: dict[str, list[int]] = {}
+    source = ""
+    weeks_available: list[int] = []
+    for wk in range(1, TOTAL_WEEKS + 1):
+        data = schedule_games.fetch_week(con, league["season"], wk)
+        weeks_available = data["weeks_available"]
+        if data["source"]:
+            source = data["source"]
+        for g in data["games"]:
+            row = per_team.setdefault(
+                g["ipl_team_code"], [0] * TOTAL_WEEKS)
+            row[wk - 1] = g["games"]
+    rows = [
+        schemas.ScheduleMatrixRowOut(
+            ipl_team_code=code, games_by_week=games, total=sum(games))
+        for code, games in sorted(per_team.items())
+    ]
+    return schemas.ScheduleMatrixOut(
+        league_id=league_id, season=league["season"], source=source,
+        weeks_available=weeks_available, rows=rows)
+
+
 @router.post("/{league_id}/draft/start", response_model=schemas.DraftOut)
 def start_draft(league_id: int, con: sqlite3.Connection = Depends(get_db)):
     """Start the snake draft (P3-A2: engine-backed). Moved here from the

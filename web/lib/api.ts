@@ -34,6 +34,7 @@ import type {
   RostersOut,
   RosterMoveOut,
   ScoreboardOut,
+  ScheduleMatrixOut,
   ScheduleNudgesOut,
   TeamOut,
   TradeAnalysisOut,
@@ -123,6 +124,9 @@ export const api = {
     req<PlayoffsOut>(`/leagues/${leagueId}/playoffs`),
   scheduleNudges: (leagueId: number | string, week: number) =>
     req<ScheduleNudgesOut>(`/leagues/${leagueId}/schedule-nudges?week_no=${week}`),
+  // P5-W15: the full IPL-team x week game-count matrix in one read.
+  scheduleMatrix: (leagueId: number | string) =>
+    req<ScheduleMatrixOut>(`/leagues/${leagueId}/schedule-matrix`),
 
   // players
   listPlayers: (params: { league_id: number; season?: string; role?: string; team?: string; q?: string }) => {

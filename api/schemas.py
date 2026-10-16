@@ -631,6 +631,22 @@ class TeamGameCount(BaseModel):
     games: int
 
 
+class ScheduleMatrixRowOut(BaseModel):
+    ipl_team_code: str
+    games_by_week: list[int] = []  # index 0 = fantasy week 1
+    total: int = 0
+
+
+class ScheduleMatrixOut(BaseModel):
+    # P5-W15: the whole schedule-nudges table at once — one row per IPL
+    # team, one cell per fantasy week (0 = bye week that week).
+    league_id: int
+    season: str
+    source: str = ""
+    weeks_available: list[int] = []
+    rows: list[ScheduleMatrixRowOut] = []
+
+
 class ScheduleNudgesOut(BaseModel):
     league_id: int
     season: str

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
 import { ApiError, type LineupOut, type MatchupOut, type PlayerOut } from "@/lib/types";
@@ -234,6 +235,13 @@ export default function MatchupPage() {
   return (
     <div>
       <PageHeader title="Matchups" sub="Weekly head-to-head · Monday–Sunday periods" />
+      <p className="-mt-3 mb-5 text-xs text-zinc-500">
+        Planning ahead? See every IPL team&apos;s games per week in the{" "}
+        <Link href="/schedule" className="font-medium text-trophy-gold hover:underline">
+          schedule matrix
+        </Link>
+        .
+      </p>
 
       <div className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-2">
         <ScrollHint className="flex gap-1.5 overflow-x-auto" role="tablist" aria-label="Week">
