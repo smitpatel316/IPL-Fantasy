@@ -52,6 +52,17 @@ def analyze_trade(league_id: int = Query(...),
         _csv_ids(gives, "gives"), _csv_ids(receives, "receives")))
 
 
+@router.get("/finder", response_model=schemas.TradeFinderOut)
+def trade_finder(league_id: int = Query(...), team_id: int = Query(...),
+                 con: sqlite3.Connection = Depends(get_db)):
+    """Read-only "find a partner" suggestions (P5-W18): positional
+    surplus/deficit matches across the league, composed on the trade
+    block (P5-W7). No writes; propose/analyzer/veto flows untouched."""
+    get_league(con, league_id)
+    return schemas.TradeFinderOut(
+        **services.trade_finder(con, league_id, team_id))
+
+
 @router.post("", response_model=schemas.TradeOut)
 def propose_trade(body: schemas.TradeCreate, request: Request,
                   con: sqlite3.Connection = Depends(get_db)):
