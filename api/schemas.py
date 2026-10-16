@@ -298,6 +298,22 @@ class MessageBoardOut(BaseModel):
     messages: list[MessageOut] = []
 
 
+# ---------- season-start readiness (P5-W10) ----------
+class ReadinessItemOut(BaseModel):
+    key: str
+    label: str
+    done: bool
+    detail: str
+    fix_href: str
+
+
+class ReadinessOut(BaseModel):
+    league_id: int
+    ready_count: int
+    total_count: int
+    items: list[ReadinessItemOut] = []
+
+
 class DndOut(BaseModel):
     draft_id: int
     team_id: int
