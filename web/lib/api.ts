@@ -19,6 +19,7 @@ import type {
   LeagueOut,
   LeagueSummaryOut,
   LineupOut,
+  LineupSuggestionOut,
   MatchupOut,
   MessageBoardOut,
   MessageOut,
@@ -202,6 +203,10 @@ export const api = {
     }),
   getLineup: (teamId: number | string, week_no: number) =>
     req<LineupOut>(`/teams/${teamId}/lineup?week_no=${week_no}`),
+  // P5-W13: Suggested XI — read-only solver projection; saving still
+  // goes through setLineup so lock/IL/D8 validation applies unchanged.
+  getLineupSuggestion: (teamId: number | string, week_no: number) =>
+    req<LineupSuggestionOut>(`/teams/${teamId}/lineup/suggestion?week_no=${week_no}`),
 
   // waivers
   submitClaim: (body: { league_id: number; team_id: number; add_player_id: number; drop_player_id?: number; bid: number }) =>

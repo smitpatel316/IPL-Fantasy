@@ -418,6 +418,16 @@ class LineupOut(BaseModel):
     player_availability: dict[int, str] = {}
 
 
+class LineupSuggestionOut(LineupOut):
+    # P5-W13: honest basis copy for the Suggested XI — the suggestion is
+    # the exact best-ADP D8-legal solver over preseason ranks; there is
+    # no scoring/projection model behind it.
+    basis: str = (
+        "Best XI by preseason rank — the exact D8-legal solver over this"
+        " roster's pre-draft ranks. No scoring model."
+    )
+
+
 # ---------- watchlist (P5-W2) ----------
 class WatchlistCreate(BaseModel):
     league_id: int
