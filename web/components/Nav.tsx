@@ -43,6 +43,7 @@ export default function Nav() {
     { href: "/trades", label: "Trades", match: "trades" },
     { href: "/matchup", label: "Matchup", match: "matchup" },
     { href: "/playoffs", label: "Playoffs", match: "playoffs" },
+    { href: "/help", label: "How to play", match: "help" },
   ];
 
   const isActive = (match: string) =>
