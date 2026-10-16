@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
-import { ApiError, type PlayerOut, type TeamOut, type TradeAnalysisOut, type TradeOut } from "@/lib/types";
+import { ApiError, type PlayerOut, type TeamOut, type TradeAnalysisOut, type TradeBlockEntryOut, type TradeOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { ArrowLeftRight, ArrowRight, Clock, Plus } from "lucide-react";
@@ -265,18 +265,27 @@ export default function TradesPage() {
   const [busyAction, setBusyAction] = useState(false);
   const [actionErr, setActionErr] = useState("");
 
+  // trade block (P5-W7) state
+  const [block, setBlock] = useState<TradeBlockEntryOut[]>([]);
+  const [blockPlayerId, setBlockPlayerId] = useState("");
+  const [blockSeeking, setBlockSeeking] = useState("");
+  const [blockErr, setBlockErr] = useState("");
+  const [blockBusy, setBlockBusy] = useState(false);
+
   async function load() {
     setLoading(true);
     setErr("");
     try {
-      const [ts, ps, trs] = await Promise.all([
+      const [ts, ps, trs, blk] = await Promise.all([
         api.listTeams(leagueId),
         api.listPlayers({ league_id: leagueId }),
         api.listTrades(leagueId),
+        api.listTradeBlock(leagueId),
       ]);
       setTeams(ts);
       setPlayers(ps);
       setTrades(trs);
+      setBlock(blk);
       if (!ts.some((t) => t.id === teamId)) setTeamId(ts[0]?.id ?? null);
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "load failed");
@@ -349,6 +358,44 @@ export default function TradesPage() {
     }
   }
 
+  async function postBlock() {
+    if (teamId == null) return;
+    setBlockErr("");
+    if (blockPlayerId === "") {
+      setBlockErr("Pick one of your players to put on the block.");
+      return;
+    }
+    setBlockBusy(true);
+    try {
+      await api.postTradeBlock({
+        league_id: leagueId,
+        team_id: teamId,
+        player_id: Number(blockPlayerId),
+        seeking: blockSeeking.trim(),
+      });
+      setBlockPlayerId("");
+      setBlockSeeking("");
+      await load();
+    } catch (e) {
+      setBlockErr(e instanceof ApiError ? e.message : "could not update the block");
+    } finally {
+      setBlockBusy(false);
+    }
+  }
+
+  async function removeBlock(entry: TradeBlockEntryOut) {
+    setBlockErr("");
+    setBlockBusy(true);
+    try {
+      await api.removeTradeBlock(leagueId, entry.team_id, entry.player_id);
+      await load();
+    } catch (e) {
+      setBlockErr(e instanceof ApiError ? e.message : "could not remove the listing");
+    } finally {
+      setBlockBusy(false);
+    }
+  }
+
   async function doAction(trade: TradeOut, action: "accept" | "reject" | "veto") {
     setActionErr("");
     setBusyAction(true);
@@ -386,6 +433,57 @@ export default function TradesPage() {
         </div>
         <button className={cn(btnPrimary, "ml-auto inline-flex items-center gap-1.5")} onClick={openPropose} disabled={loading}>
           <Plus className="h-4 w-4" /> Propose trade
+        </button>
+      </div>
+
+      <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-300">Trade block</h2>
+      <p className="mb-3 text-sm text-slate-500">
+        Players managers are shopping. Put one of your own on the block with a note on what you want back — listings vanish automatically when the player leaves your roster.
+      </p>
+      {blockErr && <div className="mb-4"><ErrorBox message={blockErr} /></div>}
+      {block.length === 0 ? (
+        <p className="mb-6 text-sm text-slate-500">The block is empty — nobody is shopping a player yet.</p>
+      ) : (
+        <ul className="mb-6 space-y-3">
+          {block.map((e) => (
+            <li key={e.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-800 bg-midnight-soft p-4">
+              <span className="text-sm font-semibold text-white">{e.name}</span>
+              <span className="text-xs text-zinc-500">{e.role ?? ""} {e.ipl_team_code ?? ""}</span>
+              <span className="text-xs text-zinc-400">— {e.team_name}</span>
+              {e.seeking && <span className="text-xs italic text-trophy-gold">seeking: {e.seeking}</span>}
+              {teamId != null && e.team_id === teamId && (
+                <button className={cn(btnDanger, "ml-auto")} onClick={() => removeBlock(e)} disabled={blockBusy}>
+                  Remove
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="mb-8 flex flex-wrap items-end gap-3">
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-400">Your player</label>
+          <select className={input} value={blockPlayerId} onChange={(e) => setBlockPlayerId(e.target.value)}>
+            <option value="">Pick a player…</option>
+            {myRoster.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.role ?? ""} {p.ipl_team_code ?? ""})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="min-w-56 flex-1">
+          <label className="mb-1 block text-xs font-medium text-slate-400">Seeking (e.g. “want a BOWL, will move a BAT”)</label>
+          <input
+            className={cn(input, "w-full")}
+            value={blockSeeking}
+            maxLength={200}
+            onChange={(e) => setBlockSeeking(e.target.value)}
+            placeholder="What do you want back?"
+          />
+        </div>
+        <button className={btnPrimary} onClick={postBlock} disabled={blockBusy || teamId == null}>
+          {blockBusy ? "Saving…" : "Put on the block"}
         </button>
       </div>
 

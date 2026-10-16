@@ -355,6 +355,34 @@ class WatchlistEntryOut(PlayerOut):
     created_at: str
 
 
+# ---------- trade block (P5-W7) ----------
+class TradeBlockCreate(BaseModel):
+    league_id: int
+    team_id: int
+    player_id: int
+    seeking: str = Field(default="", max_length=200)
+
+
+class TradeBlockEntryOut(BaseModel):
+    """One "on the block" listing: the player, the shopping team, and
+    the manager's seeking note. Player fields mirror PlayerOut."""
+    id: int  # listing id
+    league_id: int
+    team_id: int
+    team_name: str
+    player_id: int
+    name: str
+    season: str
+    role: Optional[str]
+    is_overseas: bool = False
+    ipl_team_code: Optional[str]
+    preseason_rank: Optional[int] = None
+    availability: str = "active"
+    seeking: str = ""
+    created_at: str
+    updated_at: str
+
+
 # ---------- waivers ----------
 class WaiverClaimCreate(BaseModel):
     league_id: int
