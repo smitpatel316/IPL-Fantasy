@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
-import { ApiError, type PlayerOut, type TeamOut } from "@/lib/types";
+import { ApiError, type PlayerCompareOut, type PlayerOut, type TeamOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { useWatchlist, WatchToggle } from "@/components/Watchlist";
-import { AvailabilityDot, AvailabilityLegend } from "@/components/AvailabilityDot";
+import { AvailabilityDot, AvailabilityLegend, AVAILABILITY_META } from "@/components/AvailabilityDot";
 import { GameCountBadge, ScheduleWeekPicker, useScheduleBadges } from "@/components/ScheduleBadges";
 import { cn } from "@/lib/utils";
-import { Plane, Search, Star, Users } from "lucide-react";
+import { Plane, Scale, Search, Star, Users, X } from "lucide-react";
 
 const ROLES = ["", "WK", "BAT", "AR", "BOWL"];
 const ROLE_BADGE: Record<string, string> = {
@@ -19,6 +19,42 @@ const ROLE_BADGE: Record<string, string> = {
   AR: "bg-purple-400/10 text-purple-300",
   BOWL: "bg-emerald-400/10 text-emerald-300",
 };
+
+/** P5-W14: add/remove a player from the compare selection. */
+function CompareToggle({
+  active,
+  disabled,
+  onToggle,
+  playerName,
+}: {
+  active: boolean;
+  disabled: boolean;
+  onToggle: () => void;
+  playerName: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={active ? `Remove ${playerName} from compare` : `Add ${playerName} to compare`}
+      aria-pressed={active}
+      disabled={!active && disabled}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onToggle();
+      }}
+      className={cn(
+        "rounded p-1 transition",
+        active
+          ? "bg-trophy-gold/15 text-trophy-gold"
+          : "text-zinc-500 hover:bg-slate-800 hover:text-white",
+        !active && disabled && "cursor-not-allowed opacity-30 hover:bg-transparent hover:text-zinc-500",
+      )}
+    >
+      <Scale className="h-4 w-4" />
+    </button>
+  );
+}
 
 export default function PlayersPage() {
   const { leagueId } = useLeague();
@@ -33,6 +69,45 @@ export default function PlayersPage() {
   // P5-W2: the watchlist is scoped to the managing-as team (P4-W18).
   const watch = useWatchlist(leagueId, teamId);
   const sched = useScheduleBadges(leagueId, 1);
+
+  // P5-W14: compare selection (2-3 players), deep-linkable via
+  // ?compare=<id>,<id>[,<id>] in the URL.
+  const [compareIds, setCompareIds] = useState<number[]>([]);
+  const [compare, setCompare] = useState<PlayerCompareOut | null>(null);
+  const [compareErr, setCompareErr] = useState("");
+
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get("compare");
+    if (!raw) return;
+    const ids = raw.split(",").map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0);
+    if (ids.length >= 2) setCompareIds([...new Set(ids)].slice(0, 3));
+  }, []);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (compareIds.length >= 2) url.searchParams.set("compare", compareIds.join(","));
+    else url.searchParams.delete("compare");
+    window.history.replaceState(null, "", url);
+    if (compareIds.length < 2) {
+      setCompare(null);
+      setCompareErr("");
+      return;
+    }
+    let live = true;
+    api
+      .comparePlayers(leagueId, compareIds)
+      .then((out) => live && setCompare(out))
+      .catch((e) => live && setCompareErr(e instanceof ApiError ? e.message : "compare failed"));
+    return () => {
+      live = false;
+    };
+  }, [compareIds, leagueId]);
+
+  function toggleCompare(pid: number) {
+    setCompareIds((prev) =>
+      prev.includes(pid) ? prev.filter((x) => x !== pid) : prev.length < 3 ? [...prev, pid] : prev,
+    );
+  }
 
   async function load(overrides?: { role?: string; q?: string }) {
     const roleArg = overrides?.role ?? role;
@@ -190,12 +265,97 @@ export default function PlayersPage() {
         )}
       </section>
 
+      {/* P5-W14: side-by-side player compare (2-3 players). */}
+      {compareIds.length > 0 && (
+        <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
+            <Scale className="h-4 w-4 text-trophy-gold" /> Compare
+            <span className="font-medium normal-case text-zinc-500">
+              {compareIds.length}/3 picked
+            </span>
+          </h2>
+          {compareIds.length < 2 ? (
+            <p className="text-sm text-zinc-500">
+              Pick one more player to compare — tap the scale icon on any row below
+              (compare holds 2–3 players).
+            </p>
+          ) : compareErr ? (
+            <p className="text-sm text-brick-red">{compareErr}</p>
+          ) : !compare ? (
+            <p className="text-sm text-zinc-500">Loading…</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[30rem] text-sm">
+                <thead>
+                  <tr className="text-left">
+                    <th className="py-2 pr-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                      <span className="sr-only">Attribute</span>
+                    </th>
+                    {compare.players.map((p) => (
+                      <th key={p.id} className="px-3 py-2">
+                        <span className="inline-flex items-center gap-2 font-semibold text-white">
+                          <Link href={`/players/${p.id}`} className="hover:text-trophy-gold hover:underline">
+                            {p.name}
+                          </Link>
+                          <button
+                            type="button"
+                            aria-label={`Remove ${p.name} from compare`}
+                            onClick={() => toggleCompare(p.id)}
+                            className="rounded p-0.5 text-zinc-500 transition hover:bg-slate-800 hover:text-brick-red"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="[&_td]:px-3 [&_td]:py-2 [&_th]:py-2 [&_tr]:border-t [&_tr]:border-slate-800/60">
+                  {(
+                    [
+                      ["Role", (p) => (p.role ? <span className={cn("rounded px-1.5 py-0.5 text-xs font-bold", ROLE_BADGE[p.role])}>{p.role}</span> : "–")],
+                      ["IPL team", (p) => p.ipl_team_code ?? "–"],
+                      ["Overseas", (p) => (p.is_overseas ? "Yes" : "No")],
+                      ["Preseason rank", (p) => p.preseason_rank ?? "–"],
+                      ["Avg points", (p) => (p.avg_points != null ? p.avg_points.toFixed(1) : "–")],
+                      ["Ownership", (p) => (p.ownership_pct != null ? `${p.ownership_pct.toFixed(0)}%` : "–")],
+                      ["Owner", (p) => (p.owned_by_team_id ? (teamName.get(p.owned_by_team_id) ?? `Team ${p.owned_by_team_id}`) : "Free agent")],
+                      ["Availability", (p) => (
+                        <span className="inline-flex items-center gap-1.5">
+                          <AvailabilityDot availability={p.availability} />
+                          {AVAILABILITY_META[p.availability].label}
+                        </span>
+                      )],
+                      [`Games · weeks ${compare.weeks[0] ?? ""}–${compare.weeks[compare.weeks.length - 1] ?? ""}`, (p) => p.games_next_3_weeks ?? "–"],
+                    ] as [string, (p: PlayerCompareOut["players"][number]) => ReactNode][]
+                  ).map(([label, render]) => (
+                    <tr key={label}>
+                      <th className="pr-3 text-left text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                        {label}
+                      </th>
+                      {compare.players.map((p) => (
+                        <td key={p.id} className="tabular-nums text-zinc-200">{render(p)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="mt-2 text-[11px] text-slate-500">
+                Games = the player&apos;s IPL team fixtures over the next 3 fantasy weeks
+                (schedule-nudges data; “–” until the fixture imports).
+              </p>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Desktop table */}
       <div className="hidden overflow-hidden rounded-xl border border-slate-800 md:block">
         <table className="w-full text-sm">
           <thead className="bg-midnight-soft">
             <tr className="text-left text-[11px] uppercase tracking-wider text-zinc-500">
               <th className="px-2 py-3 font-semibold"><span className="sr-only">Watch</span></th>
+              <th className="px-2 py-3 font-semibold"><span className="sr-only">Compare</span></th>
               <th className="px-4 py-3 font-semibold">#</th>
               <th className="px-4 py-3 font-semibold">Player</th>
               <th className="px-4 py-3 font-semibold">Role</th>
@@ -213,6 +373,14 @@ export default function PlayersPage() {
                   <WatchToggle
                     watched={watch.watchedIds.has(p.id)}
                     onToggle={() => watch.toggle(p.id)}
+                    playerName={p.name}
+                  />
+                </td>
+                <td className="px-2 py-2.5">
+                  <CompareToggle
+                    active={compareIds.includes(p.id)}
+                    disabled={compareIds.length >= 3}
+                    onToggle={() => toggleCompare(p.id)}
                     playerName={p.name}
                   />
                 </td>
@@ -295,6 +463,12 @@ export default function PlayersPage() {
             <WatchToggle
               watched={watch.watchedIds.has(p.id)}
               onToggle={() => watch.toggle(p.id)}
+              playerName={p.name}
+            />
+            <CompareToggle
+              active={compareIds.includes(p.id)}
+              disabled={compareIds.length >= 3}
+              onToggle={() => toggleCompare(p.id)}
               playerName={p.name}
             />
           </Link>

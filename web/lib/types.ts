@@ -230,6 +230,18 @@ export interface WatchlistEntryOut extends PlayerOut {
   created_at: string;
 }
 
+/** P5-W14: one column of the player-compare table. */
+export interface PlayerCompareEntryOut extends PlayerOut {
+  games_next_3_weeks: number | null;
+}
+
+export interface PlayerCompareOut {
+  league_id: number;
+  current_week: number;
+  weeks: number[];
+  players: PlayerCompareEntryOut[];
+}
+
 export interface PlayerOwnerOut {
   league_id: number;
   league_name: string;

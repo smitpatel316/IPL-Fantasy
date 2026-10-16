@@ -25,6 +25,7 @@ import type {
   MockBotIn,
   MockDraftOut,
   NotImplementedOut,
+  PlayerCompareOut,
   PlayerDetailOut,
   PlayerOut,
   PlayoffsOut,
@@ -136,6 +137,10 @@ export const api = {
   },
   getPlayer: (playerId: number | string, league_id: number) =>
     req<PlayerDetailOut>(`/players/${playerId}?league_id=${league_id}`),
+  // P5-W14: side-by-side compare for 2-3 players (values match the
+  // detail endpoint exactly, plus games over the next 3 weeks).
+  comparePlayers: (league_id: number, ids: number[]) =>
+    req<PlayerCompareOut>(`/players/compare?league_id=${league_id}&ids=${ids.join(",")}`),
 
   // watchlist (P5-W2): per-team starred players. Reads open; writes
   // carry the acting team's claim header like other mutations.
