@@ -81,8 +81,27 @@ def player_roles_map(con: sqlite3.Connection, season: str = "2027") -> dict[int,
             "ipl_team_code": r["ipl_team_code"],
             "status": status,
             "il_eligible": bool(status) and status.strip().lower() != "active",
+            "availability": availability_from_status(status),
         }
     return out
+
+
+def availability_from_status(status: str | None) -> str:
+    """P5-W6: coarse availability for the lineup/players dots, derived
+    from the curated player_roles.status (the same designation P4-W4
+    uses for IL eligibility) until the live poller lands:
+      NULL/'active' -> 'active' (green)
+      'retired'     -> 'retired' (greyed)
+      anything else ('injured', 'out', ...) -> 'out' (red): the player
+      has missed or is expected to miss a game."""
+    if not status:
+        return "active"
+    s = status.strip().lower()
+    if s == "active":
+        return "active"
+    if s == "retired":
+        return "retired"
+    return "out"
 
 
 def owned_map(con: sqlite3.Connection, league_id: int) -> dict[int, int]:

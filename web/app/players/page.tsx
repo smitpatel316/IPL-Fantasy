@@ -7,6 +7,7 @@ import { useLeague } from "@/lib/league-context";
 import { ApiError, type PlayerOut, type TeamOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { useWatchlist, WatchToggle } from "@/components/Watchlist";
+import { AvailabilityDot, AvailabilityLegend } from "@/components/AvailabilityDot";
 import { GameCountBadge, ScheduleWeekPicker, useScheduleBadges } from "@/components/ScheduleBadges";
 import { cn } from "@/lib/utils";
 import { Plane, Search, Star, Users } from "lucide-react";
@@ -120,6 +121,8 @@ export default function PlayersPage() {
 
       {err && <div className="mb-4"><ErrorBox message={err} onRetry={load} /></div>}
 
+      <AvailabilityLegend className="mb-4" />
+
       {/* P5-W2: per-team watchlist, scoped to the managing-as identity. */}
       <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
         <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -153,6 +156,7 @@ export default function PlayersPage() {
             {watch.entries.map((p) => (
               <li key={p.watch_id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2.5">
                 <WatchToggle watched onToggle={() => watch.toggle(p.id)} playerName={p.name} />
+                <AvailabilityDot availability={p.availability} />
                 <Link href={`/players/${p.id}`} className="font-medium text-white hover:text-trophy-gold hover:underline">
                   {p.name}
                 </Link>
@@ -214,9 +218,12 @@ export default function PlayersPage() {
                 </td>
                 <td className="px-4 py-2.5 tabular-nums text-zinc-500">{p.preseason_rank ?? "–"}</td>
                 <td className="px-4 py-2.5 font-medium text-white">
-                  <Link href={`/players/${p.id}`} className="hover:text-trophy-gold hover:underline">
-                    {p.name}
-                  </Link>
+                  <span className="inline-flex items-center gap-2">
+                    <AvailabilityDot availability={p.availability} />
+                    <Link href={`/players/${p.id}`} className="hover:text-trophy-gold hover:underline">
+                      {p.name}
+                    </Link>
+                  </span>
                 </td>
                 <td className="px-4 py-2.5">
                   {p.role ? (
@@ -267,7 +274,8 @@ export default function PlayersPage() {
           >
             <span className="w-8 shrink-0 tabular-nums text-xs text-zinc-500">{p.preseason_rank ?? "–"}</span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">
+              <p className="flex items-center gap-1.5 truncate text-sm font-medium text-white">
+                <AvailabilityDot availability={p.availability} />
                 {p.name}
                 {p.is_overseas && <Plane className="ml-1.5 inline h-3 w-3 text-zinc-500" />}
               </p>

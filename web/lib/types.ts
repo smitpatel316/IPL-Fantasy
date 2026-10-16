@@ -100,6 +100,9 @@ export interface ClaimOut {
 
 export type PlayerRole = "WK" | "BAT" | "AR" | "BOWL";
 
+/** P5-W6: availability dot state from the curated registry status. */
+export type Availability = "active" | "out" | "retired";
+
 export interface PlayerOut {
   id: number;
   name: string;
@@ -109,6 +112,7 @@ export interface PlayerOut {
   ipl_team_code: string | null;
   preseason_rank: number | null;
   owned_by_team_id: number | null;
+  availability: Availability;
   avg_points: number | null;
   ownership_pct: number | null;
 }
@@ -232,6 +236,8 @@ export interface LineupOut {
   carried_over_from_week: number | null;
   locked: boolean;
   lock_at: string | null;
+  /** P5-W6: availability per player in slots, keyed by player id. */
+  player_availability: Record<string, Availability>;
 }
 
 export interface WaiverRunResultOut {

@@ -8,7 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from .. import schemas
 from ..database import get_db
-from . import avg_points_map, get_league, owned_map, ownership_pct_map
+from . import (
+    availability_from_status,
+    avg_points_map,
+    get_league,
+    owned_map,
+    ownership_pct_map,
+)
 
 router = APIRouter()
 
@@ -25,6 +31,7 @@ def list_players(
     get_league(con, league_id)  # 404 for an unknown league (P4-W10)
     owned = owned_map(con, league_id)
     sql = """SELECT p.id, p.name, p.season, pr.role, pr.is_overseas, pr.ipl_team_code,
+                    pr.status,
                     (SELECT MIN(rank) FROM pre_draft_ranks r
                      JOIN teams t ON t.id = r.team_id
                      WHERE r.player_id = p.id AND t.league_id = :league_id) AS preseason_rank
@@ -51,6 +58,7 @@ def list_players(
             is_overseas=bool(r["is_overseas"] or 0),
             ipl_team_code=r["ipl_team_code"], preseason_rank=r["preseason_rank"],
             owned_by_team_id=owned.get(r["id"]),
+            availability=availability_from_status(r["status"]),
             avg_points=avgs.get(r["id"]),
             ownership_pct=own_pct.get(r["id"], 0.0),
         ))
@@ -66,6 +74,7 @@ def get_player(player_id: int, league_id: int = Query(...),
     context of `league_id`, like the list."""
     row = con.execute(
         """SELECT p.id, p.name, p.season, pr.role, pr.is_overseas, pr.ipl_team_code,
+                  pr.status,
                   (SELECT MIN(rank) FROM pre_draft_ranks r
                    JOIN teams t ON t.id = r.team_id
                    WHERE r.player_id = p.id AND t.league_id = ?) AS preseason_rank
@@ -111,6 +120,7 @@ def get_player(player_id: int, league_id: int = Query(...),
         is_overseas=bool(row["is_overseas"] or 0),
         ipl_team_code=row["ipl_team_code"], preseason_rank=row["preseason_rank"],
         owned_by_team_id=owned_map(con, league_id).get(player_id),
+        availability=availability_from_status(row["status"]),
         avg_points=avgs.get(player_id),
         ownership_pct=own_pct.get(player_id, 0.0),
         owners=owners,

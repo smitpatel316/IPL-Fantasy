@@ -142,6 +142,9 @@ class PlayerOut(BaseModel):
     ipl_team_code: Optional[str]
     preseason_rank: Optional[int]
     owned_by_team_id: Optional[int]  # None = free agent
+    # P5-W6: availability dot state from the curated player_roles.status
+    # (active | out | retired) until the live poller lands.
+    availability: str = "active"
     # P4-W19: None until scoring lands (no player_match_stats rows yet).
     avg_points: Optional[float] = None
     # Share of leagues (0-100) in which the player is rostered.
@@ -329,6 +332,10 @@ class LineupOut(BaseModel):
     # first-ball instant (ISO, UTC) when known.
     locked: bool = False
     lock_at: Optional[str] = None
+    # P5-W6: availability (active | out | retired) for every player in
+    # slots, keyed by player_id — the lineup page dots each slot from
+    # this map (players not in it default to 'active').
+    player_availability: dict[int, str] = {}
 
 
 # ---------- watchlist (P5-W2) ----------

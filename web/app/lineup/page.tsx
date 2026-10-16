@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
-import { ApiError, type PlayerOut, type TeamOut } from "@/lib/types";
+import { ApiError, type Availability, type PlayerOut, type TeamOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
+import { AvailabilityDot, AvailabilityLegend, AVAILABILITY_META } from "@/components/AvailabilityDot";
 import { ScrollHint } from "@/components/ScrollHint";
 import { cn } from "@/lib/utils";
 import { Plane, Save, Search, X, CheckCircle2, AlertTriangle } from "lucide-react";
@@ -44,6 +45,7 @@ export default function LineupPage() {
   const [roster, setRoster] = useState<PlayerOut[]>([]);
   const [slots, setSlots] = useState<Record<string, number[]>>({});
   const [carriedFrom, setCarriedFrom] = useState<number | null>(null);
+  const [availMap, setAvailMap] = useState<Record<string, Availability>>({});
   const [locked, setLocked] = useState(false);
   const [lockAt, setLockAt] = useState<string | null>(null);
   const [err, setErr] = useState("");
@@ -76,12 +78,14 @@ export default function LineupPage() {
       .then((l) => {
         setSlots(l.slots ?? {});
         setCarriedFrom(l.carried_over_from_week ?? null);
+        setAvailMap(l.player_availability ?? {});
         setLocked(l.locked);
         setLockAt(l.lock_at);
       })
       .catch(() => {
         setSlots({});
         setCarriedFrom(null);
+        setAvailMap({});
         setLocked(false);
         setLockAt(null);
       });
@@ -109,6 +113,7 @@ export default function LineupPage() {
     try {
       const out = await api.setLineup(teamId, week, slots);
       setCarriedFrom(null);
+      setAvailMap(out.player_availability ?? {});
       setLockAt(out.lock_at);
       setMsg(`Lineup saved · ${out.overseas_starters}/${OVERSEAS_CAP} overseas starters`);
     } catch (e) {
@@ -136,6 +141,15 @@ export default function LineupPage() {
   }, [roster, q, role]);
 
   const byId = useMemo(() => new Map(roster.map((p) => [p.id, p])), [roster]);
+
+  // P5-W6: availability per slotted player — the lineup response's map
+  // wins; the roster's PlayerOut state is the fallback.
+  function availOf(pid: number): Availability {
+    return availMap[String(pid)] ?? byId.get(pid)?.availability ?? "active";
+  }
+  const flaggedStarters = STARTERS.flatMap((s) => slots[s.slot] ?? [])
+    .map((pid) => ({ pid, availability: availOf(pid) }))
+    .filter((f) => f.availability !== "active");
 
   return (
     <div>
@@ -245,6 +259,25 @@ export default function LineupPage() {
           <CheckCircle2 className="h-4 w-4" /> {msg}
         </p>
       )}
+      {flaggedStarters.length > 0 && (
+        <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-200">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            {flaggedStarters.length === 1 ? "A starter is" : "Starters are"} flagged:{" "}
+            {flaggedStarters.map((f, i) => (
+              <span key={f.pid}>
+                {i > 0 && ", "}
+                <span className="font-medium text-white">{byId.get(f.pid)?.name ?? `#${f.pid}`}</span>{" "}
+                <span className={AVAILABILITY_META[f.availability].text}>
+                  ({AVAILABILITY_META[f.availability].label.toLowerCase()})
+                </span>
+              </span>
+            ))}
+            {" "}— consider a bench swap before lock.
+          </span>
+        </p>
+      )}
+      <AvailabilityLegend className="mb-4" />
 
       <div className="grid gap-5 lg:grid-cols-5">
         {/* Slots */}
@@ -277,6 +310,7 @@ export default function LineupPage() {
                             title="Tap to remove"
                             className="group inline-flex items-center gap-1.5 rounded-lg border border-ipl-blue-bright/40 bg-ipl-blue/25 px-2.5 py-1.5 text-xs font-medium text-white transition hover:border-brick-red/60 hover:bg-brick-red/15"
                           >
+                            <AvailabilityDot availability={availOf(pid)} />
                             {p?.name ?? `#${pid}`}
                             {p?.is_overseas && <Plane className="h-3 w-3 text-zinc-400" />}
                             <X className="h-3 w-3 text-zinc-500 group-hover:text-brick-red" />
@@ -325,6 +359,7 @@ export default function LineupPage() {
                             title="Tap to remove"
                             className="group inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/60 px-2.5 py-1.5 text-xs font-medium text-zinc-200 transition hover:border-brick-red/60 hover:bg-brick-red/15"
                           >
+                            <AvailabilityDot availability={availOf(pid)} />
                             {p?.name ?? `#${pid}`}
                             {p?.is_overseas && <Plane className="h-3 w-3 text-zinc-500" />}
                             <X className="h-3 w-3 text-zinc-500 group-hover:text-brick-red" />
@@ -387,7 +422,8 @@ export default function LineupPage() {
                     )}
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-white">
+                      <p className="flex items-center gap-1.5 truncate text-sm font-medium text-white">
+                        <AvailabilityDot availability={p.availability} />
                         {p.name}
                         {p.is_overseas && <Plane className="ml-1.5 inline h-3 w-3 text-zinc-500" />}
                       </p>
