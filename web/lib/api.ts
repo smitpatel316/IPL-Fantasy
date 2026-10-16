@@ -31,6 +31,7 @@ import type {
   PowerRankingsOut,
   RanksOut,
   ReadinessOut,
+  RostersOut,
   RosterMoveOut,
   ScoreboardOut,
   ScheduleNudgesOut,
@@ -116,6 +117,8 @@ export const api = {
     req<PowerRankingsOut>(`/leagues/${leagueId}/power-rankings`),
   getReadiness: (leagueId: number | string) =>
     req<ReadinessOut>(`/leagues/${leagueId}/readiness`),
+  getRosters: (leagueId: number | string) =>
+    req<RostersOut>(`/leagues/${leagueId}/rosters`),
   getPlayoffs: (leagueId: number | string) =>
     req<PlayoffsOut>(`/leagues/${leagueId}/playoffs`),
   scheduleNudges: (leagueId: number | string, week: number) =>

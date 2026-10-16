@@ -197,6 +197,31 @@ export interface ReadinessOut {
   items: ReadinessItemOut[];
 }
 
+/** P5-W12: all-teams roster view — one team's roster grouped by
+ * slot, with its D8 overseas-starter count and FAAB remaining. */
+export interface RosterPlayerOut {
+  id: number;
+  name: string;
+  role: PlayerRole | null;
+  is_overseas: boolean;
+  ipl_team_code: string | null;
+  availability: Availability;
+}
+
+export interface RosterTeamOut {
+  team_id: number;
+  team_name: string;
+  faab_remaining: number;
+  overseas_starters: number;
+  roster_size: number;
+  slots: Record<string, RosterPlayerOut[]>;
+}
+
+export interface RostersOut {
+  league_id: number;
+  teams: RosterTeamOut[];
+}
+
 /** P5-W2: a watched player — PlayerOut plus the watchlist row. */
 export interface WatchlistEntryOut extends PlayerOut {
   watch_id: number;
