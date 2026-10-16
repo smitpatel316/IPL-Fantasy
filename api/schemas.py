@@ -298,6 +298,30 @@ class MessageBoardOut(BaseModel):
     messages: list[MessageOut] = []
 
 
+# ---------- all-teams rosters (P5-W12) ----------
+class RosterPlayerOut(BaseModel):
+    id: int
+    name: str
+    role: Optional[str]
+    is_overseas: bool = False
+    ipl_team_code: Optional[str]
+    availability: str = "active"
+
+
+class RosterTeamOut(BaseModel):
+    team_id: int
+    team_name: str
+    faab_remaining: int
+    overseas_starters: int
+    roster_size: int
+    slots: dict[str, list[RosterPlayerOut]] = {}
+
+
+class RostersOut(BaseModel):
+    league_id: int
+    teams: list[RosterTeamOut] = []
+
+
 class DndOut(BaseModel):
     draft_id: int
     team_id: int
