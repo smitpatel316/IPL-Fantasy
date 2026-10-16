@@ -9,6 +9,7 @@ import { ApiError, type AdjustmentOut, type DraftRecapOut, type LeagueDetailOut,
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { MessageBoard } from "@/components/MessageBoard";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { PowerRankings } from "@/components/PowerRankings";
 import { cn } from "@/lib/utils";
 import { Trophy, Settings2, ArrowRight, Crown, KeyRound, Swords, UserCog, Dices, GraduationCap } from "lucide-react";
 
@@ -282,6 +283,8 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
 
       {/* P5-W8: league activity feed */}
       {league && <ActivityFeed leagueId={league.id} />}
+      {/* P5-W9: power rankings */}
+      {league && <PowerRankings leagueId={league.id} />}
 
       {/* P5-W5: persistent league message board */}
       {league && (

@@ -157,6 +157,29 @@ export interface ActivityOut {
   entries: ActivityEntryOut[];
 }
 
+/** P5-W9: power rankings. basis is "roster_value" pre-season
+ * (honest roster-value ranking) and "record_blend" once weeks
+ * finalize; movement is null until two final weeks exist. */
+export interface PowerRankEntryOut {
+  rank: number;
+  team_id: number;
+  team_name: string;
+  roster_value: number;
+  wins: number;
+  losses: number;
+  ties: number;
+  points_for: number;
+  power_score: number;
+  movement: number | null;
+}
+
+export interface PowerRankingsOut {
+  league_id: number;
+  basis: "roster_value" | "record_blend";
+  through_week: number;
+  entries: PowerRankEntryOut[];
+}
+
 /** P5-W2: a watched player — PlayerOut plus the watchlist row. */
 export interface WatchlistEntryOut extends PlayerOut {
   watch_id: number;

@@ -319,6 +319,27 @@ class ActivityOut(BaseModel):
     league_id: int
     total: int
     entries: list[ActivityEntryOut] = []
+# ---------- power rankings (P5-W9) ----------
+class PowerRankEntryOut(BaseModel):
+    rank: int
+    team_id: int
+    team_name: str
+    roster_value: int
+    wins: int = 0
+    losses: int = 0
+    ties: int = 0
+    points_for: float = 0.0
+    power_score: float
+    # Rank change vs the previous computed week (positive = climbed);
+    # None until two final weeks exist.
+    movement: Optional[int] = None
+
+
+class PowerRankingsOut(BaseModel):
+    league_id: int
+    basis: str  # roster_value (pre-season) | record_blend
+    through_week: int  # last final week included; 0 = none yet
+    entries: list[PowerRankEntryOut] = []
 
 
 class DndOut(BaseModel):
