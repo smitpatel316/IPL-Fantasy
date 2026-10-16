@@ -8,6 +8,7 @@ import { clearTeamClaim, getTeamClaim, setTeamClaim } from "@/lib/identity";
 import { ApiError, type AdjustmentOut, type DraftRecapOut, type LeagueDetailOut, type MatchupOut, type PlayerOut, type RosterMoveOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { MessageBoard } from "@/components/MessageBoard";
+import { PowerRankings } from "@/components/PowerRankings";
 import { cn } from "@/lib/utils";
 import { Trophy, Settings2, ArrowRight, Crown, KeyRound, Swords, UserCog, Dices, GraduationCap } from "lucide-react";
 
@@ -278,6 +279,9 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
 
       {/* P5-W4: draft recap + grades */}
       {recap && <DraftRecapSection recap={recap} />}
+
+      {/* P5-W9: power rankings */}
+      {league && <PowerRankings leagueId={league.id} />}
 
       {/* P5-W5: persistent league message board */}
       {league && (

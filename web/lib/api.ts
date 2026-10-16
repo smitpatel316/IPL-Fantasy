@@ -27,6 +27,7 @@ import type {
   PlayerDetailOut,
   PlayerOut,
   PlayoffsOut,
+  PowerRankingsOut,
   RanksOut,
   RosterMoveOut,
   ScoreboardOut,
@@ -106,6 +107,8 @@ export const api = {
       body: JSON.stringify({ invite_code, team_name, owner_name }),
     }),
   listTeams: (leagueId: number | string) => req<TeamOut[]>(`/leagues/${leagueId}/teams`),
+  getPowerRankings: (leagueId: number | string) =>
+    req<PowerRankingsOut>(`/leagues/${leagueId}/power-rankings`),
   getPlayoffs: (leagueId: number | string) =>
     req<PlayoffsOut>(`/leagues/${leagueId}/playoffs`),
   scheduleNudges: (leagueId: number | string, week: number) =>
