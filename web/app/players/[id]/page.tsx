@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
 import { ApiError, type PlayerDetailOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
+import { AvailabilityDot, AVAILABILITY_META } from "@/components/AvailabilityDot";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Plane } from "lucide-react";
 
@@ -87,6 +88,13 @@ export default function PlayerDetailPage({ params }: { params: Promise<{ id: str
             <div className="flex items-baseline justify-between gap-4">
               <dt className="text-zinc-500">Preseason rank</dt>
               <dd className="font-medium text-zinc-200">{player.preseason_rank ?? "—"}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4">
+              <dt className="text-zinc-500">Availability</dt>
+              <dd className="inline-flex items-center gap-1.5 font-medium text-zinc-200">
+                <AvailabilityDot availability={player.availability} />
+                {AVAILABILITY_META[player.availability].label}
+              </dd>
             </div>
             <div className="flex items-baseline justify-between gap-4">
               <dt className="text-zinc-500">Ownership</dt>

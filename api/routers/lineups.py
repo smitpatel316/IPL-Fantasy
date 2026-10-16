@@ -91,6 +91,10 @@ def set_lineup(team_id: int, body: schemas.LineupSet, request: Request,
         # The save just succeeded, so the week is by definition unlocked;
         # still report the lock instant so clients can show it.
         locked=False, lock_at=lock.isoformat() if lock else None,
+        player_availability={
+            pid: roles.get(pid, {}).get("availability", "active")
+            for pids in body.slots.values() for pid in pids
+        },
     )
 
 
@@ -153,4 +157,8 @@ def get_lineup(team_id: int, week_no: int, con: sqlite3.Connection = Depends(get
         carried_over_from_week=carried_from,
         locked=lock is not None and datetime.now(timezone.utc) >= lock,
         lock_at=lock.isoformat() if lock else None,
+        player_availability={
+            pid: roles.get(pid, {}).get("availability", "active")
+            for pids in slots.values() for pid in pids
+        },
     )

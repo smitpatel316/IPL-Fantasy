@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from .. import schemas
 from ..database import get_db
 from . import (
+    availability_from_status,
     avg_points_map,
     get_league,
     get_team,
@@ -40,6 +41,7 @@ def _entry(con: sqlite3.Connection, row: sqlite3.Row,
         ipl_team_code=row["ipl_team_code"],
         preseason_rank=row["preseason_rank"],
         owned_by_team_id=owned.get(pid),
+        availability=availability_from_status(row["status"]),
         avg_points=avgs.get(pid),
         ownership_pct=own_pct.get(pid, 0.0),
         watch_id=row["id"], league_id=row["league_id"],
@@ -58,6 +60,7 @@ def _rows(con: sqlite3.Connection, league_id: int,
     rows = con.execute(
         """SELECT w.id, w.league_id, w.team_id, w.player_id, w.created_at,
                   p.name, p.season, pr.role, pr.is_overseas, pr.ipl_team_code,
+                  pr.status,
                   (SELECT MIN(rank) FROM pre_draft_ranks r
                    JOIN teams t ON t.id = r.team_id
                    WHERE r.player_id = p.id AND t.league_id = :league_id)
