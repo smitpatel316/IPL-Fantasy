@@ -10,6 +10,7 @@ import {
   Gavel,
   ChevronRight,
   Sparkles,
+  BookOpen,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { setTeamClaim } from "@/lib/identity";
@@ -28,6 +29,11 @@ const FEATURES = [
     icon: <Users className="h-5 w-5" />,
     title: "Snake draft",
     text: "14 rounds with a pick clock, auto-pick, custom ranks and do-not-draft lists. Draft from your phone.",
+  },
+  {
+    icon: <BookOpen className="h-5 w-5" />,
+    title: "New here?",
+    text: "The how-to-play guide walks the locked rules — draft, FAAB, the overseas cap, playoffs — plus your first-week checklist.",
   },
   {
     icon: <CalendarDays className="h-5 w-5" />,
@@ -233,6 +239,11 @@ export default function Home() {
             </Card>
           ))}
         </div>
+        <p className="mt-6 text-center text-sm">
+          <a href="/help" className="font-semibold text-pitch-green hover:underline">
+            Read the full how-to-play guide →
+          </a>
+        </p>
       </section>
 
       {/* --------------------------- How it flows --------------------------- */}

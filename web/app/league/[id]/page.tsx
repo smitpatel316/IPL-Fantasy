@@ -195,6 +195,28 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
         sub={`Season ${league.season} · invite code ${league.invite_code} · ${league.status}`}
       />
 
+      {/* P5-W11: onboarding nudge — only when the visitor's selected
+          team is still unclaimed. */}
+      {myTeamId != null &&
+        league.standings.find((s) => s.team_id === myTeamId)?.claimed === false && (
+          <section
+            aria-label="Get started"
+            className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-trophy-gold/30 bg-trophy-gold/5 px-5 py-4"
+          >
+            <p className="text-sm text-zinc-300">
+              <strong className="text-white">New here?</strong> Your team is still
+              unclaimed — claim it below so only you can manage it, then read the
+              how-to-play guide for the draft, FAAB, and playoff rules.
+            </p>
+            <Link
+              href="/help"
+              className="ml-auto flex items-center gap-1.5 rounded-md bg-trophy-gold px-3 py-1.5 text-sm font-bold text-midnight transition hover:bg-trophy-gold/90"
+            >
+              How to play <ArrowRight className="h-4 w-4" />
+            </Link>
+          </section>
+        )}
+
       {/* P5-W3: practice-draft entry — ephemeral mock drafts vs bots. */}
       <section
         aria-label="Practice draft"
