@@ -137,6 +137,26 @@ export interface TradeBlockEntryOut {
   updated_at: string;
 }
 
+/** P5-W8: one league-activity entry. `amount` is set ONLY for a
+ * winning waiver bid (public post-run); losing bids never carry one. */
+export interface ActivityEntryOut {
+  id: string;
+  kind: string;
+  text: string;
+  team_id: number | null;
+  team_name: string | null;
+  player_id: number | null;
+  player_name: string | null;
+  amount: number | null;
+  occurred_at: string;
+}
+
+export interface ActivityOut {
+  league_id: number;
+  total: number;
+  entries: ActivityEntryOut[];
+}
+
 /** P5-W2: a watched player — PlayerOut plus the watchlist row. */
 export interface WatchlistEntryOut extends PlayerOut {
   watch_id: number;

@@ -298,6 +298,29 @@ class MessageBoardOut(BaseModel):
     messages: list[MessageOut] = []
 
 
+# ---------- league activity feed (P5-W8) ----------
+class ActivityEntryOut(BaseModel):
+    """One projected league event. `amount` is set ONLY for a winning
+    waiver bid (public once the run executes, D6); it is None for
+    every other kind — losing bids never carry an amount."""
+    id: str  # stable, source-prefixed: pick- / waiver- / trade- / adj-
+    kind: str  # draft_pick | waiver_won | waiver_lost | trade_executed
+    #          | trade_vetoed | commissioner_faab | commissioner_roster_*
+    text: str
+    team_id: Optional[int] = None
+    team_name: Optional[str] = None
+    player_id: Optional[int] = None
+    player_name: Optional[str] = None
+    amount: Optional[int] = None
+    occurred_at: str
+
+
+class ActivityOut(BaseModel):
+    league_id: int
+    total: int
+    entries: list[ActivityEntryOut] = []
+
+
 class DndOut(BaseModel):
     draft_id: int
     team_id: int
