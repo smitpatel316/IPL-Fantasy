@@ -235,6 +235,21 @@ CREATE TABLE IF NOT EXISTS watchlist (
     UNIQUE (league_id, team_id, player_id)
 );
 
+-- P5-W7: trade block — players a manager publicly shops, with a
+-- short "seeking" note. Scoped to league+team; writes are claim-aware
+-- (P4-W18 require_team_actor). Listings auto-expire when the player
+-- leaves the roster (enforced on read in the router).
+CREATE TABLE IF NOT EXISTS trade_block (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    league_id   INTEGER NOT NULL REFERENCES leagues(id) ON DELETE CASCADE,
+    team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    player_id   INTEGER NOT NULL REFERENCES players(id),
+    seeking     TEXT NOT NULL DEFAULT '',
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (league_id, team_id, player_id)
+);
+
 -- P5-W5: persistent league message board (trash talk). Posts are
 -- gated by team identity (P4-W18); commissioner soft-delete via
 -- deleted_at (rows are never hard-deleted).

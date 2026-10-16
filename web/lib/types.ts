@@ -117,6 +117,26 @@ export interface PlayerOut {
   ownership_pct: number | null;
 }
 
+/** P5-W7: one trade-block listing — the player being shopped, the
+ * shopping team, and the manager's seeking note. */
+export interface TradeBlockEntryOut {
+  id: number;
+  league_id: number;
+  team_id: number;
+  team_name: string;
+  player_id: number;
+  name: string;
+  season: string;
+  role: PlayerRole | null;
+  is_overseas: boolean;
+  ipl_team_code: string | null;
+  preseason_rank: number | null;
+  availability: Availability;
+  seeking: string;
+  created_at: string;
+  updated_at: string;
+}
+
 /** P5-W2: a watched player — PlayerOut plus the watchlist row. */
 export interface WatchlistEntryOut extends PlayerOut {
   watch_id: number;

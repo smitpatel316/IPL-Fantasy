@@ -33,6 +33,7 @@ import type {
   ScheduleNudgesOut,
   TeamOut,
   TradeAnalysisOut,
+  TradeBlockEntryOut,
   TradeOut,
   WaiverClaimOut,
   WaiverRunResultOut,
@@ -231,6 +232,22 @@ export const api = {
     req<TradeOut>(`/trades/${tradeId}/veto?team_id=${teamId}`, {
       method: "POST",
       headers: claimHeaders(teamId),
+    }),
+  // trade block (P5-W7): league-wide "on the block" board. Reads
+  // open; post/remove carry the acting team's claim header and the
+  // API only accepts players on that team's own roster.
+  listTradeBlock: (league_id: number) =>
+    req<TradeBlockEntryOut[]>(`/trade-block?league_id=${league_id}`),
+  postTradeBlock: (body: { league_id: number; team_id: number; player_id: number; seeking: string }) =>
+    req<TradeBlockEntryOut>("/trade-block", {
+      method: "POST",
+      headers: claimHeaders(body.team_id),
+      body: JSON.stringify(body),
+    }),
+  removeTradeBlock: (league_id: number, team_id: number, player_id: number) =>
+    req<void>(`/trade-block?league_id=${league_id}&team_id=${team_id}&player_id=${player_id}`, {
+      method: "DELETE",
+      headers: claimHeaders(team_id),
     }),
   analyzeTrade: (args: {
     league_id: number;
