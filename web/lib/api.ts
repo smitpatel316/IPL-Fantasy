@@ -40,6 +40,7 @@ import type {
   TradeBlockEntryOut,
   TradeOut,
   WaiverClaimOut,
+  WaiverRecommendationsOut,
   WaiverRunResultOut,
   WatchlistEntryOut,
 } from "./types";
@@ -210,6 +211,9 @@ export const api = {
       headers: claimHeaders(body.team_id),
       body: JSON.stringify(body),
     }),
+  // P5-W16: recommended adds for one team (D6-safe projection).
+  waiverRecommendations: (league_id: number, team_id: number) =>
+    req<WaiverRecommendationsOut>(`/waivers/recommendations?league_id=${league_id}&team_id=${team_id}`),
   pendingClaims: (league_id: number, week_no: number, team_id?: number) =>
     req<WaiverClaimOut[]>(
       `/waivers/pending?league_id=${league_id}&week_no=${week_no}${team_id != null ? `&team_id=${team_id}` : ""}`

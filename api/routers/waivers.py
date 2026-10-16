@@ -34,6 +34,19 @@ def submit_claim(body: schemas.WaiverClaimCreate, request: Request,
         body.add_player_id, body.drop_player_id, body.bid))
 
 
+@router.get("/recommendations",
+            response_model=schemas.WaiverRecommendationsOut)
+def recommendations(league_id: int = Query(...), team_id: int = Query(...),
+                    con: sqlite3.Connection = Depends(get_db)):
+    """P5-W16: recommended adds for the requesting team only. D6-safe —
+    computed from that team's own roster + the public FA pool; pending
+    claims/bids of any team are never read."""
+    get_league(con, league_id)  # 404 if missing
+    get_team(con, team_id)  # 404 if missing
+    return schemas.WaiverRecommendationsOut(
+        **services.waiver_recommendations(con, league_id, team_id))
+
+
 @router.get("/pending", response_model=list[schemas.WaiverClaimOut])
 def pending_claims(league_id: int = Query(...),
                    week_no: int = Query(..., ge=1, le=TOTAL_WEEKS),

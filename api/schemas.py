@@ -472,6 +472,36 @@ class WaiverClaimCreate(BaseModel):
     bid: int = Field(ge=0)
 
 
+class WaiverRecommendationOut(BaseModel):
+    # P5-W16: one recommended add for the requesting team. upgrade is
+    # rank value gained over the suggested drop piece (weakest rank -
+    # FA rank, value = pool-rank convention as in the draft recap);
+    # score = upgrade + games_next_3_weeks (1 per game) when the
+    # fixture exists, else upgrade alone.
+    player_id: int
+    name: str
+    role: Optional[str] = None
+    ipl_team_code: Optional[str] = None
+    is_overseas: bool = False
+    availability: str = "active"
+    preseason_rank: int
+    games_next_3_weeks: Optional[int] = None
+    upgrade: int
+    score: int
+    drop_player_id: Optional[int] = None  # None = open roster spot
+    drop_player_name: Optional[str] = None
+    reason: str
+
+
+class WaiverRecommendationsOut(BaseModel):
+    league_id: int
+    team_id: int
+    current_week: int
+    weeks: list[int] = []
+    basis: str
+    recommendations: list[WaiverRecommendationOut] = []
+
+
 class WaiverClaimOut(BaseModel):
     id: int
     week_no: int
