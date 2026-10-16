@@ -340,6 +340,20 @@ class PowerRankingsOut(BaseModel):
     basis: str  # roster_value (pre-season) | record_blend
     through_week: int  # last final week included; 0 = none yet
     entries: list[PowerRankEntryOut] = []
+# ---------- season-start readiness (P5-W10) ----------
+class ReadinessItemOut(BaseModel):
+    key: str
+    label: str
+    done: bool
+    detail: str
+    fix_href: str
+
+
+class ReadinessOut(BaseModel):
+    league_id: int
+    ready_count: int
+    total_count: int
+    items: list[ReadinessItemOut] = []
 
 
 class DndOut(BaseModel):

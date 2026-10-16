@@ -180,6 +180,23 @@ export interface PowerRankingsOut {
   entries: PowerRankEntryOut[];
 }
 
+/** P5-W10: one season-start checklist item, derived server-side
+ * from live DB state (never a stored flag). */
+export interface ReadinessItemOut {
+  key: string;
+  label: string;
+  done: boolean;
+  detail: string;
+  fix_href: string;
+}
+
+export interface ReadinessOut {
+  league_id: number;
+  ready_count: number;
+  total_count: number;
+  items: ReadinessItemOut[];
+}
+
 /** P5-W2: a watched player — PlayerOut plus the watchlist row. */
 export interface WatchlistEntryOut extends PlayerOut {
   watch_id: number;
