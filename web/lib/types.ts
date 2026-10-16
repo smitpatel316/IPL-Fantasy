@@ -230,6 +230,17 @@ export interface WatchlistEntryOut extends PlayerOut {
   created_at: string;
 }
 
+/** P5-W17: a private per-team player note (owning team only). */
+export interface PlayerNoteOut {
+  id: number;
+  league_id: number;
+  team_id: number;
+  player_id: number;
+  player_name: string;
+  note: string;
+  updated_at: string;
+}
+
 export interface PlayerOwnerOut {
   league_id: number;
   league_name: string;

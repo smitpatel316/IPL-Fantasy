@@ -106,6 +106,21 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
     };
   }, [myTeamId, board]);
 
+  // P5-W17: private-note indicators on the board for my team. A 403
+  // (claimed team, not ours) just means no indicators — never data.
+  const [notedIds, setNotedIds] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    if (!myTeamId || !leagueId) return;
+    let live = true;
+    api
+      .listPlayerNotes(Number(leagueId), myTeamId)
+      .then((notes) => live && setNotedIds(new Set(notes.map((n) => n.player_id))))
+      .catch(() => live && setNotedIds(new Set()));
+    return () => {
+      live = false;
+    };
+  }, [leagueId, myTeamId]);
+
   function moveRank(idx: number, dir: -1 | 1) {
     setRanksMsg("");
     setRankOrder((prev) => {
@@ -498,6 +513,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
                       onDraft={(id) => send({ type: "pick", player_id: id })}
                       onToggleDnd={(id, active) => send({ type: active ? "dnd_add" : "dnd_remove", player_id: id })}
                       weekGames={sched.map}
+                      noted={notedIds.has(p.id)}
                     />
                   ))}
                   {filtered.length === 0 && (

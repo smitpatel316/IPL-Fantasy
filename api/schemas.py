@@ -418,6 +418,24 @@ class LineupOut(BaseModel):
     player_availability: dict[int, str] = {}
 
 
+# ---------- player notes (P5-W17) ----------
+class PlayerNoteOut(BaseModel):
+    id: int
+    league_id: int
+    team_id: int
+    player_id: int
+    player_name: str
+    note: str
+    updated_at: str
+
+
+class PlayerNoteUpsert(BaseModel):
+    league_id: int
+    team_id: int
+    player_id: int
+    note: str
+
+
 # ---------- watchlist (P5-W2) ----------
 class WatchlistCreate(BaseModel):
     league_id: int

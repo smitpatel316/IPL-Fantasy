@@ -10,7 +10,7 @@ import { useWatchlist, WatchToggle } from "@/components/Watchlist";
 import { AvailabilityDot, AvailabilityLegend } from "@/components/AvailabilityDot";
 import { GameCountBadge, ScheduleWeekPicker, useScheduleBadges } from "@/components/ScheduleBadges";
 import { cn } from "@/lib/utils";
-import { Plane, Search, Star, Users } from "lucide-react";
+import { Plane, Search, Star, StickyNote, Users } from "lucide-react";
 
 const ROLES = ["", "WK", "BAT", "AR", "BOWL"];
 const ROLE_BADGE: Record<string, string> = {
@@ -33,6 +33,21 @@ export default function PlayersPage() {
   // P5-W2: the watchlist is scoped to the managing-as team (P4-W18).
   const watch = useWatchlist(leagueId, teamId);
   const sched = useScheduleBadges(leagueId, 1);
+
+  // P5-W17: private notes indicator for the managing-as team. A 403
+  // (claimed team, not ours) simply means no indicators — never data.
+  const [notesByPlayer, setNotesByPlayer] = useState<Map<number, string>>(new Map());
+  useEffect(() => {
+    if (teamId == null) return;
+    let live = true;
+    api
+      .listPlayerNotes(leagueId, teamId)
+      .then((notes) => live && setNotesByPlayer(new Map(notes.map((n) => [n.player_id, n.note]))))
+      .catch(() => live && setNotesByPlayer(new Map()));
+    return () => {
+      live = false;
+    };
+  }, [leagueId, teamId]);
 
   async function load(overrides?: { role?: string; q?: string }) {
     const roleArg = overrides?.role ?? role;
@@ -223,6 +238,11 @@ export default function PlayersPage() {
                     <Link href={`/players/${p.id}`} className="hover:text-trophy-gold hover:underline">
                       {p.name}
                     </Link>
+                    {notesByPlayer.has(p.id) && (
+                      <span title={`Your note: ${notesByPlayer.get(p.id)}`}>
+                        <StickyNote className="h-3.5 w-3.5 text-trophy-gold" aria-label="You have a private note on this player" />
+                      </span>
+                    )}
                   </span>
                 </td>
                 <td className="px-4 py-2.5">
@@ -277,6 +297,9 @@ export default function PlayersPage() {
               <p className="flex items-center gap-1.5 truncate text-sm font-medium text-white">
                 <AvailabilityDot availability={p.availability} />
                 {p.name}
+                {notesByPlayer.has(p.id) && (
+                  <StickyNote className="h-3.5 w-3.5 shrink-0 text-trophy-gold" aria-label="You have a private note on this player" />
+                )}
                 {p.is_overseas && <Plane className="ml-1.5 inline h-3 w-3 text-zinc-500" />}
               </p>
               <p className="mt-1 flex items-center gap-1.5 text-[11px] text-zinc-500">
