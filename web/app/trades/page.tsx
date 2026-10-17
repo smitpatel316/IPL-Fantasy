@@ -162,6 +162,7 @@ function TradeCard({
   playerName,
   managingAs,
   onAction,
+  onCounter,
   busy,
   analysis,
 }: {
@@ -170,6 +171,7 @@ function TradeCard({
   playerName: Map<number, string>;
   managingAs: number | null;
   onAction: (action: "accept" | "reject" | "veto") => void;
+  onCounter: () => void;
   busy: boolean;
   analysis?: React.ReactNode;
 }) {
@@ -177,7 +179,7 @@ function TradeCard({
   const isParty = managingAs != null && (trade.from_team_id === managingAs || trade.to_team_id === managingAs);
   const canVeto = managingAs != null && trade.status === "accepted" && !isParty && !trade.executed_at;
   return (
-    <li className="rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
+    <li id={`trade-${trade.id}`} className="scroll-mt-24 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-white">
           <ArrowLeftRight className="h-4 w-4 text-trophy-gold" />
@@ -224,6 +226,27 @@ function TradeCard({
           )}
         </div>
       )}
+      {(trade.counter_of != null || trade.countered_by.length > 0) && (
+        <p className="mt-3 flex flex-wrap gap-x-3 text-xs text-zinc-500">
+          {trade.counter_of != null && (
+            <span>
+              Counter to{" "}
+              <a href={`#trade-${trade.counter_of}`} className="font-semibold text-pitch-green hover:underline">
+                trade #{trade.counter_of}
+              </a>{" "}
+              ({teamName.get(trade.to_team_id) ?? "the original proposer"}&apos;s offer)
+            </span>
+          )}
+          {trade.countered_by.map((cid) => (
+            <span key={cid}>
+              Countered by{" "}
+              <a href={`#trade-${cid}`} className="font-semibold text-pitch-green hover:underline">
+                trade #{cid}
+              </a>
+            </span>
+          ))}
+        </p>
+      )}
       <div className="mt-3 flex flex-wrap gap-2">
         {isOfferee && (
           <>
@@ -232,6 +255,9 @@ function TradeCard({
             </button>
             <button className={btnGhost} onClick={() => onAction("reject")} disabled={busy}>
               Reject
+            </button>
+            <button className={btnGhost} onClick={onCounter} disabled={busy} title="Propose a new trade back with the sides swapped — the original stays open">
+              Counter
             </button>
           </>
         )}
@@ -254,7 +280,9 @@ export default function TradesPage() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // propose modal state
+  // propose modal state (P5-W36: counterOf set = the modal is a
+  // counter to that pending trade, submitted via the counter path)
+  const [counterOf, setCounterOf] = useState<TradeOut | null>(null);
   const [proposeOpen, setProposeOpen] = useState(false);
   const [partnerId, setPartnerId] = useState("");
   const [gives, setGives] = useState<number[]>([]);
@@ -328,6 +356,7 @@ export default function TradesPage() {
   }, [leagueId, teamId]);
 
   function openFinderPropose(s: TradeFinderSuggestionOut) {
+    setCounterOf(null);
     setPartnerId(String(s.partner_team_id));
     setGives([s.give.player_id]);
     setReceives([s.receive.player_id]);
@@ -337,6 +366,7 @@ export default function TradesPage() {
   }
 
   function openPropose() {
+    setCounterOf(null);
     setProposeOpen(true);
     setPropErr("");
     setPropOk("");
@@ -344,6 +374,21 @@ export default function TradesPage() {
     setReceives([]);
     const first = teams.find((t) => t.id !== teamId);
     setPartnerId(first ? String(first.id) : "");
+  }
+
+  // P5-W36: counter — the propose modal pre-filled as the reverse
+  // fixture (partner locked to the original proposer, sides swapped:
+  // you give what they asked for, you get what they offered). Players
+  // stay editable; submitting creates a NEW trade and leaves the
+  // original untouched.
+  function openCounter(t: TradeOut) {
+    setCounterOf(t);
+    setPartnerId(String(t.from_team_id));
+    setGives([...t.receives]);
+    setReceives([...t.gives]);
+    setPropErr("");
+    setPropOk("");
+    setProposeOpen(true);
   }
 
   async function submitPropose() {
@@ -364,15 +409,25 @@ export default function TradesPage() {
     }
     setSubmitting(true);
     try {
-      const t = await api.proposeTrade({
-        league_id: leagueId,
-        from_team_id: teamId,
-        to_team_id: Number(partnerId),
-        gives,
-        receives,
-      });
-      setPropOk(`Trade proposed to ${teamName.get(t.to_team_id) ?? "them"} — they have 3 days to accept or reject it.`);
+      if (counterOf) {
+        const t = await api.counterTrade(counterOf.id, {
+          from_team_id: teamId,
+          gives,
+          receives,
+        });
+        setPropOk(`Counter proposed to ${teamName.get(t.to_team_id) ?? "them"} — the original trade #${counterOf.id} stays open.`);
+      } else {
+        const t = await api.proposeTrade({
+          league_id: leagueId,
+          from_team_id: teamId,
+          to_team_id: Number(partnerId),
+          gives,
+          receives,
+        });
+        setPropOk(`Trade proposed to ${teamName.get(t.to_team_id) ?? "them"} — they have 3 days to accept or reject it.`);
+      }
       setProposeOpen(false);
+      setCounterOf(null);
       await load();
     } catch (e) {
       setPropErr(e instanceof ApiError ? e.message : "propose failed");
@@ -582,6 +637,7 @@ export default function TradesPage() {
                   managingAs={teamId}
                   busy={busyAction}
                   onAction={(a) => doAction(t, a)}
+                  onCounter={() => openCounter(t)}
                   analysis={
                     <TradeAnalysisBox
                       leagueId={leagueId}
@@ -609,6 +665,7 @@ export default function TradesPage() {
                     managingAs={teamId}
                     busy={busyAction}
                     onAction={(a) => doAction(t, a)}
+                    onCounter={() => openCounter(t)}
                   />
                 ))}
               </ul>
@@ -618,20 +675,25 @@ export default function TradesPage() {
       )}
 
       {proposeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setProposeOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => { setProposeOpen(false); setCounterOf(null); }}>
           <div
             className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-700 bg-midnight-soft p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-white">Propose trade</h3>
+            <h3 className="text-lg font-semibold text-white">
+              {counterOf ? `Counter trade #${counterOf.id}` : "Propose trade"}
+            </h3>
             <p className="mt-1 text-sm text-slate-400">
-              N-for-N only · the other manager accepts or rejects · accepted trades face a 2-day review window (veto by one-third of the league)
+              {counterOf
+                ? "A new trade back to the original proposer, pre-filled with the sides swapped — edit the players freely. The original trade stays open and unchanged."
+                : "N-for-N only · the other manager accepts or rejects · accepted trades face a 2-day review window (veto by one-third of the league)"}
             </p>
             <div className="mt-4">
               <label className="mb-1 block text-xs font-medium text-slate-400">Trade with</label>
               <select
                 className={cn(input, "w-full")}
                 value={partnerId}
+                disabled={counterOf != null}
                 onChange={(e) => {
                   setPartnerId(e.target.value);
                   setReceives([]);
@@ -703,7 +765,7 @@ export default function TradesPage() {
             )}
             {propOk && <p className="mt-3 text-sm text-green-300">{propOk}</p>}
             <div className="mt-5 flex justify-end gap-2">
-              <button className={btnGhost} onClick={() => setProposeOpen(false)} disabled={submitting}>
+              <button className={btnGhost} onClick={() => { setProposeOpen(false); setCounterOf(null); }} disabled={submitting}>
                 Cancel
               </button>
               <button className={btnPrimary} onClick={submitPropose} disabled={submitting}>

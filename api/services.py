@@ -78,6 +78,7 @@ def ensure_engine_tables(con: sqlite3.Connection) -> None:
         ("accepted_at", "TEXT"),
         ("vetoed_at", "TEXT"),
         ("executed_at", "TEXT"),
+        ("counter_of", "INTEGER"),  # P5-W36 counter-trade linkage
     ):
         if col not in cols:
             con.execute(f"ALTER TABLE trades ADD COLUMN {col} {ddl}")
@@ -1074,6 +1075,25 @@ def _trade_to_out(trade: dict, db_id: int) -> dict:
     }
 
 
+def _counter_fields(con: sqlite3.Connection, league_id: int,
+                    db_id: int) -> dict:
+    """P5-W36 counter linkage for one trades-table row: the trade it
+    counters (counter_of column) + the trades that counter it."""
+    cols = {r["name"] for r in con.execute("PRAGMA table_info(trades)")}
+    if "counter_of" not in cols:
+        return {"counter_of": None, "countered_by": []}
+    row = con.execute(
+        "SELECT counter_of FROM trades WHERE id = ? AND league_id = ?",
+        (db_id, league_id)).fetchone()
+    countered_by = [
+        r["id"] for r in con.execute(
+            "SELECT id FROM trades WHERE league_id = ? AND counter_of = ?"
+            " ORDER BY id", (league_id, db_id))
+    ]
+    return {"counter_of": row["counter_of"] if row else None,
+            "countered_by": countered_by}
+
+
 def _db_id_for_engine(con: sqlite3.Connection, league_id: int, engine_id: int) -> int:
     """trades-table id for an engine trade id (must exist after sync)."""
     row = con.execute(
@@ -1272,8 +1292,53 @@ def propose_trade(con: sqlite3.Connection, league_id: int, from_team_id: int,
     with con:
         _sync_trade_row(con, league_id, trade)
     _put_cached("trade", league_id, eng, con)
-    out = _trade_to_out(trade, _db_id_for_engine(con, league_id, trade["id"]))
+    db_id = _db_id_for_engine(con, league_id, trade["id"])
+    out = _trade_to_out(trade, db_id)
     out["league_id"] = league_id
+    out.update(_counter_fields(con, league_id, db_id))
+    return out
+
+
+def counter_trade(con: sqlite3.Connection, league_id: int,
+                  original_db_id: int, from_team_id: int,
+                  gives: list[int], receives: list[int]) -> dict:
+    """Counter a pending incoming trade (P5-W36).
+
+    Creates a NEW pending trade through propose_trade — so every
+    existing validation applies unchanged (N-for-N and ownership in
+    the engine, claim-aware actor checks at the router, the P4-W24
+    D8-reachability guard) — with the sides reversed: the countering
+    team (the original's recipient) proposes back to the original
+    proposer. The new trade's trades-row carries counter_of =
+    original_db_id. The original trade is NOT auto-rejected or
+    mutated: it resolves only through the existing settle/expiry
+    paths (a counter that executes first strands it exactly like a
+    competing trade, P4-W23).
+    """
+    get_league(con, league_id)
+    row = con.execute(
+        "SELECT * FROM trades WHERE id = ? AND league_id = ?",
+        (original_db_id, league_id)).fetchone()
+    if not row:
+        raise HTTPException(404, f"trade {original_db_id} not found")
+    _settle_trades(con, league_id)  # expire stale proposals first
+    row = con.execute(
+        "SELECT * FROM trades WHERE id = ? AND league_id = ?",
+        (original_db_id, league_id)).fetchone()
+    if row["status"] != "proposed":
+        raise HTTPException(
+            422, f"trade {original_db_id} is {row['status']} — only a "
+                 "pending proposed trade can be countered")
+    if from_team_id != row["to_team_id"]:
+        raise HTTPException(
+            422, "only the team the original trade was proposed to "
+                 "can counter it")
+    out = propose_trade(con, league_id, from_team_id,
+                        row["from_team_id"], gives, receives)
+    with con:
+        con.execute("UPDATE trades SET counter_of = ? WHERE id = ?",
+                    (original_db_id, out["id"]))
+    out.update(_counter_fields(con, league_id, out["id"]))
     return out
 
 
@@ -1712,8 +1777,10 @@ def respond_trade(con: sqlite3.Connection, league_id: int, trade_id: int,
     with con:
         _sync_trade_row(con, league_id, trade)
     _put_cached("trade", league_id, eng, con)
-    out = _trade_to_out(trade, _db_id_for_engine(con, league_id, trade["id"]))
+    db_id = _db_id_for_engine(con, league_id, trade["id"])
+    out = _trade_to_out(trade, db_id)
     out["league_id"] = league_id
+    out.update(_counter_fields(con, league_id, db_id))
     return out
 
 
@@ -1820,8 +1887,16 @@ def list_trades(con: sqlite3.Connection, league_id: int,
         sql += " AND status = ?"
         params.append(status)
     sql += " ORDER BY created_at DESC"
+    rows = list(con.execute(sql, params))
+    # P5-W36: reverse counter links for the whole league in one pass.
+    countered_by: dict[int, list[int]] = {}
+    if rows and "counter_of" in rows[0].keys():
+        for r in con.execute(
+                "SELECT id, counter_of FROM trades WHERE league_id = ?"
+                " AND counter_of IS NOT NULL ORDER BY id", (league_id,)):
+            countered_by.setdefault(r["counter_of"], []).append(r["id"])
     out = []
-    for r in con.execute(sql, params):
+    for r in rows:
         keys = r.keys()
         out.append({
             "id": r["id"], "league_id": r["league_id"],
@@ -1835,5 +1910,7 @@ def list_trades(con: sqlite3.Connection, league_id: int,
             "accepted_at": r["accepted_at"] if "accepted_at" in keys else None,
             "vetoed_at": r["vetoed_at"] if "vetoed_at" in keys else None,
             "executed_at": r["executed_at"] if "executed_at" in keys else None,
+            "counter_of": r["counter_of"] if "counter_of" in keys else None,
+            "countered_by": countered_by.get(r["id"], []),
         })
     return out
