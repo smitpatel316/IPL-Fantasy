@@ -285,3 +285,33 @@ CREATE TABLE IF NOT EXISTS notification_reads (
     last_read_at TEXT NOT NULL,
     PRIMARY KEY (league_id, team_id)
 );
+
+-- P5-W24: league polls (advisory votes, companion to the message
+-- board). One vote per team per poll (UNIQUE), changeable while the
+-- poll is open; closing is creator/commissioner only. A poll result
+-- NEVER mutates league settings or any other state.
+CREATE TABLE IF NOT EXISTS polls (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    league_id   INTEGER NOT NULL REFERENCES leagues(id) ON DELETE CASCADE,
+    team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    question    TEXT NOT NULL,
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    closed_at   TEXT
+);
+
+CREATE TABLE IF NOT EXISTS poll_options (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    poll_id     INTEGER NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+    label       TEXT NOT NULL,
+    position    INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS poll_votes (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    poll_id     INTEGER NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+    team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    option_id   INTEGER NOT NULL REFERENCES poll_options(id) ON DELETE CASCADE,
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (poll_id, team_id)
+);

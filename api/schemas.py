@@ -439,6 +439,46 @@ class RosterHealthOut(BaseModel):
     retired: list[RosterHealthPlayerOut] = []
 
 
+# ---------- league polls (P5-W24) ----------
+class PollCreate(BaseModel):
+    team_id: int
+    question: str = Field(min_length=1, max_length=200)
+    options: list[str] = Field(min_length=2, max_length=6)
+
+
+class PollVoteIn(BaseModel):
+    team_id: int
+    option_id: int
+
+
+class PollOptionOut(BaseModel):
+    id: int
+    label: str
+    votes: int = 0
+    pct: float = 0.0  # share of votes cast, 1 decimal; 0.0 when no votes
+
+
+class PollOut(BaseModel):
+    id: int
+    league_id: int
+    team_id: int  # creator team
+    team_name: str
+    question: str
+    options: list[PollOptionOut] = []
+    total_votes: int = 0
+    my_option_id: Optional[int] = None  # viewer's team vote, when team_id given
+    closed: bool = False
+    created_at: str
+    closed_at: Optional[str] = None
+
+
+class PollsOut(BaseModel):
+    league_id: int
+    commissioner_team_id: Optional[int] = None
+    total: int
+    polls: list[PollOut] = []
+
+
 class DndOut(BaseModel):
     draft_id: int
     team_id: int

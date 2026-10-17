@@ -24,6 +24,8 @@ import type {
   MatchupOut,
   MessageBoardOut,
   MessageOut,
+  PollOut,
+  PollsOut,
   MockBotIn,
   MockDraftOut,
   NotImplementedOut,
@@ -361,6 +363,31 @@ export const api = {
   deleteMessage: (leagueId: number, messageId: number, team_id: number) =>
     req<void>(`/leagues/${leagueId}/messages/${messageId}?team_id=${team_id}`, {
       method: "DELETE",
+      headers: claimHeaders(team_id),
+    }),
+
+  // polls (P5-W24): advisory league votes. Reads open (team_id only
+  // marks the viewer's own vote); create/vote/close carry the acting
+  // team's claim header (P4-W18).
+  getPolls: (leagueId: number, teamId?: number | null) =>
+    req<PollsOut>(
+      `/leagues/${leagueId}/polls${teamId != null ? `?team_id=${teamId}` : ""}`,
+    ),
+  createPoll: (leagueId: number, team_id: number, question: string, options: string[]) =>
+    req<PollOut>(`/leagues/${leagueId}/polls`, {
+      method: "POST",
+      headers: claimHeaders(team_id),
+      body: JSON.stringify({ team_id, question, options }),
+    }),
+  votePoll: (leagueId: number, pollId: number, team_id: number, option_id: number) =>
+    req<PollOut>(`/leagues/${leagueId}/polls/${pollId}/vote`, {
+      method: "POST",
+      headers: claimHeaders(team_id),
+      body: JSON.stringify({ team_id, option_id }),
+    }),
+  closePoll: (leagueId: number, pollId: number, team_id: number) =>
+    req<PollOut>(`/leagues/${leagueId}/polls/${pollId}/close?team_id=${team_id}`, {
+      method: "POST",
       headers: claimHeaders(team_id),
     }),
 

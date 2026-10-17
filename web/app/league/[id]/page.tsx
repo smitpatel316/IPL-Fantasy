@@ -8,6 +8,7 @@ import { clearTeamClaim, getTeamClaim, setTeamClaim } from "@/lib/identity";
 import { ApiError, type AdjustmentOut, type DraftRecapOut, type LeagueDetailOut, type MatchupOut, type PlayerOut, type RosterMoveOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { MessageBoard } from "@/components/MessageBoard";
+import { LeaguePolls } from "@/components/LeaguePolls";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { NotificationsInbox } from "@/components/NotificationsInbox";
 import { PowerRankings } from "@/components/PowerRankings";
@@ -372,6 +373,9 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
       {league && <ReadinessChecklist leagueId={league.id} />}
       {/* P5-W12: all-teams roster view */}
       {league && <AllRosters leagueId={league.id} />}
+
+      {/* P5-W24: league polls (advisory votes, beside the board) */}
+      {league && <LeaguePolls leagueId={league.id} myTeamId={myTeamId} />}
 
       {/* P5-W5: persistent league message board */}
       {league && (
