@@ -132,6 +132,12 @@ class ClaimOut(BaseModel):
     claim_code: str
 
 
+class TeamRenameIn(BaseModel):
+    """P5-W23: rename the acting team. The router trims the name and
+    rejects empty-after-trim with 422; the schema bounds raw length."""
+    name: str = Field(min_length=1, max_length=80)
+
+
 # ---------- players ----------
 class PlayerOut(BaseModel):
     id: int

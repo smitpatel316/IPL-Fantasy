@@ -24,6 +24,9 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
   // P4-W18: team ids this browser holds claim codes for.
   const [mine, setMine] = useState<Set<number>>(new Set());
   const [claimMsg, setClaimMsg] = useState("");
+  // P5-W23: inline rename editor for this browser's own claimed team.
+  const [renameId, setRenameId] = useState<number | null>(null);
+  const [renameText, setRenameText] = useState("");
   // P4-W21: "my matchup" strip state.
   const [myTeamId, setMyTeamId] = useState<number | null>(null);
   const [myMatchup, setMyMatchup] = useState<MatchupOut | null>(null);
@@ -84,16 +87,69 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
     }
   }
 
-  function claimControl(s: { team_id: number; claimed: boolean }) {
-    if (mine.has(s.team_id))
+  async function doRename(teamId: number) {
+    const name = renameText.trim();
+    if (!name) {
+      setClaimMsg("Team name can't be empty.");
+      return;
+    }
+    setClaimMsg("");
+    try {
+      await api.renameTeam(teamId, name);
+      setRenameId(null);
+      setClaimMsg("Team renamed — the new name shows everywhere right away.");
+      if (id) await refresh(id);
+    } catch (e) {
+      setClaimMsg(e instanceof ApiError ? e.message : "rename failed");
+    }
+  }
+
+  function claimControl(s: { team_id: number; team_name?: string; claimed: boolean }) {
+    if (mine.has(s.team_id)) {
+      // P5-W23: rename affordance only for this browser's own claimed
+      // team — other teams' names are never editable from here.
+      if (renameId === s.team_id)
+        return (
+          <span className="mt-0.5 flex items-center gap-1.5 text-[11px]">
+            <input
+              value={renameText}
+              onChange={(e) => setRenameText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void doRename(s.team_id);
+                if (e.key === "Escape") setRenameId(null);
+              }}
+              maxLength={80}
+              autoFocus
+              aria-label="New team name"
+              className="w-36 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[11px] text-white"
+            />
+            <button type="button" onClick={() => void doRename(s.team_id)} className="font-semibold text-pitch-green hover:underline">
+              Save
+            </button>
+            <button type="button" onClick={() => setRenameId(null)} className="text-zinc-500 underline hover:text-zinc-300">
+              cancel
+            </button>
+          </span>
+        );
       return (
         <span className="mt-0.5 flex items-center gap-2 text-[11px]">
           <span className="font-bold text-trophy-gold">Yours</span>
+          <button
+            type="button"
+            onClick={() => {
+              setRenameText(s.team_name ?? "");
+              setRenameId(s.team_id);
+            }}
+            className="text-zinc-500 underline hover:text-zinc-300"
+          >
+            rename
+          </button>
           <button type="button" onClick={() => doRelease(s.team_id)} className="text-zinc-500 underline hover:text-zinc-300">
             release
           </button>
         </span>
       );
+    }
     if (s.claimed) return <span className="mt-0.5 block text-[11px] text-zinc-600">Claimed</span>;
     return (
       <button
