@@ -2,7 +2,10 @@
 
 /* P5-W22: playoff picture + remaining strength of schedule —
    descriptive only: current record, games back from the 4th seed,
-   and who is left to play. No projections or win probabilities. */
+   and who is left to play. No projections or win probabilities.
+   P5-W34: clinch status + magic number are deterministic bounds
+   arithmetic on standings points (see api/routers/playoff_picture.py)
+   — a tied bound never clinches or eliminates. */
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -51,6 +54,8 @@ export function PlayoffPicture({ leagueId }: { leagueId: number }) {
               <th className="py-1 pr-2">Record</th>
               <th className="py-1 pr-2">GB from 4th</th>
               <th className="py-1 pr-2">Left</th>
+              <th className="py-1 pr-2">Status</th>
+              <th className="py-1 pr-2">Magic no.</th>
               <th className="py-1 pr-2">Remaining opponents</th>
               <th className="py-1">Rem. SOS</th>
             </tr>
@@ -80,6 +85,28 @@ export function PlayoffPicture({ leagueId }: { leagueId: number }) {
                       : e.games_back.toFixed(1)}
                 </td>
                 <td className="py-2 pr-2 text-zinc-400">{e.remaining_games}</td>
+                <td className="py-2 pr-2">
+                  {e.clinch_status === "clinched" ? (
+                    <span className="rounded bg-pitch-green/15 px-1.5 py-0.5 text-[11px] font-bold uppercase text-pitch-green">
+                      Clinched
+                    </span>
+                  ) : e.clinch_status === "eliminated" ? (
+                    <span className="rounded bg-brick-red/15 px-1.5 py-0.5 text-[11px] font-bold uppercase text-brick-red">
+                      Eliminated
+                    </span>
+                  ) : (
+                    <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[11px] font-bold uppercase text-zinc-400">
+                      In contention
+                    </span>
+                  )}
+                </td>
+                <td className="py-2 pr-2 tabular-nums text-zinc-400">
+                  {e.clinch_status === "in_contention"
+                    ? e.magic_number != null
+                      ? e.magic_number
+                      : "—"
+                    : "—"}
+                </td>
                 <td className="py-2 pr-2 text-zinc-400">
                   {e.remaining_opponents.length === 0
                     ? "—"
@@ -98,6 +125,11 @@ export function PlayoffPicture({ leagueId }: { leagueId: number }) {
       <p className="mt-2 text-xs text-zinc-600">
         Remaining SOS is the average standings-points share (2 pts per win, 1 per tie) of the
         opponents still to play — a description of the run-in, not a prediction.
+      </p>
+      <p className="mt-1 text-xs text-zinc-600">
+        Clinch status and the magic number (standings points needed to guarantee a top-4
+        finish) are bounds arithmetic only — best/worst-case standings points, with tied
+        bounds always resolving to “in contention”. No win probability, no simulation.
       </p>
     </section>
   );

@@ -16,6 +16,29 @@ the remaining games will go.
     current standings-points shares, where a team's standings points
     are 2W + T and its share is points / league total points (0 when
     no games are final yet or no games remain).
+
+P5-W34 adds deterministic clinch math on the same bounds: a team's
+final standings points lie in [pts, pts + 2*remaining] (2 per win,
+1 per tie). A rival who can merely TIE a team's worst case could
+still pass it on tiebreakers while either side has games left, so
+a live tied bound counts as "can pass" — tied bounds never clinch
+or eliminate. The one exception is a tie between two teams with
+no games left: their records are final, so the projection's own
+seed order settles them definitively.
+
+  * clinched — at most 3 rivals can pass the team's min (current
+    points): max > min, or max == min in a live tie (above).
+  * eliminated — at least 4 rivals are guaranteed ahead of the
+    team's max: min > max, or min == max between two finished
+    teams with the rival seeded higher.
+  * otherwise in contention.
+  * magic number (in-contention teams only) — the smallest added
+    standings points M with at most 3 rivals at max >= pts + M,
+    i.e. M = (4th-highest rival max) + 1 - pts; null when even
+    winning out (M > 2*remaining) cannot supply it on bounds alone.
+
+Bounds arithmetic only, exactly like the rest of this projection:
+no win probability, no simulation, no projected points.
 """
 
 import sqlite3
@@ -94,6 +117,49 @@ def get_playoff_picture(league_id: int,
                     week_no=m["week_no"], opponent_team_id=oid,
                     opponent_team_name=names.get(oid, f"Team {oid}")))
 
+    # P5-W34 bounds: standings points (2W+T) and each team's
+    # best/worst final totals from its remaining games.
+    pts = {r["team_id"]: 2 * r["wins"] + r["ties"] for r in records}
+    max_pts = {r["team_id"]: pts[r["team_id"]] + 2 * len(remaining[r["team_id"]])
+               for r in records}
+
+    seed_of = {r["team_id"]: i for i, r in enumerate(records)}
+    rem_of = {r["team_id"]: len(remaining[r["team_id"]]) for r in records}
+
+    def clinch(team_id: int) -> tuple[str, int | None]:
+        rivals = [t for t in pts if t != team_id]
+
+        def can_pass(t: int) -> bool:
+            if max_pts[t] > pts[team_id]:
+                return True
+            if max_pts[t] < pts[team_id]:
+                return False
+            # Tied bound: a live tie can still flip on tiebreakers;
+            # a tie between two finished teams is settled by seeds.
+            return not (rem_of[t] == 0 and rem_of[team_id] == 0
+                        and seed_of[team_id] < seed_of[t])
+
+        def locked_ahead(t: int) -> bool:
+            if pts[t] > max_pts[team_id]:
+                return True
+            if pts[t] < max_pts[team_id]:
+                return False
+            return (rem_of[t] == 0 and rem_of[team_id] == 0
+                    and seed_of[t] < seed_of[team_id])
+
+        if sum(1 for t in rivals if can_pass(t)) <= PLAYOFF_TEAMS - 1:
+            return "clinched", None
+        if sum(1 for t in rivals if locked_ahead(t)) >= PLAYOFF_TEAMS:
+            return "eliminated", None
+        magic = None
+        if len(rivals) >= PLAYOFF_TEAMS:
+            fourth_max = sorted((max_pts[t] for t in rivals),
+                                reverse=True)[PLAYOFF_TEAMS - 1]
+            need = fourth_max + 1 - pts[team_id]
+            if 1 <= need <= 2 * len(remaining[team_id]):
+                magic = need
+        return "in_contention", magic
+
     fourth = records[PLAYOFF_TEAMS - 1] if len(records) >= PLAYOFF_TEAMS else None
     entries = []
     for i, r in enumerate(records):
@@ -104,12 +170,13 @@ def get_playoff_picture(league_id: int,
         opps = remaining[r["team_id"]]
         sos = (round(sum(share[o.opponent_team_id] for o in opps) / len(opps), 4)
                if opps else 0.0)
+        status, magic = clinch(r["team_id"])
         entries.append(schemas.PlayoffPictureEntryOut(
             seed=i + 1, team_id=r["team_id"], team_name=r["team_name"],
             wins=r["wins"], losses=r["losses"], ties=r["ties"],
             points_for=r["points_for"], games_back=gb,
             remaining_games=len(opps), remaining_opponents=opps,
-            remaining_sos=sos))
+            remaining_sos=sos, clinch_status=status, magic_number=magic))
 
     return schemas.PlayoffPictureOut(
         league_id=league_id, through_week=through_week,
