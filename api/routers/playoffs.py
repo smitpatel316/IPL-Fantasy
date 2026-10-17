@@ -13,10 +13,12 @@ renders something real at every point of the season:
   * Week-7/8 matchup rows don't exist yet (scoring lands through the
     admin seam); when they do, games adopt the rows' scores/status and
     winners are derived — a tied playoff game goes to the better seed,
-    the engine's documented tiebreak. Unmatched week-7/8 rows (e.g. a
-    future consolation game) are ignored by the bracket.
+    the engine's documented tiebreak.
   * The final pairs the semifinal winners, the third-place game the
     losers; until the semis are final both show as placeholders.
+  * P5-W19: the week-7 consolation game pairs regular-season seeds
+    5 vs 6 (engine consolation_pairings); its winner takes 5th place.
+    Leagues with fewer than 6 teams have no consolation game.
 """
 
 import sqlite3
@@ -172,6 +174,29 @@ def get_playoffs(league_id: int, con: sqlite3.Connection = Depends(get_db)):
             _row_for((sf_losers[0], sf_losers[1])), names, seed_rank,
         )
 
+    # P5-W19: consolation game — seeds 5 vs 6, week 7, winner = 5th place.
+    consolation = None
+    fifth_id = sixth_id = None
+    if len(records) >= 6:
+        c5, c6 = records[4], records[5]
+        cons_rank = {c5["team_id"]: 5, c6["team_id"]: 6}
+        rows7c = _week_rows(con, league_id, SEMIFINAL_WEEK)
+        crow = next(
+            (r for r in rows7c
+             if {r["team_a_id"], r["team_b_id"]} == {c5["team_id"], c6["team_id"]}),
+            None,
+        )
+        consolation = _game(
+            "Consolation game", SEMIFINAL_WEEK,
+            (c5["team_id"], c5["team_name"]), (c6["team_id"], c6["team_name"]),
+            crow, names, cons_rank,
+        )
+        if consolation.winner_team_id is not None:
+            fifth_id = consolation.winner_team_id
+            sixth_id = (
+                c6["team_id"] if fifth_id == c5["team_id"] else c5["team_id"]
+            )
+
     if not rs_done:
         stage = "regular_season"
     elif not all(g.status == "final" for g in semifinals):
@@ -186,4 +211,9 @@ def get_playoffs(league_id: int, con: sqlite3.Connection = Depends(get_db)):
         semifinals=semifinals, final=final, third_place=third,
         champion_team_id=champion_id,
         champion_team_name=names.get(champion_id) if champion_id else None,
+        consolation=consolation,
+        fifth_place_team_id=fifth_id,
+        fifth_place_team_name=names.get(fifth_id) if fifth_id else None,
+        sixth_place_team_id=sixth_id,
+        sixth_place_team_name=names.get(sixth_id) if sixth_id else None,
     )

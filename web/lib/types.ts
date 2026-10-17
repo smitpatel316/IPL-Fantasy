@@ -615,6 +615,11 @@ export interface PlayoffsOut {
   third_place: PlayoffGameOut | null;
   champion_team_id: number | null;
   champion_team_name: string | null;
+  consolation: PlayoffGameOut | null;
+  fifth_place_team_id: number | null;
+  fifth_place_team_name: string | null;
+  sixth_place_team_id: number | null;
+  sixth_place_team_name: string | null;
 }
 
 export interface PlayerScoreOut {

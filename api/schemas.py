@@ -703,6 +703,12 @@ class PlayoffsOut(BaseModel):
     third_place: Optional[PlayoffGameOut] = None
     champion_team_id: Optional[int] = None
     champion_team_name: Optional[str] = None
+    # P5-W19: week-7 consolation game (seeds 5 vs 6); None for <6 teams.
+    consolation: Optional[PlayoffGameOut] = None
+    fifth_place_team_id: Optional[int] = None
+    fifth_place_team_name: Optional[str] = None
+    sixth_place_team_id: Optional[int] = None
+    sixth_place_team_name: Optional[str] = None
 
 
 class PlayerScoreOut(BaseModel):
