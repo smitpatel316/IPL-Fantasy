@@ -242,6 +242,14 @@ export const api = {
     req<ClaimOut>(`/teams/${teamId}/claim`, { method: "POST" }),
   resetClaim: (teamId: number) =>
     req<TeamOut>(`/teams/${teamId}/reset-claim`, { method: "POST" }),
+  // P5-W23: rename own team — claim header attached like other
+  // team mutations; the API 403s a claimed team without its code.
+  renameTeam: (teamId: number, name: string) =>
+    req<TeamOut>(`/teams/${teamId}`, {
+      method: "PATCH",
+      headers: claimHeaders(teamId),
+      body: JSON.stringify({ name }),
+    }),
 
   // lineups
   setLineup: (teamId: number | string, week_no: number, slots: Record<string, number[]>) =>
