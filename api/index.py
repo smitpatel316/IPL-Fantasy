@@ -22,7 +22,7 @@ from fastapi.responses import JSONResponse  # noqa: E402
 from api import draft_ws, schemas  # noqa: E402
 from api.constants import SANDBOX_LEAGUE_NAME, SCORING_TABLE_VERSION  # noqa: E402
 from api.database import init_db  # noqa: E402
-from api.routers import activity, admin, drafts, identity, leagues, lineups, matchups, message_board, mock_draft, player_notes, players, playoffs, power_rankings, ranks, readiness, rosters, trade_block, trades, waivers, watchlist  # noqa: E402
+from api.routers import activity, admin, drafts, identity, leagues, lineups, matchups, message_board, mock_draft, player_notes, players, playoffs, power_rankings, ranks, readiness, roster_health, rosters, trade_block, trades, waivers, watchlist  # noqa: E402
 from api.sandbox import seed_if_empty  # noqa: E402
 
 APP_VERSION = "0.1.0-scaffold"
@@ -112,6 +112,7 @@ app.include_router(playoffs.router, prefix="/api/leagues", tags=["playoffs"])
 app.include_router(power_rankings.router, prefix="/api/leagues", tags=["power-rankings"])
 app.include_router(readiness.router, prefix="/api/leagues", tags=["readiness"])
 app.include_router(rosters.router, prefix="/api/leagues", tags=["rosters"])
+app.include_router(roster_health.router, prefix="/api/leagues", tags=["roster-health"])
 app.include_router(lineups.router, prefix="/api", tags=["lineups"])
 app.include_router(ranks.router, prefix="/api", tags=["ranks"])
 app.include_router(identity.router, prefix="/api", tags=["identity"])

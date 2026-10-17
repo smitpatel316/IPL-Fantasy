@@ -392,6 +392,26 @@ class RostersOut(BaseModel):
     teams: list[RosterTeamOut] = []
 
 
+# ---------- roster health / IL assistant (P5-W21) ----------
+class RosterHealthPlayerOut(BaseModel):
+    player_id: int
+    player_name: str
+    role: Optional[str] = None
+    slot: str
+    status: str
+    note: Optional[str] = None
+
+
+class RosterHealthOut(BaseModel):
+    league_id: int
+    team_id: int
+    team_name: str
+    basis: str  # honest source copy (curated registry, P5-W6 basis)
+    move_to_il: list[RosterHealthPlayerOut] = []
+    return_candidates: list[RosterHealthPlayerOut] = []
+    retired: list[RosterHealthPlayerOut] = []
+
+
 class DndOut(BaseModel):
     draft_id: int
     team_id: int

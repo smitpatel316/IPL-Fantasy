@@ -34,6 +34,7 @@ import type {
   RanksOut,
   ReadinessOut,
   RostersOut,
+  RosterHealthOut,
   RosterMoveOut,
   ScoreboardOut,
   ScheduleMatrixOut,
@@ -125,6 +126,10 @@ export const api = {
     req<ReadinessOut>(`/leagues/${leagueId}/readiness`),
   getRosters: (leagueId: number | string) =>
     req<RostersOut>(`/leagues/${leagueId}/rosters`),
+  getRosterHealth: (leagueId: number, teamId: number) =>
+    req<RosterHealthOut>(`/leagues/${leagueId}/roster-health?team_id=${teamId}`, {
+      headers: claimHeaders(teamId),
+    }),
   getPlayoffs: (leagueId: number | string) =>
     req<PlayoffsOut>(`/leagues/${leagueId}/playoffs`),
   scheduleNudges: (leagueId: number | string, week: number) =>

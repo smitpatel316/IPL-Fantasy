@@ -7,6 +7,7 @@ import { ApiError, type Availability, type PlayerOut, type TeamOut } from "@/lib
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { AvailabilityDot, AvailabilityLegend, AVAILABILITY_META } from "@/components/AvailabilityDot";
 import { ScrollHint } from "@/components/ScrollHint";
+import { RosterHealth } from "@/components/RosterHealth";
 import { cn } from "@/lib/utils";
 import { Plane, Save, Search, Sparkles, X, CheckCircle2, AlertTriangle } from "lucide-react";
 
@@ -266,6 +267,9 @@ export default function LineupPage() {
           </p>
         )}
       </div>
+
+      {/* P5-W21: roster-health / IL assistant for the selected team */}
+      <RosterHealth leagueId={leagueId} teamId={teamId} />
 
       {locked ? (
         <p className="mb-4 rounded-lg border border-brick-red/40 bg-brick-red/10 px-4 py-2.5 text-sm text-red-200">
