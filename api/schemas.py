@@ -91,6 +91,9 @@ class LeagueSettingsPatch(BaseModel):
     (rounds, roster slots, scoring table) are creation-time decisions."""
     pick_clock_secs: Optional[int] = Field(default=None, ge=0, le=600)
     trade_deadline_week: Optional[int] = Field(default=None, ge=1, le=8)
+    # P5-W30: commissioner-set draft order — an exact permutation of
+    # the league's joined team ids; [] clears back to the seeded shuffle.
+    draft_order: Optional[list[int]] = None
     waiver_run_weekday: Optional[str] = Field(
         default=None,
         pattern="^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$",

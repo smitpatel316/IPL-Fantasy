@@ -237,6 +237,10 @@ def _build_draft(con: sqlite3.Connection, league_id: int) -> Draft:
         rounds=constants.DRAFT_ROUNDS,
         pick_clock_secs=int(settings.get("pick_clock_secs", 90)),
         seed=42,
+        # P5-W30: a commissioner-set order (validated as an exact
+        # permutation at PATCH time) overrides the seeded shuffle.
+        draft_order=(tuple(settings["draft_order"])
+                     if settings.get("draft_order") else None),
     )
     draft = Draft(cfg, pool, roles=roles, ranks=ranks)
     draft.start()

@@ -23,6 +23,7 @@ export interface LeagueSettings {
   playoff_teams: number;
   trade_deadline_week: number;
   waiver_run_weekday: string;
+  draft_order?: number[];
 }
 
 export interface AdjustmentOut {

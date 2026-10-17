@@ -143,8 +143,27 @@ def patch_league_settings(league_id: int, body: schemas.LeagueSettingsPatch,
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
     if not updates:
         raise HTTPException(422, "no settings supplied")
+    if "draft_order" in updates:
+        # P5-W30: the order locks once the draft starts, and a set order
+        # must be an exact permutation of the joined team ids.
+        if league["status"] != "setup":
+            raise HTTPException(
+                422, "draft order locks once the draft starts")
+        order = updates["draft_order"]
+        if order:
+            team_ids = [r["id"] for r in con.execute(
+                "SELECT id FROM teams WHERE league_id = ?", (league_id,))]
+            if sorted(order) != sorted(team_ids):
+                raise HTTPException(
+                    422, "draft_order must be an exact permutation of the"
+                         " league's team ids (no duplicates, none missing,"
+                         " none unknown)")
+        else:
+            updates.pop("draft_order")  # [] clears back to the shuffle
     settings = dict(league["settings"] or {})
     settings.update(updates)
+    if "draft_order" in body.model_dump() and body.draft_order == []:
+        settings.pop("draft_order", None)
     con.execute("UPDATE leagues SET settings = ? WHERE id = ?",
                 (json.dumps(settings), league_id))
     con.commit()
