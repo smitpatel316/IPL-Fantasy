@@ -14,6 +14,7 @@ from .. import schedule_games, schemas
 from ..constants import STARTER_SLOTS, TOTAL_WEEKS
 from ..database import get_db
 from ..engine.matchup_scheduler import FANTASY_WEEKS
+from ..engine.sandbox_season import solve_best_d8_lineup
 from ..validation import LineupError, validate_lineup
 from . import get_league, get_team, player_roles_map, require_team_actor
 
@@ -94,6 +95,85 @@ def set_lineup(team_id: int, body: schemas.LineupSet, request: Request,
         player_availability={
             pid: roles.get(pid, {}).get("availability", "active")
             for pids in body.slots.values() for pid in pids
+        },
+    )
+
+
+@router.get("/teams/{team_id}/lineup/suggestion",
+            response_model=schemas.LineupSuggestionOut)
+def get_lineup_suggestion(team_id: int, week_no: int,
+                          con: sqlite3.Connection = Depends(get_db)):
+    """P5-W13 Suggested XI: project the P2-L7 exact best-ADP D8-legal
+    solver (the same one that auto-sets week 1 at draft completion) over
+    the team's current construction roster for week_no. Read-only —
+    zero writes; the manager still saves through PUT, so the D5 lock,
+    D7 IL-eligibility and D8 cap checks stay exactly as enforced there.
+    Players currently holding the IL slot in the requested week's saved
+    lineup are excluded from the suggestion (they are out)."""
+    team = get_team(con, team_id)
+    if not 1 <= week_no <= TOTAL_WEEKS:
+        raise HTTPException(422, f"week_no must be 1..{TOTAL_WEEKS}")
+    league = get_league(con, team["league_id"])
+    roster = [
+        r["player_id"] for r in con.execute(
+            "SELECT player_id FROM roster_slots"
+            " WHERE team_id = ? AND week_no IS NULL", (team_id,))
+    ]
+    if len(roster) < 11:
+        raise HTTPException(
+            422, f"team {team_id} has {len(roster)} rostered players;"
+                 " a suggestion needs at least 11")
+    il_out = {
+        r["player_id"] for r in con.execute(
+            "SELECT player_id FROM roster_slots"
+            " WHERE team_id = ? AND week_no = ? AND slot = 'IL'",
+            (team_id, week_no))
+    }
+    pool = [pid for pid in roster if pid not in il_out]
+    if len(pool) < 11:
+        raise HTTPException(
+            422, f"only {len(pool)} players are available (IL excluded);"
+                 " a suggestion needs at least 11")
+    roles = player_roles_map(con, league["season"])
+    missing = [pid for pid in pool if pid not in roles]
+    if missing:
+        raise HTTPException(
+            422, f"no role metadata for players {missing};"
+                 " cannot compute a legal suggestion")
+    adp = {
+        r["player_id"]: r["r"]
+        for r in con.execute(
+            "SELECT player_id, MIN(rank) AS r FROM pre_draft_ranks"
+            " GROUP BY player_id")
+    }
+    adp_index = {pid: adp.get(pid, 10 ** 9) for pid in pool}
+    try:
+        assignment = solve_best_d8_lineup(pool, roles, adp_index)
+    except AssertionError as e:
+        raise HTTPException(422, str(e))
+    slots: dict[str, list[int]] = {}
+    for pid, slot in assignment.items():
+        slots.setdefault(slot, []).append(pid)
+    # A full 15-man roster with nobody on IL leaves 4 non-starters but BN
+    # holds 3 (D7): the suggestion keeps the best-ranked 3 on the bench
+    # and omits the last player rather than emit an unsavable lineup.
+    if len(slots.get("BN", [])) > 3:
+        slots["BN"] = sorted(slots["BN"], key=lambda p: adp_index[p])[:3]
+    for pid in sorted(il_out):
+        slots.setdefault("IL", []).append(pid)
+    try:
+        summary = validate_lineup(slots, roles)
+    except LineupError as e:
+        raise HTTPException(422, str(e))
+    lock = lineup_lock_at(con, team["league_id"], week_no)
+    return schemas.LineupSuggestionOut(
+        team_id=team_id, week_no=week_no, slots=slots,
+        overseas_starters=summary["overseas_starters"], valid=True,
+        locked=lock is not None and datetime.now(timezone.utc) >= lock,
+        lock_at=lock.isoformat() if lock else None,
+        player_availability={
+            pid: roles.get(pid, {}).get("availability", "active")
+            for pids in slots.values() for pid in pids
         },
     )
 

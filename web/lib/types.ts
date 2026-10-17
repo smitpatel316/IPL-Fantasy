@@ -345,6 +345,11 @@ export interface LineupOut {
   player_availability: Record<string, Availability>;
 }
 
+export interface LineupSuggestionOut extends LineupOut {
+  /** P5-W13: honest basis copy for the Suggested XI. */
+  basis: string;
+}
+
 export interface WaiverRunResultOut {
   player_id: number;
   winner_team_id: number | null;

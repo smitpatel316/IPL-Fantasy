@@ -8,7 +8,7 @@ import { PageHeader, ErrorBox } from "@/components/ui";
 import { AvailabilityDot, AvailabilityLegend, AVAILABILITY_META } from "@/components/AvailabilityDot";
 import { ScrollHint } from "@/components/ScrollHint";
 import { cn } from "@/lib/utils";
-import { Plane, Save, Search, X, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Plane, Save, Search, Sparkles, X, CheckCircle2, AlertTriangle } from "lucide-react";
 
 const STARTERS: { slot: string; max: number; label: string }[] = [
   { slot: "WK", max: 1, label: "Wicket-keeper" },
@@ -51,6 +51,7 @@ export default function LineupPage() {
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [saving, setSaving] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
 
@@ -103,6 +104,31 @@ export default function LineupPage() {
       }
       return next;
     });
+  }
+
+  // P5-W13: fill the form with the server's Suggested XI (best XI by
+  // preseason rank, D8-legal). Nothing is saved — the manager reviews
+  // and saves through the normal PUT, so lock/IL/D8 rules still apply.
+  async function suggest() {
+    if (!teamId) return;
+    setErr("");
+    setMsg("");
+    setSuggesting(true);
+    try {
+      const out = await api.getLineupSuggestion(teamId, week);
+      setSlots(out.slots ?? {});
+      setCarriedFrom(null);
+      setAvailMap(out.player_availability ?? {});
+      setMsg(
+        locked
+          ? `Suggested XI shown for week ${week} (read-only — week is locked). ${out.basis}`
+          : `Suggested XI filled in for week ${week} — review, then Save. ${out.basis}`,
+      );
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "suggestion failed");
+    } finally {
+      setSuggesting(false);
+    }
   }
 
   async function save() {
@@ -218,9 +244,17 @@ export default function LineupPage() {
             <span className="text-xs font-medium">{overseas}/{OVERSEAS_CAP} overseas</span>
           </div>
           <button
+            onClick={suggest}
+            disabled={suggesting || !teamId}
+            className="ml-auto inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-trophy-gold hover:text-white disabled:opacity-50"
+          >
+            <Sparkles className="h-4 w-4" />
+            {suggesting ? "Thinking…" : "Suggest best XI"}
+          </button>
+          <button
             onClick={save}
             disabled={saving || !teamId || locked}
-            className="ml-auto inline-flex items-center gap-2 rounded-lg bg-trophy-gold px-5 py-2 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg bg-trophy-gold px-5 py-2 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {saving ? "Saving…" : "Save lineup"}
