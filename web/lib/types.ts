@@ -609,6 +609,36 @@ export interface MessageBoardOut {
   messages: MessageOut[];
 }
 
+/** P5-W24: league polls — advisory votes only; a result never
+ * changes league settings. my_option_id marks the viewer's vote. */
+export interface PollOptionOut {
+  id: number;
+  label: string;
+  votes: number;
+  pct: number;
+}
+
+export interface PollOut {
+  id: number;
+  league_id: number;
+  team_id: number;
+  team_name: string;
+  question: string;
+  options: PollOptionOut[];
+  total_votes: number;
+  my_option_id: number | null;
+  closed: boolean;
+  created_at: string;
+  closed_at: string | null;
+}
+
+export interface PollsOut {
+  league_id: number;
+  commissioner_team_id: number | null;
+  total: number;
+  polls: PollOut[];
+}
+
 export interface MatchupOut {
   id: number;
   week_no: number;
