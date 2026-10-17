@@ -753,6 +753,26 @@ export interface ScheduleMatrixOut {
   rows: ScheduleMatrixRowOut[];
 }
 
+/** P5-W28: per-team FAAB & transaction ledger. */
+export interface LedgerEntryOut {
+  id: string;
+  kind: string;
+  text: string;
+  occurred_at: string;
+  amount: number | null;
+  faab_delta: number;
+  balance_after: number;
+}
+
+export interface TeamLedgerOut {
+  league_id: number;
+  team_id: number;
+  team_name: string;
+  starting_faab: number;
+  current_faab: number;
+  entries: LedgerEntryOut[];
+}
+
 export interface ScheduleNudgesOut {
   league_id: number;
   season: string;
