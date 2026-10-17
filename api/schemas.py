@@ -151,6 +151,20 @@ class PlayerOut(BaseModel):
     ownership_pct: Optional[float] = None
 
 
+class PlayerCompareEntryOut(PlayerOut):
+    # P5-W14: games for the player's IPL team over the next 3 fantasy
+    # weeks (from the schedule-nudges table); None when no fixture has
+    # been imported for those weeks.
+    games_next_3_weeks: Optional[int] = None
+
+
+class PlayerCompareOut(BaseModel):
+    league_id: int
+    current_week: int
+    weeks: list[int] = []  # the fantasy weeks games_next_3_weeks covers
+    players: list[PlayerCompareEntryOut] = []
+
+
 class PlayerOwnerOut(BaseModel):
     league_id: int
     league_name: str

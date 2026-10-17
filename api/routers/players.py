@@ -6,7 +6,8 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from .. import schemas
+from .. import schedule_games, schemas, services
+from ..constants import TOTAL_WEEKS
 from ..database import get_db
 from . import (
     availability_from_status,
@@ -63,6 +64,72 @@ def list_players(
             ownership_pct=own_pct.get(r["id"], 0.0),
         ))
     return out
+
+
+@router.get("/compare", response_model=schemas.PlayerCompareOut)
+def compare_players(
+    league_id: int = Query(...),
+    ids: str = Query(..., description="comma-separated player ids (2-3)"),
+    con: sqlite3.Connection = Depends(get_db),
+):
+    """P5-W14 player compare: 2-3 players side by side. Every value is
+    the same projection the list/detail endpoints serve (role, IPL
+    team, overseas, preseason rank in this league, avg points,
+    ownership %, availability) plus games over the next 3 fantasy
+    weeks from the schedule-nudges table. Read-only; entries return in
+    the order requested. Declared before /{player_id} so 'compare' is
+    not parsed as a player id."""
+    league = get_league(con, league_id)  # 404 for an unknown league
+    try:
+        wanted = [int(x) for x in ids.split(",") if x.strip()]
+    except ValueError:
+        raise HTTPException(422, "ids must be comma-separated player ids")
+    if not 2 <= len(wanted) <= 3 or len(set(wanted)) != len(wanted):
+        raise HTTPException(422, "compare needs 2-3 distinct player ids")
+    week = services.current_week(con, league_id)
+    weeks = list(range(week, min(week + 3, TOTAL_WEEKS + 1)))
+    games_by_code: dict[str, int] = {}
+    fixture_seen = False
+    for wk in weeks:
+        data = schedule_games.fetch_week(con, league["season"], wk)
+        for g in data["games"]:
+            fixture_seen = True
+            games_by_code[g["ipl_team_code"]] = (
+                games_by_code.get(g["ipl_team_code"], 0) + g["games"])
+    owned = owned_map(con, league_id)
+    avgs = avg_points_map(con)
+    own_pct = ownership_pct_map(con)
+    entries = []
+    for pid in wanted:
+        row = con.execute(
+            """SELECT p.id, p.name, p.season, pr.role, pr.is_overseas,
+                      pr.ipl_team_code, pr.status,
+                      (SELECT MIN(rank) FROM pre_draft_ranks r
+                       JOIN teams t ON t.id = r.team_id
+                       WHERE r.player_id = p.id AND t.league_id = ?) AS preseason_rank
+               FROM players p LEFT JOIN player_roles pr
+                 ON pr.player_id = p.id AND pr.season = p.season
+               WHERE p.id = ?""",
+            (league_id, pid),
+        ).fetchone()
+        if not row:
+            raise HTTPException(404, f"player {pid} not found")
+        code = row["ipl_team_code"]
+        entries.append(schemas.PlayerCompareEntryOut(
+            id=row["id"], name=row["name"], season=row["season"],
+            role=row["role"], is_overseas=bool(row["is_overseas"] or 0),
+            ipl_team_code=code, preseason_rank=row["preseason_rank"],
+            owned_by_team_id=owned.get(row["id"]),
+            availability=availability_from_status(row["status"]),
+            avg_points=avgs.get(row["id"]),
+            ownership_pct=own_pct.get(row["id"], 0.0),
+            games_next_3_weeks=(
+                games_by_code.get(code, 0)
+                if fixture_seen and code else None),
+        ))
+    return schemas.PlayerCompareOut(
+        league_id=league_id, current_week=week, weeks=weeks,
+        players=entries)
 
 
 @router.get("/{player_id}", response_model=schemas.PlayerDetailOut)
