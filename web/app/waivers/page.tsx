@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
 import { ApiError, type PlayerOut, type TeamOut, type WaiverClaimOut } from "@/lib/types";
@@ -192,6 +193,13 @@ export default function WaiversPage() {
   return (
     <div>
       <PageHeader title="Waivers" sub="Weekly blind FAAB · $100 season budget · runs Wednesday ~3am PT" />
+      <p className="-mt-3 mb-5 text-xs text-zinc-500">
+        Weighing a bid? Check bye weeks and double-game rounds in the{" "}
+        <Link href="/schedule" className="font-medium text-trophy-gold hover:underline">
+          schedule matrix
+        </Link>
+        .
+      </p>
 
       <div className="mb-5 grid gap-2 sm:grid-cols-3">
         {[

@@ -42,6 +42,7 @@ export default function Nav() {
     { href: "/waivers", label: "Waivers", match: "waivers" },
     { href: "/trades", label: "Trades", match: "trades" },
     { href: "/matchup", label: "Matchup", match: "matchup" },
+    { href: "/schedule", label: "Schedule", match: "schedule" },
     { href: "/playoffs", label: "Playoffs", match: "playoffs" },
     { href: "/help", label: "How to play", match: "help" },
   ];
