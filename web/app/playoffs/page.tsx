@@ -229,6 +229,29 @@ export default function PlayoffsPage() {
               </div>
             </div>
           </div>
+          {data.consolation && (
+            <div className="mt-6 max-w-xl">
+              <GameCard
+                game={data.consolation}
+                icon={<Swords className="h-4 w-4 text-zinc-500" />}
+                chipFor={(id, fb) =>
+                  data.fifth_place_team_id != null
+                    ? id === data.fifth_place_team_id
+                      ? "5th"
+                      : "6th"
+                    : id === data.consolation?.team_a_id
+                      ? "5"
+                      : "6"
+                }
+                projected={!data.seeds_final}
+              />
+              <p className="mt-2 text-xs text-zinc-500">
+                {data.fifth_place_team_name
+                  ? `${data.fifth_place_team_name} takes 5th place · ${data.sixth_place_team_name} finishes 6th.`
+                  : "Seeds 5 vs 6 in week 7 — the winner takes 5th place. Pairing is projected until the regular season is final."}
+              </p>
+            </div>
+          )}
         </>
       )}
 
