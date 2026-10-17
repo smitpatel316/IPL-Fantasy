@@ -16,8 +16,9 @@ from datetime import datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import PlainTextResponse
 
-from .. import schemas
+from .. import schemas, schedule_games
 from ..constants import PLAYOFF_WEEKS, TOTAL_WEEKS
 from ..database import get_db
 from . import get_league
@@ -35,8 +36,11 @@ def _fmt(dt: datetime | None, tz: ZoneInfo) -> str | None:
     return dt.astimezone(tz).strftime("%a %b %d, %Y %H:%M %Z") if dt else None
 
 
-@router.get("/{league_id}/key-dates", response_model=schemas.KeyDatesOut)
-def key_dates(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+def build_key_dates(league_id: int,
+                    con: sqlite3.Connection) -> schemas.KeyDatesOut:
+    """The one key-dates projection (P5-W27). The JSON endpoint and
+    the P5-W35 .ics export both render THIS — never a second date
+    computation."""
     league = get_league(con, league_id)  # 404 if missing
     settings = league["settings"] or {}  # get_league parses the JSON
     weekday_name = str(settings.get("waiver_run_weekday", "wednesday")).lower()
@@ -101,3 +105,90 @@ def key_dates(league_id: int, con: sqlite3.Connection = Depends(get_db)):
                            "next-up" if at == next_up_at else "upcoming")
         entries.append(entry)
     return schemas.KeyDatesOut(league_id=league_id, entries=entries)
+
+
+@router.get("/{league_id}/key-dates", response_model=schemas.KeyDatesOut)
+def key_dates(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+    return build_key_dates(league_id, con)
+
+
+# ---------- P5-W35: iCalendar export of the same projection ----------
+
+def _ics_escape(text: str) -> str:
+    return (text.replace("\\", "\\\\").replace(";", "\\;")
+            .replace(",", "\\,").replace("\n", "\\n"))
+
+
+def _ics_dt(dt: datetime) -> str:
+    return dt.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def _is_standin(con: sqlite3.Connection, league_id: int,
+                entry: schemas.KeyDateEntryOut) -> bool:
+    """True when a lock-derived entry's instant came from the stand-in
+    calendar rather than an imported fixture row: the seam's fixture
+    lookup for that week has no week_start, or its source says so.
+    Only called for lineup_lock_N / trade_deadline / playoffs keys."""
+    week_no = None
+    if entry.key.startswith("lineup_lock_"):
+        week_no = int(entry.key.rsplit("_", 1)[1])
+    elif entry.key == "trade_deadline":
+        # The deadline entry's instant IS a lock instant; match it.
+        week_no = next(
+            (wk for wk in range(1, TOTAL_WEEKS + 1)
+             if lineup_lock_at(con, league_id, wk) is not None
+             and entry.at == lineup_lock_at(con, league_id, wk).isoformat()),
+            None)
+    elif entry.key == "playoffs":
+        week_no = PLAYOFF_WEEKS[0]
+    if week_no is None:
+        return False
+    season = get_league(con, league_id)["season"]
+    week = schedule_games.fetch_week(con, season, week_no)
+    return not week.get("week_start") or "standin" in (week.get("source") or "")
+
+
+@router.get("/{league_id}/key-dates.ics")
+def key_dates_ics(league_id: int,
+                  con: sqlite3.Connection = Depends(get_db)):
+    """RFC 5545 rendering of build_key_dates — every VEVENT instant
+    is the payload's `at` for the same league, in UTC. The undated
+    draft entry has no instant and is omitted (a VEVENT requires a
+    DTSTART). The single weekly waiver-run entry becomes a weekly
+    RRULE event from its projected next run. Lock-derived events
+    carry the standin note when their date is a stand-in."""
+    payload = build_key_dates(league_id, con)  # 404 if missing
+    stamp = _ics_dt(datetime.now(timezone.utc))
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//IPL Fantasy//Key Dates//EN",
+        "CALSCALE:GREGORIAN",
+    ]
+    for entry in payload.entries:
+        if entry.at is None:
+            continue  # undated (draft) — cannot be a VEVENT
+        start = datetime.fromisoformat(entry.at)
+        description = entry.detail
+        if entry.key != "waiver_run" and _is_standin(con, league_id, entry):
+            description += (" Standin date — based on the stand-in "
+                            "calendar until the real fixture imports.")
+        lines += [
+            "BEGIN:VEVENT",
+            f"UID:{entry.key}@league-{league_id}.ipl-fantasy",
+            f"DTSTAMP:{stamp}",
+            f"DTSTART:{_ics_dt(start)}",
+            f"DTEND:{_ics_dt(start + timedelta(minutes=30))}",
+        ]
+        if entry.key == "waiver_run":
+            lines.append("RRULE:FREQ=WEEKLY")
+        lines += [
+            f"SUMMARY:{_ics_escape(entry.label)}",
+            f"DESCRIPTION:{_ics_escape(description)}",
+            "END:VEVENT",
+        ]
+    lines.append("END:VCALENDAR")
+    return PlainTextResponse(
+        "\r\n".join(lines) + "\r\n", media_type="text/calendar",
+        headers={"Content-Disposition":
+                 f'attachment; filename="key-dates-league-{league_id}.ics"'})

@@ -41,6 +41,13 @@ export function KeyDates({ leagueId }: { leagueId: number }) {
     >
       <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
         <CalendarClock className="h-4 w-4 text-trophy-gold" /> Key dates
+        <a
+          href={api.keyDatesIcsUrl(leagueId)}
+          download
+          className="ml-auto text-[11px] font-semibold normal-case tracking-normal text-pitch-green hover:underline"
+        >
+          Add to calendar (.ics)
+        </a>
       </h2>
       <ul className="divide-y divide-slate-800/60">
         {data.entries.map((e) => (

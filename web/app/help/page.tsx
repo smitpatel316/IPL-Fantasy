@@ -155,7 +155,8 @@ export default function HelpPage() {
             <li>
               <strong>Watch the key dates</strong> — the league page&apos;s Key dates card
               lists every lineup lock, the Wednesday waiver run, the trade deadline, and
-              the playoff weeks, in PT and IST.
+              the playoff weeks, in PT and IST. Its “Add to calendar (.ics)” link downloads
+              the same dates for your own calendar app.
             </li>
             <li>
               <strong>Set your lineup</strong> — after the real draft, save your week-1 XI

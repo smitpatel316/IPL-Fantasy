@@ -172,6 +172,9 @@ export const api = {
   // P5-W27: key dates & deadlines calendar.
   keyDates: (leagueId: number | string) =>
     req<KeyDatesOut>(`/leagues/${leagueId}/key-dates`),
+  // P5-W35: .ics download of the same key-dates projection.
+  keyDatesIcsUrl: (leagueId: number | string) =>
+    `${BASE}/leagues/${leagueId}/key-dates.ics`,
   // P5-W29: league-wide availability / injury report.
   availabilityReport: (leagueId: number | string) =>
     req<AvailabilityReportOut>(`/leagues/${leagueId}/availability-report`),
