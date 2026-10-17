@@ -44,6 +44,7 @@ import type {
   ScoreboardOut,
   ScheduleMatrixOut,
   CheatSheetOut,
+  KeyDatesOut,
   ScheduleNudgesOut,
   TeamOut,
   TradeAnalysisOut,
@@ -159,6 +160,9 @@ export const api = {
     req<CheatSheetOut>(`/leagues/${leagueId}/cheat-sheet`),
   cheatSheetCsvUrl: (leagueId: number | string) =>
     `${BASE}/leagues/${leagueId}/cheat-sheet.csv`,
+  // P5-W27: key dates & deadlines calendar.
+  keyDates: (leagueId: number | string) =>
+    req<KeyDatesOut>(`/leagues/${leagueId}/key-dates`),
 
   // players
   listPlayers: (params: { league_id: number; season?: string; role?: string; team?: string; q?: string }) => {

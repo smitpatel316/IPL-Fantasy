@@ -13,6 +13,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { NotificationsInbox } from "@/components/NotificationsInbox";
 import { PowerRankings } from "@/components/PowerRankings";
 import { ReadinessChecklist } from "@/components/ReadinessChecklist";
+import { KeyDates } from "@/components/KeyDates";
 import { AllRosters } from "@/components/AllRosters";
 import { cn } from "@/lib/utils";
 import { Trophy, Settings2, ArrowRight, Crown, KeyRound, Swords, UserCog, Dices, GraduationCap } from "lucide-react";
@@ -371,6 +372,8 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
       {league && <PowerRankings leagueId={league.id} />}
       {/* P5-W10: season-start checklist */}
       {league && <ReadinessChecklist leagueId={league.id} />}
+
+      {league && <KeyDates leagueId={league.id} />}
       {/* P5-W12: all-teams roster view */}
       {league && <AllRosters leagueId={league.id} />}
 

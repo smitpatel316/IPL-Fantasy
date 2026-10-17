@@ -153,6 +153,11 @@ export default function HelpPage() {
               from the league page; your real league is never touched.
             </li>
             <li>
+              <strong>Watch the key dates</strong> — the league page&apos;s Key dates card
+              lists every lineup lock, the Wednesday waiver run, the trade deadline, and
+              the playoff weeks, in PT and IST.
+            </li>
+            <li>
               <strong>Set your lineup</strong> — after the real draft, save your week-1 XI
               before the first ball, then work the waiver wire every Wednesday.
             </li>

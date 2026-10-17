@@ -815,6 +815,22 @@ export interface CheatSheetOut {
   groups: CheatSheetGroupOut[];
 }
 
+/** P5-W27: key dates & deadlines, derived from the enforcing sources. */
+export interface KeyDateEntryOut {
+  key: string;
+  label: string;
+  detail: string;
+  at: string | null;
+  at_pt: string | null;
+  at_ist: string | null;
+  state: "past" | "next-up" | "upcoming";
+}
+
+export interface KeyDatesOut {
+  league_id: number;
+  entries: KeyDateEntryOut[];
+}
+
 export interface ScheduleNudgesOut {
   league_id: number;
   season: string;

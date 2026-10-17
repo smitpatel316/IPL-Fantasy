@@ -933,6 +933,24 @@ class MatchupPreviewOut(BaseModel):
     basis: str = ("Descriptive only: current saved/carried lineups + "
                   "schedule — no win probability, no projected points.")
     previews: list[MatchupPreviewEntryOut] = []
+class KeyDateEntryOut(BaseModel):
+    # P5-W27: one key date. `at` is ISO UTC (null for the undated draft
+    # entry); at_pt / at_ist are the same instant rendered for managers.
+    key: str
+    label: str
+    detail: str = ""
+    at: Optional[str] = None
+    at_pt: Optional[str] = None
+    at_ist: Optional[str] = None
+    state: str  # past | next-up | upcoming
+
+
+class KeyDatesOut(BaseModel):
+    # P5-W27: every entry derives from the source that enforces it —
+    # league settings, lineup_lock_at (P4-W8), the waiver scheduler's
+    # weekday/03:00 PT rule, draft status, D9 playoff weeks.
+    league_id: int
+    entries: list[KeyDateEntryOut] = []
 
 
 class ScheduleNudgesOut(BaseModel):
