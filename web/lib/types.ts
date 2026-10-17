@@ -362,6 +362,32 @@ export interface LineupSuggestionOut extends LineupOut {
   basis: string;
 }
 
+/** P5-W16: one recommended waiver add for the managing-as team. */
+export interface WaiverRecommendationOut {
+  player_id: number;
+  name: string;
+  role: string | null;
+  ipl_team_code: string | null;
+  is_overseas: boolean;
+  availability: Availability;
+  preseason_rank: number;
+  games_next_3_weeks: number | null;
+  upgrade: number;
+  score: number;
+  drop_player_id: number | null;
+  drop_player_name: string | null;
+  reason: string;
+}
+
+export interface WaiverRecommendationsOut {
+  league_id: number;
+  team_id: number;
+  current_week: number;
+  weeks: number[];
+  basis: string;
+  recommendations: WaiverRecommendationOut[];
+}
+
 export interface WaiverRunResultOut {
   player_id: number;
   winner_team_id: number | null;

@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
-import { ApiError, type PlayerOut, type TeamOut, type WaiverClaimOut } from "@/lib/types";
+import { ApiError, type PlayerOut, type TeamOut, type WaiverClaimOut, type WaiverRecommendationOut, type WaiverRecommendationsOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { GameCountBadge, ScheduleWeekPicker, useScheduleBadges } from "@/components/ScheduleBadges";
 import { useWatchlist, WatchToggle } from "@/components/Watchlist";
+import { AvailabilityDot } from "@/components/AvailabilityDot";
 import { cn } from "@/lib/utils";
-import { Gavel, CircleDollarSign, Timer, Scale, ArrowRight } from "lucide-react";
+import { Gavel, CircleDollarSign, Timer, Scale, ArrowRight, Sparkles } from "lucide-react";
 
 const STATUS_STYLE: Record<string, string> = {
   pending: "bg-trophy-gold/15 text-trophy-gold",
@@ -190,6 +191,41 @@ export default function WaiversPage() {
   // as the players page (scoped to the managing-as team).
   const watch = useWatchlist(leagueId, teamId);
 
+  // P5-W16: recommended adds for the managing-as team (D6-safe: own
+  // roster + public FA pool only, computed server-side).
+  const [recs, setRecs] = useState<WaiverRecommendationsOut | null>(null);
+  useEffect(() => {
+    if (teamId == null) return;
+    let live = true;
+    api
+      .waiverRecommendations(leagueId, teamId)
+      .then((out) => live && setRecs(out))
+      .catch(() => live && setRecs(null));
+    return () => {
+      live = false;
+    };
+  }, [leagueId, teamId]);
+
+  function openRecommendedBid(rec: WaiverRecommendationOut) {
+    const p = players.find((x) => x.id === rec.player_id) ?? {
+      id: rec.player_id,
+      name: rec.name,
+      season: "",
+      role: rec.role as PlayerOut["role"],
+      is_overseas: rec.is_overseas,
+      ipl_team_code: rec.ipl_team_code,
+      preseason_rank: rec.preseason_rank,
+      owned_by_team_id: null,
+      availability: rec.availability,
+      avg_points: null,
+      ownership_pct: null,
+    };
+    openBid(p);
+    // Pre-select the suggested drop (the modal's own validation and
+    // the can't-cut disabling still apply — this is the same bid flow).
+    if (rec.drop_player_id != null) setDropId(String(rec.drop_player_id));
+  }
+
   return (
     <div>
       <PageHeader title="Waivers" sub="Weekly blind FAAB · $100 season budget · runs Wednesday ~3am PT" />
@@ -268,6 +304,53 @@ export default function WaiversPage() {
           ))}
           {sorted.length === 0 && <p className="text-sm text-zinc-600">No teams yet.</p>}
         </div>
+      </section>
+
+      {/* P5-W16: recommended adds for the managing-as team. */}
+      <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
+        <h2 className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
+          <Sparkles className="h-4 w-4 text-trophy-gold" /> Recommended adds
+          {teamId != null && (
+            <span className="font-medium normal-case text-zinc-500">
+              for {teams.find((t) => t.id === teamId)?.name ?? "your team"}
+            </span>
+          )}
+        </h2>
+        {recs == null ? (
+          <p className="text-sm text-zinc-500">Loading recommendations…</p>
+        ) : recs.recommendations.length === 0 ? (
+          <p className="text-sm text-zinc-500">
+            No free agent beats your roster on preseason rank right now — your weakest
+            players at every role outrank the wire. Check back after the next ranks update.
+          </p>
+        ) : (
+          <>
+            <ul className="divide-y divide-slate-800/60">
+              {recs.recommendations.map((rec) => (
+                <li key={rec.player_id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2.5">
+                  <AvailabilityDot availability={rec.availability} />
+                  <span className="font-medium text-white">{rec.name}</span>
+                  {rec.role && (
+                    <span className="rounded bg-slate-800 px-1.5 py-0.5 text-xs font-bold text-zinc-300">
+                      {rec.role}
+                    </span>
+                  )}
+                  <span className="text-xs text-zinc-500">rank {rec.preseason_rank}</span>
+                  <span className="min-w-0 flex-1 text-xs text-zinc-400">{rec.reason}</span>
+                  <button
+                    type="button"
+                    onClick={() => openRecommendedBid(rec)}
+                    className="rounded-lg bg-trophy-gold px-3 py-1.5 text-xs font-bold text-midnight transition hover:brightness-110"
+                  >
+                    Bid
+                    {rec.drop_player_name ? ` · drop ${rec.drop_player_name}` : ""}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[11px] text-slate-500">{recs.basis}</p>
+          </>
+        )}
       </section>
 
       <form

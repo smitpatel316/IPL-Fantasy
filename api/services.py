@@ -1420,6 +1420,129 @@ def analyze_trade(con: sqlite3.Connection, league_id: int, from_team_id: int,
     }
 
 
+def waiver_recommendations(con: sqlite3.Connection, league_id: int,
+                           team_id: int, limit: int = 5) -> dict:
+    """Read-only waiver-wire recommendations for ONE team (P5-W16).
+
+    D6-safe by construction: the only inputs are the requesting team's
+    own roster and the public free-agent pool (ownership + preseason
+    ranks + fixture game counts). No other team's claims or bids are
+    ever read. For each ranked free agent, upgrade = the rank value
+    gained over the team's weakest rostered player at a compatible
+    role (same role; UTIL-eligible BAT/AR/BOWL fallback when the team
+    rosters nobody at the FA's role), where rank value follows the
+    draft-recap convention (value = pool_size + 1 - rank, so upgrade =
+    weakest_rank - fa_rank). Can't-cut players (P4-W22) are never the
+    suggested drop. Score blends schedule: score = upgrade + the FA's
+    IPL-team games over the next 3 weeks (1 per game) when the fixture
+    exists. Only positive upgrades are returned. An open roster spot
+    (< 15) needs no drop: the weakest compatible player is still the
+    yardstick, but drop_player_id is None.
+    """
+    league = get_league(con, league_id)
+    team = get_team(con, team_id)
+    if team["league_id"] != league_id:
+        raise HTTPException(422, f"team {team_id} is not in league {league_id}")
+    season = league["season"]
+    roles = player_roles_map(con, season)
+    rank_of: dict[int, int] = {
+        r["player_id"]: r["rk"]
+        for r in con.execute(
+            """SELECT r.player_id, MIN(r.rank) AS rk FROM pre_draft_ranks r
+               JOIN teams t ON t.id = r.team_id
+               WHERE t.league_id = ? GROUP BY r.player_id""",
+            (league_id,))
+    }
+    if not rank_of:
+        return {"league_id": league_id, "team_id": team_id,
+                "current_week": current_week(con, league_id), "weeks": [],
+                "basis": "No preseason ranks in this league yet — "
+                         "recommendations need the rank pool.",
+                "recommendations": []}
+    unranked = max(rank_of.values()) + 1  # just below every ranked player
+    owned = owned_map(con, league_id)
+    roster_ids = _roster_pids(con, team_id)
+    cant_cut, _src = cant_cut_player_ids(con, league_id)
+    wk = current_week(con, league_id)
+    weeks = [w for w in (wk, wk + 1, wk + 2) if w <= constants.TOTAL_WEEKS]
+    games_of: dict[str, int] = {}
+    schedule_ok = False
+    if weeks:
+        wp = ",".join("?" for _ in weeks)
+        for row in con.execute(
+                f"""SELECT ipl_team_code, SUM(games) AS g
+                    FROM team_weekly_games
+                    WHERE season = ? AND week_no IN ({wp})
+                    GROUP BY ipl_team_code""",
+                (season, *weeks)):
+            if row["g"]:
+                schedule_ok = True
+            games_of[row["ipl_team_code"]] = row["g"] or 0
+    names = {r["id"]: r["name"] for r in con.execute(
+        "SELECT id, name FROM players WHERE season = ?", (season,))}
+    open_spot = len(roster_ids) < constants.ROSTER_SIZE
+
+    def weakest_compatible(fa_role: str | None) -> int | None:
+        cands = [pid for pid in roster_ids
+                 if roles.get(pid, {}).get("role") == fa_role
+                 and pid not in cant_cut]
+        if not cands and fa_role in ("BAT", "AR", "BOWL"):
+            cands = [pid for pid in roster_ids
+                     if roles.get(pid, {}).get("role") in ("BAT", "AR", "BOWL")
+                     and pid not in cant_cut]
+        if not cands:
+            return None
+        return max(cands, key=lambda pid: (rank_of.get(pid, unranked), pid))
+
+    recs = []
+    for pid, rk in rank_of.items():
+        if pid in owned or pid not in roles or pid not in names:
+            continue  # rostered somewhere, or not a current FA-pool player
+        if roles[pid].get("availability") == "retired":
+            continue
+        drop = weakest_compatible(roles[pid].get("role"))
+        if drop is None:
+            continue
+        upgrade = rank_of.get(drop, unranked) - rk
+        if upgrade <= 0:
+            continue
+        code = roles[pid].get("ipl_team_code")
+        games = games_of.get(code, 0) if schedule_ok and code else None
+        score = upgrade + (games or 0)
+        drop_role = roles.get(drop, {}).get("role") or "player"
+        if open_spot:
+            reason = (f"+{upgrade} rank value over your weakest {drop_role}"
+                      " — and you have an open roster spot, no drop needed")
+            drop_id, drop_name = None, None
+        else:
+            reason = f"+{upgrade} rank value over your weakest {drop_role}"
+            drop_id, drop_name = drop, names.get(drop)
+        if games is not None and code:
+            reason += f" · {code} plays {games} games in the next 3 weeks"
+        recs.append({
+            "player_id": pid, "name": names[pid],
+            "role": roles[pid].get("role"), "ipl_team_code": code,
+            "is_overseas": bool(roles[pid].get("is_overseas")),
+            "availability": roles[pid].get("availability", "active"),
+            "preseason_rank": rk, "games_next_3_weeks": games,
+            "upgrade": upgrade, "score": score,
+            "drop_player_id": drop_id, "drop_player_name": drop_name,
+            "reason": reason,
+        })
+    recs.sort(key=lambda r: (-r["score"], -r["upgrade"], r["preseason_rank"],
+                             r["player_id"]))
+    return {
+        "league_id": league_id, "team_id": team_id, "current_week": wk,
+        "weeks": weeks,
+        "basis": ("Ranked by rank-implied upgrade over your weakest"
+                  " compatible player plus next-3-weeks game counts,"
+                  " from preseason ranks + the imported fixture — not a"
+                  " projection model. Can't-cut players are never the"
+                  " suggested drop."),
+        "recommendations": recs[:limit],
+    }
+
+
 def _db_engine_id(con: sqlite3.Connection, league_id: int, trade_id: int) -> int:
     """DB trade id -> engine trade id."""
     row = con.execute(
