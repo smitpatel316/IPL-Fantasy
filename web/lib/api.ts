@@ -42,6 +42,7 @@ import type {
   RosterMoveOut,
   ScoreboardOut,
   ScheduleMatrixOut,
+  AvailabilityReportOut,
   ScheduleNudgesOut,
   TeamOut,
   TradeAnalysisOut,
@@ -152,6 +153,9 @@ export const api = {
   // P5-W15: the full IPL-team x week game-count matrix in one read.
   scheduleMatrix: (leagueId: number | string) =>
     req<ScheduleMatrixOut>(`/leagues/${leagueId}/schedule-matrix`),
+  // P5-W29: league-wide availability / injury report.
+  availabilityReport: (leagueId: number | string) =>
+    req<AvailabilityReportOut>(`/leagues/${leagueId}/availability-report`),
 
   // players
   listPlayers: (params: { league_id: number; season?: string; role?: string; team?: string; q?: string }) => {

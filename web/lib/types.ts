@@ -753,6 +753,27 @@ export interface ScheduleMatrixOut {
   rows: ScheduleMatrixRowOut[];
 }
 
+/** P5-W29: league-wide availability / injury report. */
+export interface AvailabilityReportPlayerOut {
+  id: number;
+  name: string;
+  role: string | null;
+  ipl_team_code: string | null;
+  availability: Availability;
+  on_il: boolean;
+}
+
+export interface AvailabilityReportOut {
+  league_id: number;
+  basis: string;
+  groups: {
+    availability: string;
+    teams: { team_id: number; team_name: string; players: AvailabilityReportPlayerOut[] }[];
+  }[];
+  il_occupancy: { team_id: number; team_name: string; il_player_name: string | null }[];
+  free_agents: AvailabilityReportPlayerOut[];
+}
+
 export interface ScheduleNudgesOut {
   league_id: number;
   season: string;
