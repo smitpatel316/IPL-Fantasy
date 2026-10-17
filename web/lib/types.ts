@@ -639,6 +639,41 @@ export interface PollsOut {
   polls: PollOut[];
 }
 
+/** P5-W26: descriptive matchup preview (no win probability). */
+export interface MatchupPreviewSideOut {
+  team_id: number;
+  team_name: string;
+  lineup_set: boolean;
+  starters_rank_value: number | null;
+  games_this_week: number | null;
+  flagged_starters: string[];
+}
+
+export interface PriorH2HOut {
+  week_no: number;
+  team_a_id: number;
+  team_b_id: number;
+  score_a: number;
+  score_b: number;
+  winner_team_id: number | null;
+}
+
+export interface MatchupPreviewEntryOut {
+  matchup_id: number;
+  week_no: number;
+  status: string;
+  side_a: MatchupPreviewSideOut;
+  side_b: MatchupPreviewSideOut;
+  prior_h2h: PriorH2HOut | null;
+}
+
+export interface MatchupPreviewOut {
+  league_id: number;
+  week_no: number;
+  basis: string;
+  previews: MatchupPreviewEntryOut[];
+}
+
 export interface MatchupOut {
   id: number;
   week_no: number;

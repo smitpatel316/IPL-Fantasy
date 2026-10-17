@@ -865,6 +865,46 @@ class ScheduleMatrixOut(BaseModel):
     rows: list[ScheduleMatrixRowOut] = []
 
 
+class MatchupPreviewSideOut(BaseModel):
+    # P5-W26: one side of a matchup preview. Descriptive only —
+    # starters_rank_value uses the P5-W4/W9 rank-value convention
+    # (pool + 1 - consensus rank; unranked = 0). No projections.
+    team_id: int
+    team_name: str
+    lineup_set: bool = False
+    starters_rank_value: Optional[int] = None
+    games_this_week: Optional[int] = None
+    flagged_starters: list[str] = []
+
+
+class PriorH2HOut(BaseModel):
+    week_no: int
+    team_a_id: int
+    team_b_id: int
+    score_a: float
+    score_b: float
+    winner_team_id: Optional[int] = None  # None = tie
+
+
+class MatchupPreviewEntryOut(BaseModel):
+    matchup_id: int
+    week_no: int
+    status: str
+    side_a: MatchupPreviewSideOut
+    side_b: MatchupPreviewSideOut
+    prior_h2h: Optional[PriorH2HOut] = None
+
+
+class MatchupPreviewOut(BaseModel):
+    # P5-W26: previews for the week's not-yet-final matchups only;
+    # final matchups keep their existing result state (no entry).
+    league_id: int
+    week_no: int
+    basis: str = ("Descriptive only: current saved/carried lineups + "
+                  "schedule — no win probability, no projected points.")
+    previews: list[MatchupPreviewEntryOut] = []
+
+
 class ScheduleNudgesOut(BaseModel):
     league_id: int
     season: str

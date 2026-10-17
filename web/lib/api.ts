@@ -22,6 +22,7 @@ import type {
   LineupOut,
   LineupSuggestionOut,
   MatchupOut,
+  MatchupPreviewOut,
   MessageBoardOut,
   MessageOut,
   PollOut,
@@ -394,6 +395,9 @@ export const api = {
   // matchups / scoring
   listMatchups: (league_id: number, week_no: number) =>
     req<MatchupOut[]>(`/matchups?league_id=${league_id}&week_no=${week_no}`),
+  // P5-W26: descriptive preview for the week's not-yet-final matchups.
+  matchupPreview: (league_id: number | string, week_no: number) =>
+    req<MatchupPreviewOut>(`/leagues/${league_id}/matchups/preview?week_no=${week_no}`),
   scoreboard: (matchId: number | string) => req<ScoreboardOut>(`/matchups/scoreboard/${matchId}`),
   scoreMatch: (match_id: number) =>
     req<NotImplementedOut>("/admin/score-match", { method: "POST", body: JSON.stringify({ match_id }) }),
