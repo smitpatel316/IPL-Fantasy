@@ -865,6 +865,38 @@ class ScheduleMatrixOut(BaseModel):
     rows: list[ScheduleMatrixRowOut] = []
 
 
+class CheatSheetPlayerOut(BaseModel):
+    # P5-W25: one draftable player on the tier sheet. Every value is the
+    # players-list projection (consensus rank, avg points, availability)
+    # plus the tier derived from consensus ranks and total games.
+    id: int
+    name: str
+    role: str
+    ipl_team_code: Optional[str] = None
+    is_overseas: bool = False
+    preseason_rank: Optional[int] = None
+    tier: int
+    avg_points: Optional[float] = None
+    availability: str = "active"
+    total_games: Optional[int] = None
+
+
+class CheatSheetGroupOut(BaseModel):
+    role: str
+    players: list[CheatSheetPlayerOut] = []
+
+
+class CheatSheetOut(BaseModel):
+    # P5-W25: tier sheet by D7 role. Tier break wherever the consensus
+    # rank gap to the next player at the same role exceeds the pinned
+    # threshold (TIER_GAP in api/routers/leagues.py).
+    league_id: int
+    season: str
+    source: str = ""
+    tier_gap_threshold: int
+    groups: list[CheatSheetGroupOut] = []
+
+
 class ScheduleNudgesOut(BaseModel):
     league_id: int
     season: str

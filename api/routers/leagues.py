@@ -10,7 +10,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from .. import schemas, services
 from ..constants import FAAB_BUDGET, TOTAL_WEEKS
 from ..database import get_db
-from . import get_league, get_team, new_claim_code, row_dict
+from . import (
+    availability_from_status,
+    avg_points_map,
+    get_league,
+    get_team,
+    new_claim_code,
+    row_dict,
+)
 
 router = APIRouter()
 
@@ -347,6 +354,110 @@ def schedule_matrix(league_id: int, con: sqlite3.Connection = Depends(get_db)):
     return schemas.ScheduleMatrixOut(
         league_id=league_id, season=league["season"], source=source,
         weeks_available=weeks_available, rows=rows)
+
+
+TIER_GAP = 5  # P5-W25 pinned tier-break threshold (consensus-rank gap)
+
+
+def _cheat_sheet(con, league) -> schemas.CheatSheetOut:
+    """P5-W25 draft cheat sheet: every player with a D7 role for the
+    league's season, grouped by role and ordered by consensus
+    pre_draft_ranks (MIN rank across the league's teams — the exact
+    players-list projection), tiered by rank gaps. total_games sums the
+    schedule-nudges table over all weeks for the player's IPL team
+    (null until a fixture imports). Read-only."""
+    from .. import schedule_games
+    from ..constants import TOTAL_WEEKS
+    league_id = league["id"]
+    totals: dict[str, int] = {}
+    source = ""
+    fixture_seen = False
+    for wk in range(1, TOTAL_WEEKS + 1):
+        data = schedule_games.fetch_week(con, league["season"], wk)
+        if data["source"]:
+            source = data["source"]
+        for g in data["games"]:
+            fixture_seen = True
+            totals[g["ipl_team_code"]] = (
+                totals.get(g["ipl_team_code"], 0) + g["games"])
+    avgs = avg_points_map(con)
+    rows = con.execute(
+        """SELECT p.id, p.name, pr.role, pr.is_overseas, pr.ipl_team_code,
+                  pr.status,
+                  (SELECT MIN(rank) FROM pre_draft_ranks r
+                   JOIN teams t ON t.id = r.team_id
+                   WHERE r.player_id = p.id AND t.league_id = ?) AS rk
+           FROM players p JOIN player_roles pr
+             ON pr.player_id = p.id AND pr.season = p.season
+           WHERE p.season = ?
+           ORDER BY pr.role, rk NULLS LAST, p.name""",
+        (league_id, league["season"])).fetchall()
+    groups: dict[str, list[schemas.CheatSheetPlayerOut]] = {
+        role: [] for role in ("WK", "BAT", "AR", "BOWL")}
+    tiers: dict[str, int] = {}
+    prev_rank: dict[str, int | None] = {}
+    for r in rows:
+        role = r["role"]
+        tier = tiers.get(role, 1)
+        rk = r["rk"]
+        if rk is not None and prev_rank.get(role) is not None \
+                and rk - prev_rank[role] > TIER_GAP:
+            tier += 1
+        tiers[role] = tier
+        if rk is not None:
+            prev_rank[role] = rk
+        code = r["ipl_team_code"]
+        groups[role].append(schemas.CheatSheetPlayerOut(
+            id=r["id"], name=r["name"], role=role, ipl_team_code=code,
+            is_overseas=bool(r["is_overseas"] or 0), preseason_rank=rk,
+            tier=tier, avg_points=avgs.get(r["id"]),
+            availability=availability_from_status(r["status"]),
+            total_games=(totals.get(code, 0)
+                         if fixture_seen and code else None)))
+    return schemas.CheatSheetOut(
+        league_id=league_id, season=league["season"], source=source,
+        tier_gap_threshold=TIER_GAP,
+        groups=[schemas.CheatSheetGroupOut(role=role, players=groups[role])
+                for role in ("WK", "BAT", "AR", "BOWL")])
+
+
+@router.get("/{league_id}/cheat-sheet",
+            response_model=schemas.CheatSheetOut)
+def cheat_sheet(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+    league = get_league(con, league_id)  # 404 if missing
+    return _cheat_sheet(con, league)
+
+
+@router.get("/{league_id}/cheat-sheet.csv")
+def cheat_sheet_csv(league_id: int,
+                    con: sqlite3.Connection = Depends(get_db)):
+    """P5-W25: the cheat-sheet payload as CSV — same rows, same order,
+    for offline/print use on draft day."""
+    import csv
+    import io
+
+    from fastapi.responses import PlainTextResponse
+    league = get_league(con, league_id)  # 404 if missing
+    sheet = _cheat_sheet(con, league)
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["role", "tier", "player", "ipl_team", "overseas",
+                "preseason_rank", "avg_points", "availability",
+                "total_games"])
+    for g in sheet.groups:
+        for pl in g.players:
+            w.writerow([g.role, pl.tier, pl.name, pl.ipl_team_code or "",
+                        "yes" if pl.is_overseas else "no",
+                        pl.preseason_rank if pl.preseason_rank is not None
+                        else "",
+                        pl.avg_points if pl.avg_points is not None else "",
+                        pl.availability,
+                        pl.total_games if pl.total_games is not None
+                        else ""])
+    return PlainTextResponse(
+        buf.getvalue(), media_type="text/csv",
+        headers={"Content-Disposition":
+                 f'attachment; filename="cheat-sheet-league-{league_id}.csv"'})
 
 
 @router.post("/{league_id}/draft/start", response_model=schemas.DraftOut)

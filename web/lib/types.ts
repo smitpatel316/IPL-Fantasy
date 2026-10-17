@@ -753,6 +753,33 @@ export interface ScheduleMatrixOut {
   rows: ScheduleMatrixRowOut[];
 }
 
+/** P5-W25: draft cheat sheet — tiered by role from consensus ranks. */
+export interface CheatSheetPlayerOut {
+  id: number;
+  name: string;
+  role: string;
+  ipl_team_code: string | null;
+  is_overseas: boolean;
+  preseason_rank: number | null;
+  tier: number;
+  avg_points: number | null;
+  availability: Availability;
+  total_games: number | null;
+}
+
+export interface CheatSheetGroupOut {
+  role: string;
+  players: CheatSheetPlayerOut[];
+}
+
+export interface CheatSheetOut {
+  league_id: number;
+  season: string;
+  source: string;
+  tier_gap_threshold: number;
+  groups: CheatSheetGroupOut[];
+}
+
 export interface ScheduleNudgesOut {
   league_id: number;
   season: string;
