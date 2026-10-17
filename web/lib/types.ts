@@ -241,6 +241,26 @@ export interface RostersOut {
   teams: RosterTeamOut[];
 }
 
+/** P5-W21: roster-health / IL assistant entries. */
+export interface RosterHealthPlayerOut {
+  player_id: number;
+  player_name: string;
+  role: string | null;
+  slot: string;
+  status: string;
+  note: string | null;
+}
+
+export interface RosterHealthOut {
+  league_id: number;
+  team_id: number;
+  team_name: string;
+  basis: string;
+  move_to_il: RosterHealthPlayerOut[];
+  return_candidates: RosterHealthPlayerOut[];
+  retired: RosterHealthPlayerOut[];
+}
+
 /** P5-W2: a watched player — PlayerOut plus the watchlist row. */
 export interface WatchlistEntryOut extends PlayerOut {
   watch_id: number;
