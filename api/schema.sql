@@ -276,3 +276,12 @@ CREATE TABLE IF NOT EXISTS league_messages (
     created_at  TEXT NOT NULL DEFAULT (datetime('now')),
     deleted_at  TEXT
 );
+
+-- P5-W20: per-team notification read markers (the inbox itself is a
+-- read projection over trades / waiver_claims / league_adjustments).
+CREATE TABLE IF NOT EXISTS notification_reads (
+    league_id    INTEGER NOT NULL REFERENCES leagues(id) ON DELETE CASCADE,
+    team_id      INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    last_read_at TEXT NOT NULL,
+    PRIMARY KEY (league_id, team_id)
+);

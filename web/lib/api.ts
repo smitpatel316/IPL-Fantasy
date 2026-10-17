@@ -7,6 +7,7 @@ import { ApiError } from "./types";
 import { claimHeaders } from "./identity";
 import type {
   ActivityOut,
+  NotificationsOut,
   ClaimOut,
   DndOut,
   DraftOut,
@@ -87,6 +88,15 @@ export const api = {
   getLeague: (id: number | string) => req<LeagueDetailOut>(`/leagues/${id}`),
   getActivity: (leagueId: number, limit = 50, offset = 0) =>
     req<ActivityOut>(`/leagues/${leagueId}/activity?limit=${limit}&offset=${offset}`),
+  getNotifications: (leagueId: number, teamId: number) =>
+    req<NotificationsOut>(`/leagues/${leagueId}/notifications?team_id=${teamId}`, {
+      headers: claimHeaders(teamId),
+    }),
+  markNotificationsRead: (leagueId: number, teamId: number) =>
+    req<NotificationsOut>(`/leagues/${leagueId}/notifications/read?team_id=${teamId}`, {
+      method: "POST",
+      headers: claimHeaders(teamId),
+    }),
   patchLeagueSettings: (
     id: number | string,
     patch: { pick_clock_secs?: number; trade_deadline_week?: number; waiver_run_weekday?: string },
