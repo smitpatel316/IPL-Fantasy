@@ -46,6 +46,7 @@ import type {
   CheatSheetOut,
   KeyDatesOut,
   TeamLedgerOut,
+  AvailabilityReportOut,
   ScheduleNudgesOut,
   TeamOut,
   TradeAnalysisOut,
@@ -168,6 +169,9 @@ export const api = {
   // P5-W27: key dates & deadlines calendar.
   keyDates: (leagueId: number | string) =>
     req<KeyDatesOut>(`/leagues/${leagueId}/key-dates`),
+  // P5-W29: league-wide availability / injury report.
+  availabilityReport: (leagueId: number | string) =>
+    req<AvailabilityReportOut>(`/leagues/${leagueId}/availability-report`),
 
   // players
   listPlayers: (params: { league_id: number; season?: string; role?: string; team?: string; q?: string }) => {

@@ -8,6 +8,7 @@ import { ApiError, type PlayerCompareOut, type PlayerOut, type TeamOut } from "@
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { useWatchlist, WatchToggle } from "@/components/Watchlist";
 import { AvailabilityDot, AvailabilityLegend, AVAILABILITY_META } from "@/components/AvailabilityDot";
+import { AvailabilityReport } from "@/components/AvailabilityReport";
 import { GameCountBadge, ScheduleWeekPicker, useScheduleBadges } from "@/components/ScheduleBadges";
 import { cn } from "@/lib/utils";
 import { Plane, Scale, Search, Star, StickyNote, Users, X } from "lucide-react";
@@ -279,6 +280,9 @@ export default function PlayersPage() {
           </p>
         )}
       </section>
+
+      {/* P5-W29: league-wide availability report. */}
+      <AvailabilityReport leagueId={leagueId} />
 
       {/* P5-W14: side-by-side player compare (2-3 players). */}
       {compareIds.length > 0 && (

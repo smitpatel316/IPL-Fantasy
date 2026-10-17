@@ -972,6 +972,42 @@ class TeamLedgerOut(BaseModel):
     starting_faab: int
     current_faab: int
     entries: list[LedgerEntryOut] = []
+class AvailabilityReportPlayerOut(BaseModel):
+    id: int
+    name: str
+    role: Optional[str] = None
+    ipl_team_code: Optional[str] = None
+    availability: str  # out | retired (active players never appear)
+    on_il: bool = False
+
+
+class AvailabilityReportTeamOut(BaseModel):
+    team_id: int
+    team_name: str
+    players: list[AvailabilityReportPlayerOut] = []
+
+
+class AvailabilityGroupOut(BaseModel):
+    availability: str  # out | retired
+    teams: list[AvailabilityReportTeamOut] = []
+
+
+class ILOccupancyOut(BaseModel):
+    team_id: int
+    team_name: str
+    il_player_name: Optional[str] = None
+
+
+class AvailabilityReportOut(BaseModel):
+    # P5-W29: league-wide availability report — every rostered player
+    # whose curated status is not active, grouped by status then team,
+    # IL occupancy per team, and flagged unrostered free agents.
+    league_id: int
+    basis: str = ("Availability from curated registry until live squads "
+                  "import (player_roles.status).")
+    groups: list[AvailabilityGroupOut] = []
+    il_occupancy: list[ILOccupancyOut] = []
+    free_agents: list[AvailabilityReportPlayerOut] = []
 
 
 class ScheduleNudgesOut(BaseModel):
