@@ -440,6 +440,22 @@ class LineupSuggestionOut(LineupOut):
         "Best XI by preseason rank — the exact D8-legal solver over this"
         " roster's pre-draft ranks. No scoring model."
     )
+# ---------- player notes (P5-W17) ----------
+class PlayerNoteOut(BaseModel):
+    id: int
+    league_id: int
+    team_id: int
+    player_id: int
+    player_name: str
+    note: str
+    updated_at: str
+
+
+class PlayerNoteUpsert(BaseModel):
+    league_id: int
+    team_id: int
+    player_id: int
+    note: str
 
 
 # ---------- watchlist (P5-W2) ----------

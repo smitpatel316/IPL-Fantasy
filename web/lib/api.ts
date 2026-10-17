@@ -45,6 +45,7 @@ import type {
   WaiverClaimOut,
   WaiverRecommendationsOut,
   WaiverRunResultOut,
+  PlayerNoteOut,
   WatchlistEntryOut,
 } from "./types";
 
@@ -160,6 +161,25 @@ export const api = {
     }),
   unstarPlayer: (league_id: number, team_id: number, player_id: number) =>
     req<void>(`/watchlist?league_id=${league_id}&team_id=${team_id}&player_id=${player_id}`, {
+      method: "DELETE",
+      headers: claimHeaders(team_id),
+    }),
+
+  // player notes (P5-W17): PRIVATE per-team notes. Every call carries
+  // the team's claim header — the API 403s reads and writes for a
+  // claimed team without its code, so notes never leak across teams.
+  listPlayerNotes: (league_id: number, team_id: number) =>
+    req<PlayerNoteOut[]>(`/player-notes?league_id=${league_id}&team_id=${team_id}`, {
+      headers: claimHeaders(team_id),
+    }),
+  putPlayerNote: (body: { league_id: number; team_id: number; player_id: number; note: string }) =>
+    req<PlayerNoteOut>("/player-notes", {
+      method: "PUT",
+      headers: claimHeaders(body.team_id),
+      body: JSON.stringify(body),
+    }),
+  deletePlayerNote: (league_id: number, team_id: number, player_id: number) =>
+    req<void>(`/player-notes?league_id=${league_id}&team_id=${team_id}&player_id=${player_id}`, {
       method: "DELETE",
       headers: claimHeaders(team_id),
     }),

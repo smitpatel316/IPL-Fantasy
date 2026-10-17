@@ -18,10 +18,12 @@ interface DraftPlayerCardProps {
   onToggleDnd: (id: number, active: boolean) => void;
   /** P3-A6: ipl_team_code -> games this schedule week (badge rendering). */
   weekGames?: Map<string, number>;
+  /** P5-W17: the managing team has a private note on this player. */
+  noted?: boolean;
 }
 
 /** One row on the available-players board. Visual only — actions pass through. */
-export function DraftPlayerCard({ player: p, myTurn, dnd, onDraft, onToggleDnd, weekGames }: DraftPlayerCardProps) {
+export function DraftPlayerCard({ player: p, myTurn, dnd, onDraft, onToggleDnd, weekGames, noted }: DraftPlayerCardProps) {
   const schedGames = p.ipl_team_code ? weekGames?.get(p.ipl_team_code) : undefined;
   return (
     <div
@@ -33,7 +35,14 @@ export function DraftPlayerCard({ player: p, myTurn, dnd, onDraft, onToggleDnd, 
     >
       <span className="w-9 shrink-0 font-mono text-xs text-slate-500">#{p.preseason_rank ?? "–"}</span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-white">{p.name}</p>
+        <p className="truncate text-sm font-medium text-white">
+          {p.name}
+          {noted && (
+            <span title="You have a private note on this player" className="ml-1.5 text-trophy-gold" aria-label="You have a private note on this player">
+              🗒
+            </span>
+          )}
+        </p>
         <div className="mt-1 flex items-center gap-1.5">
           {p.role && (
             <span className={`rounded border px-1 text-[10px] font-semibold ${ROLE_STYLES[p.role] ?? ""}`}>

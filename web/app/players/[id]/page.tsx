@@ -4,11 +4,154 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
-import { ApiError, type PlayerDetailOut } from "@/lib/types";
+import { ApiError, type PlayerDetailOut, type TeamOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { AvailabilityDot, AVAILABILITY_META } from "@/components/AvailabilityDot";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Plane } from "lucide-react";
+import { ArrowLeft, Lock, Plane, StickyNote } from "lucide-react";
+
+/**
+ * P5-W17: private note editor. Notes belong to ONE team and are gated
+ * server-side by that team's claim code — a claimed team's notes 403
+ * for everyone else, and this section says so honestly instead of
+ * pretending the note is empty.
+ */
+function NoteEditor({ leagueId, playerId }: { leagueId: number; playerId: number }) {
+  const [teams, setTeams] = useState<TeamOut[]>([]);
+  const [teamId, setTeamId] = useState<number | null>(null);
+  const [draft, setDraft] = useState("");
+  const [saved, setSaved] = useState<string | null>(null);
+  const [denied, setDenied] = useState(false);
+  const [noteErr, setNoteErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api
+      .listTeams(leagueId)
+      .then((ts) => {
+        setTeams(ts);
+        setTeamId((prev) => prev ?? ts[0]?.id ?? null);
+      })
+      .catch(() => {});
+  }, [leagueId]);
+
+  useEffect(() => {
+    if (teamId == null) return;
+    setDenied(false);
+    setNoteErr("");
+    api
+      .listPlayerNotes(leagueId, teamId)
+      .then((notes) => {
+        const mine = notes.find((n) => n.player_id === playerId);
+        setSaved(mine?.note ?? null);
+        setDraft(mine?.note ?? "");
+      })
+      .catch((e) => {
+        if (e instanceof ApiError && e.status === 403) setDenied(true);
+        setSaved(null);
+        setDraft("");
+      });
+  }, [leagueId, teamId, playerId]);
+
+  async function save() {
+    if (teamId == null) return;
+    setBusy(true);
+    setNoteErr("");
+    try {
+      const out = await api.putPlayerNote({
+        league_id: leagueId, team_id: teamId, player_id: playerId, note: draft,
+      });
+      setSaved(out.note);
+      setDraft(out.note);
+    } catch (e) {
+      setNoteErr(e instanceof ApiError ? e.message : "save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clear() {
+    if (teamId == null) return;
+    setBusy(true);
+    setNoteErr("");
+    try {
+      await api.deletePlayerNote(leagueId, teamId, playerId);
+      setSaved(null);
+      setDraft("");
+    } catch (e) {
+      setNoteErr(e instanceof ApiError ? e.message : "delete failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const input =
+    "rounded-lg border border-slate-700 bg-midnight px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none";
+
+  return (
+    <section className="mt-5 rounded-xl border border-slate-800 bg-midnight-soft p-5">
+      <h2 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
+        <StickyNote className="h-4 w-4 text-trophy-gold" /> My private note
+      </h2>
+      <p className="mb-3 text-xs text-zinc-500">
+        Private to the selected team — no other manager can read it, and it never
+        appears in the activity feed or on the message board.
+      </p>
+      <label className="mb-3 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400">
+        Team
+        <select
+          className={input}
+          value={teamId ?? ""}
+          onChange={(e) => setTeamId(Number(e.target.value))}
+        >
+          {teams.map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+      </label>
+      {denied ? (
+        <p className="flex items-start gap-2 rounded-lg border border-slate-800 bg-midnight px-3 py-2.5 text-sm text-zinc-400">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" />
+          This team is claimed by its manager — its notes are private and stay
+          hidden here. Claim your own team (League page → standings) to keep
+          notes on your players.
+        </p>
+      ) : (
+        <>
+          <textarea
+            className={cn(input, "min-h-20 w-full")}
+            maxLength={500}
+            placeholder="e.g. injury watch — check the team news before round 8"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+          {noteErr && <p className="mt-2 text-xs text-brick-red">{noteErr}</p>}
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={save}
+              disabled={busy || teamId == null || !draft.trim()}
+              className="rounded-lg bg-trophy-gold px-4 py-2 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-50"
+            >
+              {busy ? "Saving…" : saved ? "Update note" : "Save note"}
+            </button>
+            {saved && (
+              <button
+                type="button"
+                onClick={clear}
+                disabled={busy}
+                className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-brick-red hover:text-white disabled:opacity-50"
+              >
+                Delete note
+              </button>
+            )}
+            {saved && <span className="text-xs text-pitch-green">Saved — only this team can see it.</span>}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
 
 const ROLE_BADGE: Record<string, string> = {
   WK: "bg-yellow-400/10 text-yellow-300",
@@ -157,6 +300,8 @@ export default function PlayerDetailPage({ params }: { params: Promise<{ id: str
           )}
         </section>
       </div>
+
+      <NoteEditor leagueId={leagueId} playerId={player.id} />
     </div>
   );
 }

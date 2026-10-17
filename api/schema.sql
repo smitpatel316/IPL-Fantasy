@@ -250,6 +250,21 @@ CREATE TABLE IF NOT EXISTS trade_block (
     UNIQUE (league_id, team_id, player_id)
 );
 
+-- P5-W17: private per-team player notes (draft prep). A note is only
+-- ever readable/writable by its owning team (claim-aware, P4-W18) and
+-- never leaks into any other team's payload, the activity feed, or
+-- the message board.
+CREATE TABLE IF NOT EXISTS player_notes (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    league_id   INTEGER NOT NULL REFERENCES leagues(id) ON DELETE CASCADE,
+    team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    player_id   INTEGER NOT NULL REFERENCES players(id),
+    note        TEXT NOT NULL,
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (league_id, team_id, player_id)
+);
+
 -- P5-W5: persistent league message board (trash talk). Posts are
 -- gated by team identity (P4-W18); commissioner soft-delete via
 -- deleted_at (rows are never hard-deleted).
