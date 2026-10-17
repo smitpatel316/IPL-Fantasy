@@ -644,6 +644,36 @@ export interface PlayoffGameOut {
   winner_team_id: number | null;
 }
 
+/** P5-W22: playoff picture — descriptive only (current record +
+ * remaining fixtures; no projections). games_back is measured from
+ * the 4th seed and is negative for teams ahead of the line. */
+export interface RemainingOpponentOut {
+  week_no: number;
+  opponent_team_id: number;
+  opponent_team_name: string;
+}
+
+export interface PlayoffPictureEntryOut {
+  seed: number;
+  team_id: number;
+  team_name: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  points_for: number;
+  games_back: number | null;
+  remaining_games: number;
+  remaining_opponents: RemainingOpponentOut[];
+  remaining_sos: number;
+}
+
+export interface PlayoffPictureOut {
+  league_id: number;
+  through_week: number;
+  regular_season_complete: boolean;
+  entries: PlayoffPictureEntryOut[];
+}
+
 export interface PlayoffsOut {
   league_id: number;
   stage: string; // regular_season | semifinals | final | complete

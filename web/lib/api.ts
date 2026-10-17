@@ -31,6 +31,7 @@ import type {
   PlayerDetailOut,
   PlayerOut,
   PlayoffsOut,
+  PlayoffPictureOut,
   PowerRankingsOut,
   RanksOut,
   ReadinessOut,
@@ -142,6 +143,8 @@ export const api = {
     }),
   getPlayoffs: (leagueId: number | string) =>
     req<PlayoffsOut>(`/leagues/${leagueId}/playoffs`),
+  getPlayoffPicture: (leagueId: number | string) =>
+    req<PlayoffPictureOut>(`/leagues/${leagueId}/playoff-picture`),
   scheduleNudges: (leagueId: number | string, week: number) =>
     req<ScheduleNudgesOut>(`/leagues/${leagueId}/schedule-nudges?week_no=${week}`),
   // P5-W15: the full IPL-team x week game-count matrix in one read.
