@@ -36,6 +36,7 @@ import type {
   PlayoffsOut,
   PlayoffPictureOut,
   PowerRankingsOut,
+  StrengthsOut,
   RanksOut,
   ReadinessOut,
   RostersOut,
@@ -144,6 +145,8 @@ export const api = {
   listTeams: (leagueId: number | string) => req<TeamOut[]>(`/leagues/${leagueId}/teams`),
   getPowerRankings: (leagueId: number | string) =>
     req<PowerRankingsOut>(`/leagues/${leagueId}/power-rankings`),
+  getStrengths: (leagueId: number | string) =>
+    req<StrengthsOut>(`/leagues/${leagueId}/strengths`),
   getReadiness: (leagueId: number | string) =>
     req<ReadinessOut>(`/leagues/${leagueId}/readiness`),
   getRosters: (leagueId: number | string) =>
