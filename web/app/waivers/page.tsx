@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
+import { TeamLedger } from "@/components/TeamLedger";
 import { ApiError, type PlayerOut, type TeamOut, type WaiverClaimOut, type WaiverRecommendationOut, type WaiverRecommendationsOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { GameCountBadge, ScheduleWeekPicker, useScheduleBadges } from "@/components/ScheduleBadges";
@@ -305,6 +306,9 @@ export default function WaiversPage() {
           {sorted.length === 0 && <p className="text-sm text-zinc-600">No teams yet.</p>}
         </div>
       </section>
+
+      {/* P5-W28: the managing team's own FAAB & transaction ledger. */}
+      <TeamLedger leagueId={leagueId} teamId={teamId} />
 
       {/* P5-W16: recommended adds for the managing-as team. */}
       <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">

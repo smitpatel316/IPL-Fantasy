@@ -45,6 +45,7 @@ import type {
   ScheduleMatrixOut,
   CheatSheetOut,
   KeyDatesOut,
+  TeamLedgerOut,
   ScheduleNudgesOut,
   TeamOut,
   TradeAnalysisOut,
@@ -95,6 +96,10 @@ export const api = {
   getLeague: (id: number | string) => req<LeagueDetailOut>(`/leagues/${id}`),
   getActivity: (leagueId: number, limit = 50, offset = 0) =>
     req<ActivityOut>(`/leagues/${leagueId}/activity?limit=${limit}&offset=${offset}`),
+  getLedger: (leagueId: number, teamId: number) =>
+    req<TeamLedgerOut>(`/leagues/${leagueId}/teams/${teamId}/ledger`, {
+      headers: claimHeaders(teamId),
+    }),
   getNotifications: (leagueId: number, teamId: number) =>
     req<NotificationsOut>(`/leagues/${leagueId}/notifications?team_id=${teamId}`, {
       headers: claimHeaders(teamId),

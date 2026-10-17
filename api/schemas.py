@@ -951,6 +951,27 @@ class KeyDatesOut(BaseModel):
     # weekday/03:00 PT rule, draft status, D9 playoff weeks.
     league_id: int
     entries: list[KeyDateEntryOut] = []
+class LedgerEntryOut(BaseModel):
+    # P5-W28: one own-team ledger line. amount is the team's OWN bid,
+    # shown only once the claim resolves (pending entries carry null —
+    # D6). faab_delta is 0 for non-money events; balance_after is the
+    # running FAAB balance after the entry.
+    id: str
+    kind: str
+    text: str
+    occurred_at: str
+    amount: Optional[int] = None
+    faab_delta: int = 0
+    balance_after: int
+
+
+class TeamLedgerOut(BaseModel):
+    league_id: int
+    team_id: int
+    team_name: str
+    starting_faab: int
+    current_faab: int
+    entries: list[LedgerEntryOut] = []
 
 
 class ScheduleNudgesOut(BaseModel):
