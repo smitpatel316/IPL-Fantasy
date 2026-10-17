@@ -333,6 +333,27 @@ class ActivityOut(BaseModel):
     league_id: int
     total: int
     entries: list[ActivityEntryOut] = []
+# ---------- team notifications inbox (P5-W20) ----------
+class NotificationEntryOut(BaseModel):
+    """One 'for you' event. `amount` is set ONLY for the team's own
+    WON waiver claim (its own bid, public post-run, D6); never for a
+    lost claim and never for another team's claim."""
+    id: str
+    kind: str  # trade_proposed|trade_accepted|trade_executed|trade_vetoed
+    #          | trade_rejected|trade_expired|waiver_won|waiver_lost
+    #          | commissioner_faab|commissioner_roster_add|commissioner_roster_drop
+    text: str
+    amount: Optional[int] = None
+    occurred_at: str
+    read: bool = False
+
+
+class NotificationsOut(BaseModel):
+    league_id: int
+    team_id: int
+    total: int
+    unread_count: int
+    entries: list[NotificationEntryOut] = []
 # ---------- power rankings (P5-W9) ----------
 class PowerRankEntryOut(BaseModel):
     rank: int

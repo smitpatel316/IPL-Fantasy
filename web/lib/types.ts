@@ -157,6 +157,25 @@ export interface ActivityOut {
   entries: ActivityEntryOut[];
 }
 
+/** P5-W20: one "for you" inbox entry. `amount` is set ONLY for the
+ * team's own won waiver claim; lost claims never carry one (D6). */
+export interface NotificationEntryOut {
+  id: string;
+  kind: string;
+  text: string;
+  amount: number | null;
+  occurred_at: string;
+  read: boolean;
+}
+
+export interface NotificationsOut {
+  league_id: number;
+  team_id: number;
+  total: number;
+  unread_count: number;
+  entries: NotificationEntryOut[];
+}
+
 /** P5-W9: power rankings. basis is "roster_value" pre-season
  * (honest roster-value ranking) and "record_blend" once weeks
  * finalize; movement is null until two final weeks exist. */

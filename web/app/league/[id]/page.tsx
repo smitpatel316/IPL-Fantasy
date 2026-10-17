@@ -9,6 +9,7 @@ import { ApiError, type AdjustmentOut, type DraftRecapOut, type LeagueDetailOut,
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { MessageBoard } from "@/components/MessageBoard";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { NotificationsInbox } from "@/components/NotificationsInbox";
 import { PowerRankings } from "@/components/PowerRankings";
 import { ReadinessChecklist } from "@/components/ReadinessChecklist";
 import { AllRosters } from "@/components/AllRosters";
@@ -305,6 +306,8 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
       {/* P5-W4: draft recap + grades */}
       {recap && <DraftRecapSection recap={recap} />}
 
+      {/* P5-W20: per-team notifications inbox */}
+      {league && <NotificationsInbox leagueId={league.id} myTeamId={myTeamId} />}
       {/* P5-W8: league activity feed */}
       {league && <ActivityFeed leagueId={league.id} />}
       {/* P5-W9: power rankings */}
