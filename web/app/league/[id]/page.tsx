@@ -605,6 +605,10 @@ function CommissionerTools({
   const [adjDelta, setAdjDelta] = useState("");
   const [adjNote, setAdjNote] = useState("");
   const [adjustments, setAdjustments] = useState<AdjustmentOut[]>([]);
+  // P5-W30: commissioner draft order — team ids in round-1 order.
+  const [order, setOrder] = useState<number[]>(
+    league.settings.draft_order ?? league.standings.map((t) => t.team_id),
+  );
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -634,6 +638,33 @@ function CommissionerTools({
     } finally {
       setBusy(false);
     }
+  }
+
+  async function saveOrder(clear: boolean) {
+    setErr("");
+    setMsg("");
+    setBusy(true);
+    try {
+      await api.patchLeagueSettings(league.id, {
+        draft_order: clear ? [] : order,
+      });
+      setMsg(clear ? "Draft order cleared — the seeded shuffle will deal round 1." : "Draft order saved.");
+      onChanged();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "draft order save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function move(idx: number, dir: -1 | 1) {
+    setOrder((prev) => {
+      const next = [...prev];
+      const j = idx + dir;
+      if (j < 0 || j >= next.length) return prev;
+      [next[idx], next[j]] = [next[j], next[idx]];
+      return next;
+    });
   }
 
   async function submitAdjustment(e: React.FormEvent) {
@@ -706,6 +737,40 @@ function CommissionerTools({
             Save settings
           </button>
         </form>
+
+        <div className="space-y-3 lg:col-span-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Draft order</h3>
+          {league.status === "setup" ? (
+            <>
+              <p className="text-xs text-zinc-500">
+                Set the round-1 order (snake rounds mirror it). The order locks once
+                the draft starts; with no set order, a seeded shuffle deals round 1.
+              </p>
+              <ul className="space-y-1.5">
+                {order.map((tid, i) => (
+                  <li key={tid} className="flex items-center gap-2 text-sm text-zinc-200">
+                    <span className="w-6 text-zinc-500">{i + 1}.</span>
+                    <span className="flex-1">
+                      {league.standings.find((t) => t.team_id === tid)?.team_name ?? `Team ${tid}`}
+                    </span>
+                    <button type="button" className="rounded border border-slate-700 px-2 py-0.5 text-xs" onClick={() => move(i, -1)} disabled={i === 0}>↑</button>
+                    <button type="button" className="rounded border border-slate-700 px-2 py-0.5 text-xs" onClick={() => move(i, 1)} disabled={i === order.length - 1}>↓</button>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex gap-2">
+                <button type="button" className={cn(input, "font-semibold")} onClick={() => saveOrder(false)} disabled={busy}>
+                  Save draft order
+                </button>
+                <button type="button" className={cn(input)} onClick={() => saveOrder(true)} disabled={busy}>
+                  Clear (use shuffle)
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-zinc-500">The draft order locked when the draft started.</p>
+          )}
+        </div>
 
         <form onSubmit={submitAdjustment} className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">FAAB adjustment</h3>

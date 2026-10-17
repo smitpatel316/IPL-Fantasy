@@ -103,7 +103,7 @@ export const api = {
     }),
   patchLeagueSettings: (
     id: number | string,
-    patch: { pick_clock_secs?: number; trade_deadline_week?: number; waiver_run_weekday?: string },
+    patch: { pick_clock_secs?: number; trade_deadline_week?: number; waiver_run_weekday?: string; draft_order?: number[] },
   ) =>
     req<LeagueOut>(`/leagues/${id}/settings`, {
       method: "PATCH",
