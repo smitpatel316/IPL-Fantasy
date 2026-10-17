@@ -822,6 +822,14 @@ class PlayoffPictureEntryOut(BaseModel):
     remaining_opponents: list[RemainingOpponentOut] = []
     # Mean of remaining opponents' standings-points shares (2W+T).
     remaining_sos: float
+    # P5-W34: deterministic bounds status — clinched | eliminated |
+    # in_contention (ties at the bound resolve to in_contention).
+    clinch_status: str = "in_contention"
+    # P5-W34: standings points (2 per win, 1 per tie) the team still
+    # needs to GUARANTEE a top-4 finish on bounds arithmetic; set
+    # only for in-contention teams whose remaining games can supply
+    # it, else null. Bounds only — no probability or simulation.
+    magic_number: Optional[int] = None
 
 
 class PlayoffPictureOut(BaseModel):

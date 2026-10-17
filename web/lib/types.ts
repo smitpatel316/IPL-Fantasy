@@ -731,6 +731,9 @@ export interface PlayoffPictureEntryOut {
   remaining_games: number;
   remaining_opponents: RemainingOpponentOut[];
   remaining_sos: number;
+  /** P5-W34: deterministic bounds status + magic number. */
+  clinch_status: "clinched" | "eliminated" | "in_contention";
+  magic_number: number | null;
 }
 
 export interface PlayoffPictureOut {
