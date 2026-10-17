@@ -7,6 +7,7 @@ import { useLeague } from "@/lib/league-context";
 import { ApiError } from "@/lib/types";
 import type { PlayoffGameOut, PlayoffsOut } from "@/lib/types";
 import { Trophy, Medal, Swords } from "lucide-react";
+import { PlayoffPicture } from "@/components/PlayoffPicture";
 import { cn } from "@/lib/utils";
 
 const STAGE_TEXT: Record<string, string> = {
@@ -135,6 +136,9 @@ export default function PlayoffsPage() {
           <p className="mb-5 rounded-lg border border-slate-800 bg-midnight-soft px-4 py-2.5 text-sm text-zinc-400">
             {STAGE_TEXT[data.stage] ?? ""}
           </p>
+
+          {/* P5-W22: playoff picture + remaining SOS */}
+          <PlayoffPicture leagueId={leagueId} />
 
           {/* Seeds */}
           <div className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-5">

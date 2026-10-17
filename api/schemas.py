@@ -705,6 +705,36 @@ class PlayoffsOut(BaseModel):
     champion_team_name: Optional[str] = None
 
 
+class RemainingOpponentOut(BaseModel):
+    week_no: int
+    opponent_team_id: int
+    opponent_team_name: str
+
+
+class PlayoffPictureEntryOut(BaseModel):
+    """P5-W22: one team's playoff picture — descriptive only."""
+    seed: int
+    team_id: int
+    team_name: str
+    wins: int
+    losses: int
+    ties: int
+    points_for: float
+    # Standard GB from the 4th seed; negative = ahead of the line.
+    games_back: Optional[float] = None
+    remaining_games: int
+    remaining_opponents: list[RemainingOpponentOut] = []
+    # Mean of remaining opponents' standings-points shares (2W+T).
+    remaining_sos: float
+
+
+class PlayoffPictureOut(BaseModel):
+    league_id: int
+    through_week: int  # last final regular-season week; 0 = none yet
+    regular_season_complete: bool
+    entries: list[PlayoffPictureEntryOut] = []
+
+
 class PlayerScoreOut(BaseModel):
     player_name: str
     fantasy_points: int
