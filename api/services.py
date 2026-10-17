@@ -1543,6 +1543,131 @@ def waiver_recommendations(con: sqlite3.Connection, league_id: int,
     }
 
 
+def trade_finder(con: sqlite3.Connection, league_id: int,
+                 team_id: int) -> dict:
+    """Read-only trade-partner suggestions for ONE team (P5-W18).
+
+    Positional surplus/deficit from roster composition vs the D7
+    starter needs (WK1 BAT3 AR2 BOWL3; UTIL is flexible so it is not a
+    need of its own): a role is SHORT for a team at count <= need (no
+    cover beyond the starters) and DEEP at count >= need + 2. A team's
+    surplus players at a role are its players there beyond its best
+    `need` by preseason rank (league MIN rank; unranked players sort
+    last), excluding the league can't-cut list (P4-W22) — a can't-cut
+    player is never named as a give piece on either side.
+    A suggestion needs mutual complement: the partner is deep at a
+    role the requester is short, and short at a role the requester is
+    deep. The partner's live trade-block listings (P5-W7) boost —
+    never create — a match: boosted suggestions sort first, then by
+    combined preseason rank of the two players (lower = better).
+    Pure read over rosters/ranks/trade_block; propose/analyzer/veto
+    flows are untouched.
+    """
+    league = get_league(con, league_id)
+    team = get_team(con, team_id)
+    if team["league_id"] != league_id:
+        raise HTTPException(422, f"team {team_id} is not in league {league_id}")
+    season = league["season"]
+    roles = player_roles_map(con, season)
+    rank_of: dict[int, int] = {
+        r["player_id"]: r["rk"]
+        for r in con.execute(
+            """SELECT r.player_id, MIN(r.rank) AS rk FROM pre_draft_ranks r
+               JOIN teams t ON t.id = r.team_id
+               WHERE t.league_id = ? GROUP BY r.player_id""",
+            (league_id,))
+    }
+    unranked = (max(rank_of.values()) + 1) if rank_of else 1
+    names = {r["id"]: r["name"] for r in con.execute(
+        "SELECT id, name FROM players WHERE season = ?", (season,))}
+    cant_cut, _src = cant_cut_player_ids(con, league_id)
+    need = {"WK": 1, "BAT": 3, "AR": 2, "BOWL": 3}
+    teams = con.execute(
+        "SELECT id, name FROM teams WHERE league_id = ? ORDER BY id",
+        (league_id,)).fetchall()
+    blocked = {
+        r["player_id"] for r in con.execute(
+            "SELECT player_id FROM trade_block WHERE league_id = ?",
+            (league_id,))
+    }
+
+    def profile(tid: int) -> dict[str, dict]:
+        by_role: dict[str, list[int]] = {r: [] for r in need}
+        for pid in _roster_pids(con, tid):
+            role = roles.get(pid, {}).get("role")
+            if role in by_role:
+                by_role[role].append(pid)
+        out = {}
+        for role, pids in by_role.items():
+            ranked = sorted(pids,
+                            key=lambda p: (rank_of.get(p, unranked), p))
+            surplus = [p for p in ranked[need[role]:] if p not in cant_cut]
+            out[role] = {
+                "count": len(pids),
+                "short": len(pids) <= need[role],
+                "deep": len(pids) >= need[role] + 2,
+                "surplus_best": surplus[0] if surplus else None,
+            }
+        return out
+
+    mine = profile(team_id)
+    suggestions = []
+    for other in teams:
+        if other["id"] == team_id:
+            continue
+        theirs = profile(other["id"])
+        for receive_role, tp in theirs.items():
+            if not (tp["deep"] and tp["surplus_best"] is not None
+                    and mine[receive_role]["short"]):
+                continue
+            for give_role, mp in mine.items():
+                if not (mp["deep"] and mp["surplus_best"] is not None
+                        and theirs[give_role]["short"]):
+                    continue
+                give_pid = mp["surplus_best"]
+                recv_pid = tp["surplus_best"]
+                boosted = recv_pid in blocked
+                reason = (
+                    f"{other['name']} is short a {give_role} and deep at "
+                    f"{receive_role} — you are deep at {give_role} and "
+                    f"short a {receive_role}")
+                if boosted:
+                    reason += (f" · {names.get(recv_pid)} is on their "
+                               "trade block")
+                suggestions.append({
+                    "partner_team_id": other["id"],
+                    "partner_team_name": other["name"],
+                    "give": {"player_id": give_pid,
+                             "name": names.get(give_pid),
+                             "role": give_role,
+                             "preseason_rank": rank_of.get(give_pid)},
+                    "receive": {"player_id": recv_pid,
+                                "name": names.get(recv_pid),
+                                "role": receive_role,
+                                "preseason_rank": rank_of.get(recv_pid)},
+                    "give_role": give_role,
+                    "receive_role": receive_role,
+                    "on_trade_block": boosted,
+                    "reason": reason,
+                    "_sort": (0 if boosted else 1,
+                              rank_of.get(give_pid, unranked)
+                              + rank_of.get(recv_pid, unranked),
+                              other["id"]),
+                })
+    suggestions.sort(key=lambda s: s["_sort"])
+    for s in suggestions:
+        del s["_sort"]
+    return {
+        "league_id": league_id, "team_id": team_id,
+        "basis": ("Surplus/deficit from roster counts vs the D7 starter"
+                  " needs (WK1 BAT3 AR2 BOWL3) weighted by preseason"
+                  " rank; trade-block listings boost a match but never"
+                  " create one. Suggestions only — the propose flow"
+                  " decides the real deal."),
+        "suggestions": suggestions,
+    }
+
+
 def _db_engine_id(con: sqlite3.Connection, league_id: int, trade_id: int) -> int:
     """DB trade id -> engine trade id."""
     row = con.execute(

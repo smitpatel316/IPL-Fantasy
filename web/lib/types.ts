@@ -448,6 +448,32 @@ export interface TradeSideAnalysisOut {
   net_games_next_3w: number | null; // + = incoming players play more games
 }
 
+/** P5-W18: trade-finder suggestion (surplus/deficit match). */
+export interface TradeFinderPlayerOut {
+  player_id: number;
+  name: string;
+  role: string | null;
+  preseason_rank: number | null;
+}
+
+export interface TradeFinderSuggestionOut {
+  partner_team_id: number;
+  partner_team_name: string;
+  give: TradeFinderPlayerOut;
+  receive: TradeFinderPlayerOut;
+  give_role: string;
+  receive_role: string;
+  on_trade_block: boolean;
+  reason: string;
+}
+
+export interface TradeFinderOut {
+  league_id: number;
+  team_id: number;
+  basis: string;
+  suggestions: TradeFinderSuggestionOut[];
+}
+
 export interface TradeAnalysisOut {
   league_id: number;
   from_team_id: number;

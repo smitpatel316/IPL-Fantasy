@@ -40,6 +40,7 @@ import type {
   ScheduleNudgesOut,
   TeamOut,
   TradeAnalysisOut,
+  TradeFinderOut,
   TradeBlockEntryOut,
   TradeOut,
   WaiverClaimOut,
@@ -309,6 +310,9 @@ export const api = {
     req<TradeAnalysisOut>(
       `/trades/analyze?league_id=${args.league_id}&from_team_id=${args.from_team_id}&to_team_id=${args.to_team_id}&gives=${args.gives.join(",")}&receives=${args.receives.join(",")}`
     ),
+  // P5-W18: read-only partner suggestions for the managing-as team.
+  tradeFinder: (league_id: number, team_id: number) =>
+    req<TradeFinderOut>(`/trades/finder?league_id=${league_id}&team_id=${team_id}`),
 
   // mock draft (P5-L1/P5-W3): ephemeral practice draft — POST runs it
   // in memory on the server; zero writes to the live league.

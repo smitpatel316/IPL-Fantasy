@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
-import { ApiError, type PlayerOut, type TeamOut, type TradeAnalysisOut, type TradeBlockEntryOut, type TradeOut } from "@/lib/types";
+import { ApiError, type PlayerOut, type TeamOut, type TradeAnalysisOut, type TradeBlockEntryOut, type TradeFinderOut, type TradeFinderSuggestionOut, type TradeOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { ArrowLeftRight, ArrowRight, Clock, Plus } from "lucide-react";
+import { ArrowLeftRight, ArrowRight, Clock, Handshake, Plus } from "lucide-react";
 
 const STATUS_STYLE: Record<string, string> = {
   pending: "bg-trophy-gold/15 text-trophy-gold",
@@ -313,6 +313,29 @@ export default function TradesPage() {
     setter((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
+  // P5-W18: find-a-partner suggestions for the managing-as team.
+  const [finder, setFinder] = useState<TradeFinderOut | null>(null);
+  useEffect(() => {
+    if (teamId == null) return;
+    let live = true;
+    api
+      .tradeFinder(leagueId, teamId)
+      .then((out) => live && setFinder(out))
+      .catch(() => live && setFinder(null));
+    return () => {
+      live = false;
+    };
+  }, [leagueId, teamId]);
+
+  function openFinderPropose(s: TradeFinderSuggestionOut) {
+    setPartnerId(String(s.partner_team_id));
+    setGives([s.give.player_id]);
+    setReceives([s.receive.player_id]);
+    setPropErr("");
+    setPropOk("");
+    setProposeOpen(true);
+  }
+
   function openPropose() {
     setProposeOpen(true);
     setPropErr("");
@@ -435,6 +458,62 @@ export default function TradesPage() {
           <Plus className="h-4 w-4" /> Propose trade
         </button>
       </div>
+
+      {/* P5-W18: find a partner — surplus/deficit matches. */}
+      <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
+        <Handshake className="h-4 w-4 text-trophy-gold" /> Find a partner
+        {teamId != null && (
+          <span className="font-medium normal-case text-zinc-500">
+            for {teamName.get(teamId) ?? "your team"}
+          </span>
+        )}
+      </h2>
+      {finder == null ? (
+        <p className="mb-6 text-sm text-slate-500">Loading partner suggestions…</p>
+      ) : finder.suggestions.length === 0 ? (
+        <p className="mb-6 text-sm text-slate-500">
+          No complementary partner right now — nobody is deep where you&apos;re short
+          while also needing what you&apos;re deep at. Try the trade block below to
+          advertise what you&apos;re shopping.
+        </p>
+      ) : (
+        <>
+          <ul className="mb-3 space-y-2">
+            {finder.suggestions.map((s) => (
+              <li
+                key={`${s.partner_team_id}-${s.give.player_id}-${s.receive.player_id}`}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-slate-800 bg-midnight-soft px-4 py-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-zinc-200">
+                    <span className="font-semibold text-white">{s.partner_team_name}</span>
+                    {" — you give "}
+                    <span className="font-medium text-white">{s.give.name}</span>
+                    <span className="text-zinc-500"> ({s.give_role})</span>
+                    {", you get "}
+                    <span className="font-medium text-white">{s.receive.name}</span>
+                    <span className="text-zinc-500"> ({s.receive_role})</span>
+                    {s.on_trade_block && (
+                      <span className="ml-2 rounded bg-trophy-gold/15 px-1.5 py-0.5 text-[11px] font-bold text-trophy-gold">
+                        On their trade block
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-0.5 text-xs text-zinc-500">{s.reason}.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openFinderPropose(s)}
+                  className="rounded-lg bg-trophy-gold px-3 py-1.5 text-xs font-bold text-midnight transition hover:brightness-110"
+                >
+                  Propose this swap
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="mb-6 text-[11px] text-slate-500">{finder.basis}</p>
+        </>
+      )}
 
       <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-300">Trade block</h2>
       <p className="mb-3 text-sm text-slate-500">

@@ -618,6 +618,31 @@ class TradeSideAnalysis(BaseModel):
     net_games_next_3w: Optional[int] = None
 
 
+class TradeFinderPlayerOut(BaseModel):
+    player_id: int
+    name: str
+    role: Optional[str] = None
+    preseason_rank: Optional[int] = None
+
+
+class TradeFinderSuggestionOut(BaseModel):
+    partner_team_id: int
+    partner_team_name: str
+    give: TradeFinderPlayerOut  # the requesting team's surplus player
+    receive: TradeFinderPlayerOut  # the partner's surplus player
+    give_role: str
+    receive_role: str
+    on_trade_block: bool = False  # partner listed the receive player
+    reason: str
+
+
+class TradeFinderOut(BaseModel):
+    league_id: int
+    team_id: int
+    basis: str
+    suggestions: list[TradeFinderSuggestionOut] = []
+
+
 class TradeAnalysisOut(BaseModel):
     """Read-only trade impact projection (P5-W1)."""
 
