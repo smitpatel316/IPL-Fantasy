@@ -258,6 +258,25 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ player_ids }),
     }),
+  // P5-W31: ranks CSV export download URL + import (raw CSV text body,
+  // claim header attached like other team mutations).
+  ranksCsvUrl: (teamId: number | string) =>
+    `${BASE}/teams/${teamId}/ranks.csv`,
+  importRanksCsv: async (teamId: number, csvText: string): Promise<RanksOut> => {
+    const res = await fetch(`${BASE}/teams/${teamId}/ranks/import`, {
+      method: "POST",
+      headers: { "Content-Type": "text/csv", ...claimHeaders(teamId) },
+      body: csvText,
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new ApiError(
+        res.status,
+        (body as { detail?: string }).detail ?? `request failed (${res.status})`,
+      );
+    }
+    return body as RanksOut;
+  },
 
   // identity (P4-W18): claim/reset a team's claim code
   claimTeam: (teamId: number) =>

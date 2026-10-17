@@ -146,6 +146,33 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
     }
   }
 
+  // P5-W31: CSV import — the file's rows become the saved ranks via
+  // the API's validated import; the editor then re-seeds from the
+  // saved order (unranked board players appended, as on load).
+  const ranksFileRef = useRef<HTMLInputElement | null>(null);
+  const [ranksImporting, setRanksImporting] = useState(false);
+  async function importRanksFile(file: File) {
+    if (!myTeamId) return;
+    setRanksImporting(true);
+    setRanksMsg("");
+    try {
+      const text = await file.text();
+      const saved = await api.importRanksCsv(myTeamId, text);
+      const boardOrder = [...board]
+        .sort((a, b) => (a.preseason_rank ?? 1e9) - (b.preseason_rank ?? 1e9))
+        .map((p) => p.id);
+      const custom = saved.player_ids.filter((id) => boardOrder.includes(id));
+      const rest = boardOrder.filter((id) => !custom.includes(id));
+      setRankOrder([...custom, ...rest]);
+      setRanksMsg(`Imported ${saved.player_ids.length} ranks from CSV — auto-pick follows this order.`);
+    } catch (e) {
+      setRanksMsg(e instanceof ApiError ? e.message : "ranks import failed — saved ranks unchanged");
+    } finally {
+      setRanksImporting(false);
+      if (ranksFileRef.current) ranksFileRef.current.value = "";
+    }
+  }
+
   const teams = useMemo(() => league?.standings.map((s) => ({ id: s.team_id, name: s.team_name })) ?? [], [league]);
 
   useEffect(() => {
@@ -543,18 +570,53 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
               <div className="rounded-xl border border-slate-800 bg-midnight-soft/70 p-4">
                 <div className="mb-1 flex items-center justify-between gap-3">
                   <h2 className="font-semibold text-white">My ranks</h2>
-                  <button
-                    type="button"
-                    onClick={saveRanks}
-                    disabled={ranksSaving || !myTeamId || rankOrder.length === 0}
-                    className="rounded-lg bg-trophy-gold px-3 py-1.5 text-xs font-bold text-midnight transition hover:brightness-110 disabled:opacity-50"
-                  >
-                    {ranksSaving ? "Saving…" : "Save ranks"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {myTeamId ? (
+                      <a
+                        href={api.ranksCsvUrl(myTeamId)}
+                        className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-slate-700"
+                      >
+                        Export CSV
+                      </a>
+                    ) : (
+                      <span className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-zinc-500 opacity-50">
+                        Export CSV
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => ranksFileRef.current?.click()}
+                      disabled={ranksImporting || !myTeamId}
+                      className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-slate-700 disabled:opacity-50"
+                    >
+                      {ranksImporting ? "Importing…" : "Import CSV"}
+                    </button>
+                    <input
+                      ref={ranksFileRef}
+                      type="file"
+                      accept=".csv,text/csv"
+                      className="hidden"
+                      aria-label="Import ranks CSV"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void importRanksFile(f);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={saveRanks}
+                      disabled={ranksSaving || !myTeamId || rankOrder.length === 0}
+                      className="rounded-lg bg-trophy-gold px-3 py-1.5 text-xs font-bold text-midnight transition hover:brightness-110 disabled:opacity-50"
+                    >
+                      {ranksSaving ? "Saving…" : "Save ranks"}
+                    </button>
+                  </div>
                 </div>
                 <p className="mb-3 text-xs text-zinc-500">
                   Your personal draft order — auto-pick drafts from the top of this list.
-                  Reorder with the arrows, then save.
+                  Reorder with the arrows, then save. Or prep in a spreadsheet: export your
+                  ranks as CSV, edit, and import them back (player_id or exact player name,
+                  one row per rank).
                 </p>
                 {ranksMsg && <p className="mb-2 text-xs text-pitch-green">{ranksMsg}</p>}
                 <ol className="max-h-[420px] space-y-1 overflow-y-auto pr-1">
