@@ -200,6 +200,27 @@ export interface PowerRankingsOut {
   entries: PowerRankEntryOut[];
 }
 
+/** P5-W33: strengths heatmap — starter rank value per team x role. */
+export interface StrengthCellOut {
+  role: string;
+  value: number;
+  shade: number; // -2..2 vs the league average at that role
+}
+
+export interface StrengthRowOut {
+  team_id: number;
+  team_name: string;
+  cells: StrengthCellOut[];
+  total: number; // == power-rankings roster_value
+}
+
+export interface StrengthsOut {
+  league_id: number;
+  drafted: boolean;
+  averages: Record<string, number>;
+  rows: StrengthRowOut[];
+}
+
 /** P5-W10: one season-start checklist item, derived server-side
  * from live DB state (never a stored flag). */
 export interface ReadinessItemOut {

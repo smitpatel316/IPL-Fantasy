@@ -384,6 +384,32 @@ class PowerRankingsOut(BaseModel):
     basis: str  # roster_value (pre-season) | record_blend
     through_week: int  # last final week included; 0 = none yet
     entries: list[PowerRankEntryOut] = []
+
+
+# ---------- league strengths heatmap (P5-W33) ----------
+class StrengthCellOut(BaseModel):
+    # One team x role cell: sum of starter rank value at the role
+    # (P5-W9 convention) + shade vs the league average at that role
+    # (-2..2, thresholds pinned in api/routers/strengths.py).
+    role: str
+    value: int
+    shade: int = 0
+
+
+class StrengthRowOut(BaseModel):
+    team_id: int
+    team_name: str
+    cells: list[StrengthCellOut] = []  # WK, BAT, AR, BOWL order
+    total: int  # == power-rankings roster_value for the same DB state
+
+
+class StrengthsOut(BaseModel):
+    league_id: int
+    drafted: bool  # any roster exists yet; False = honest empty state
+    averages: dict[str, float] = {}  # role -> league-average cell value
+    rows: list[StrengthRowOut] = []
+
+
 # ---------- season-start readiness (P5-W10) ----------
 class ReadinessItemOut(BaseModel):
     key: str
