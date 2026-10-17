@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
-import { ApiError, type LineupOut, type MatchupOut, type PlayerOut } from "@/lib/types";
+import { ApiError, type LineupOut, type MatchupOut, type MatchupPreviewOut, type PlayerOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { ScrollHint } from "@/components/ScrollHint";
 import { cn } from "@/lib/utils";
@@ -224,12 +224,16 @@ export default function MatchupPage() {
   const [week, setWeek] = useState(1);
   const [err, setErr] = useState("");
   const [openMatchup, setOpenMatchup] = useState<MatchupOut | null>(null);
+  // P5-W26: descriptive preview for not-yet-final matchups.
+  const [preview, setPreview] = useState<MatchupPreviewOut | null>(null);
 
   useEffect(() => {
     api
       .listMatchups(leagueId, week)
       .then(setMatchups)
       .catch((e) => setErr(e instanceof ApiError ? e.message : "load failed"));
+    setPreview(null);
+    api.matchupPreview(leagueId, week).then(setPreview).catch(() => setPreview(null));
   }, [leagueId, week]);
 
   return (
@@ -263,6 +267,49 @@ export default function MatchupPage() {
       </div>
 
       {err && <div className="mb-4"><ErrorBox message={err} /></div>}
+
+      {preview && preview.previews.length > 0 && (
+        <section className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
+          <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-300">
+            Week {week} preview
+          </h2>
+          <p className="mb-3 text-xs text-zinc-500">{preview.basis}</p>
+          <div className="grid gap-3 md:grid-cols-2">
+            {preview.previews.map((pv) => (
+              <div key={pv.matchup_id} className="rounded-lg border border-slate-800 p-3 text-sm text-zinc-300">
+                {[pv.side_a, pv.side_b].map((side) => (
+                  <p key={side.team_id} className="flex flex-wrap items-baseline gap-x-2 py-0.5">
+                    <span className="font-semibold text-white">{side.team_name}</span>
+                    {side.lineup_set ? (
+                      <span className="text-xs text-zinc-400">
+                        starters rank value {side.starters_rank_value ?? "—"} ·{" "}
+                        {side.games_this_week ?? "—"} starter games this week
+                        {side.flagged_starters.length > 0 &&
+                          ` · unavailable: ${side.flagged_starters.join(", ")}`}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-zinc-500">no lineup saved yet</span>
+                    )}
+                  </p>
+                ))}
+                {pv.prior_h2h && (
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Last meeting (week {pv.prior_h2h.week_no}):{" "}
+                    {pv.prior_h2h.score_a.toFixed(1)} – {pv.prior_h2h.score_b.toFixed(1)}
+                    {pv.prior_h2h.winner_team_id === null
+                      ? " — tied"
+                      : ` — ${
+                          pv.prior_h2h.winner_team_id === pv.side_a.team_id
+                            ? pv.side_a.team_name
+                            : pv.side_b.team_name
+                        } won`}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {matchups.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2">
