@@ -6,6 +6,7 @@ import { useLeague } from "@/lib/league-context";
 import { ApiError, type ChatMessage, type DraftRoomState, type LeagueDetailOut, type PlayerOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { DraftClock } from "@/components/DraftClock";
+import { DraftAlertControls } from "@/components/DraftAlertControls";
 import { DraftPlayerCard } from "@/components/DraftPlayerCard";
 import {
   ScheduleWeekPicker,
@@ -386,6 +387,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
           <span className={`h-1.5 w-1.5 rounded-full ${draftId && connected ? "bg-emerald-400" : "bg-slate-600"}`} />
           {draftId ? (connected ? "live" : "connecting…") : "no draft yet"}
         </span>
+        <DraftAlertControls snap={snap} myTeamId={myTeamId} clockLeft={clockLeft} />
       </div>
 
       {!draftId ? (
