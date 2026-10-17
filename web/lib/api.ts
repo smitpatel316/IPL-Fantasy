@@ -42,6 +42,7 @@ import type {
   RosterMoveOut,
   ScoreboardOut,
   ScheduleMatrixOut,
+  CheatSheetOut,
   ScheduleNudgesOut,
   TeamOut,
   TradeAnalysisOut,
@@ -152,6 +153,11 @@ export const api = {
   // P5-W15: the full IPL-team x week game-count matrix in one read.
   scheduleMatrix: (leagueId: number | string) =>
     req<ScheduleMatrixOut>(`/leagues/${leagueId}/schedule-matrix`),
+  // P5-W25: tiered draft cheat sheet + its CSV download URL.
+  cheatSheet: (leagueId: number | string) =>
+    req<CheatSheetOut>(`/leagues/${leagueId}/cheat-sheet`),
+  cheatSheetCsvUrl: (leagueId: number | string) =>
+    `${BASE}/leagues/${leagueId}/cheat-sheet.csv`,
 
   // players
   listPlayers: (params: { league_id: number; season?: string; role?: string; team?: string; q?: string }) => {

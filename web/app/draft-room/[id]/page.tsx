@@ -327,6 +327,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
   return (
     <div>
       <PageHeader title="Draft room" sub="Live snake draft · pick clock with auto-pick (D2)" />
+      <p className="mb-4 text-xs"><a href="/cheat-sheet" className="font-medium text-trophy-gold hover:underline">Draft cheat sheet →</a></p>
       {err && (
         <div className="mb-4">
           <ErrorBox message={err} />

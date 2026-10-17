@@ -219,6 +219,7 @@ export default function PlayersPage() {
             <Star className="h-4 w-4 fill-trophy-gold text-trophy-gold" /> Watched
           </h2>
           <div className="ml-auto flex flex-wrap items-center gap-3">
+            <Link href="/cheat-sheet" className="text-xs font-medium text-trophy-gold hover:underline">Draft cheat sheet →</Link>
             <ScheduleWeekPicker weeks={sched.weeks} week={sched.week} setWeek={sched.setWeek} />
             <label className="flex items-center gap-2 text-xs font-medium text-slate-400">
               Managing as
