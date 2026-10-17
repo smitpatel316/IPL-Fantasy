@@ -12,6 +12,7 @@ import { LeaguePolls } from "@/components/LeaguePolls";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { NotificationsInbox } from "@/components/NotificationsInbox";
 import { PowerRankings } from "@/components/PowerRankings";
+import { StrengthsHeatmap } from "@/components/StrengthsHeatmap";
 import { ReadinessChecklist } from "@/components/ReadinessChecklist";
 import { KeyDates } from "@/components/KeyDates";
 import { AllRosters } from "@/components/AllRosters";
@@ -370,6 +371,8 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
       {league && <ActivityFeed leagueId={league.id} />}
       {/* P5-W9: power rankings */}
       {league && <PowerRankings leagueId={league.id} />}
+      {/* P5-W33: strengths heatmap */}
+      {league && <StrengthsHeatmap leagueId={league.id} />}
       {/* P5-W10: season-start checklist */}
       {league && <ReadinessChecklist leagueId={league.id} />}
 
