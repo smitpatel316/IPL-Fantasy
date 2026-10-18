@@ -4,13 +4,17 @@
    the draft room's in-memory chat. Anyone can read; posting acts as
    the "managing as" team and rides the P4-W18 claim gate (the api
    client attaches the stored claim code automatically). The
-   commissioner's team gets a remove button (server soft-deletes). */
+   commissioner's team gets a remove button (server soft-deletes).
+   P5-W39: the commissioner's team can pin ONE of its own posts — it
+   renders in a pinned strip above the feed instead of feed order;
+   pinning a new one unpins the old; deleting a pinned post clears
+   the strip. Pin/unpin controls are hidden for non-commissioners. */
 
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { ApiError, type MessageOut } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { MessagesSquare, Send, Trash2 } from "lucide-react";
+import { MessagesSquare, Pin, PinOff, Send, Trash2 } from "lucide-react";
 
 const PAGE = 50;
 
@@ -25,6 +29,7 @@ export function MessageBoard({
 }) {
   const [messages, setMessages] = useState<MessageOut[]>([]);
   const [total, setTotal] = useState(0);
+  const [pinned, setPinned] = useState<MessageOut | null>(null);
   const [commissionerTeamId, setCommissionerTeamId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const [err, setErr] = useState("");
@@ -36,6 +41,7 @@ export function MessageBoard({
         const board = await api.getMessageBoard(leagueId, PAGE, offset);
         setTotal(board.total);
         setCommissionerTeamId(board.commissioner_team_id);
+        setPinned(board.pinned_message);
         setMessages((prev) =>
           offset === 0 ? board.messages : [...prev, ...board.messages],
         );
@@ -76,10 +82,33 @@ export function MessageBoard({
     setErr("");
     try {
       await api.deleteMessage(leagueId, id, myTeamId);
-      setMessages((prev) => prev.filter((m) => m.id !== id));
-      setTotal((t) => Math.max(0, t - 1));
+      // reload the board: the pinned strip must clear when a pinned
+      // post is deleted (server excludes soft-deleted pins).
+      await load(0);
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "remove failed");
+    }
+  }
+
+  async function pin(id: number) {
+    if (myTeamId == null) return;
+    setErr("");
+    try {
+      await api.pinMessage(leagueId, id, myTeamId);
+      await load(0); // new pin unpins the old one server-side
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "pin failed");
+    }
+  }
+
+  async function unpin(id: number) {
+    if (myTeamId == null) return;
+    setErr("");
+    try {
+      await api.unpinMessage(leagueId, id, myTeamId);
+      await load(0); // unpinned post returns to feed order
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "unpin failed");
     }
   }
 
@@ -98,6 +127,36 @@ export function MessageBoard({
       </h2>
 
       {err && <p className="mt-2 text-xs text-loss-ink">{err}</p>}
+
+      {/* P5-W39: pinned commissioner announcement — strip above the feed */}
+      {pinned && (
+        <div
+          aria-label="Pinned announcement"
+          className="mt-4 rounded-lg border border-trophy-gold/40 bg-trophy-gold/[0.06] px-3 py-2.5"
+        >
+          <p className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-trophy-gold">
+            <span className="flex items-center gap-1.5">
+              <Pin className="h-3.5 w-3.5" /> Pinned announcement
+            </span>
+            {isCommissioner && (
+              <button
+                type="button"
+                onClick={() => unpin(pinned.id)}
+                aria-label="Unpin announcement"
+                title="Unpin (commissioner)"
+                className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-semibold normal-case tracking-normal text-zinc-400 transition hover:bg-slate-800 hover:text-zinc-200"
+              >
+                <PinOff className="h-3.5 w-3.5" /> Unpin
+              </button>
+            )}
+          </p>
+          <p className="mt-1 text-xs text-zinc-500">
+            <span className="font-semibold text-zinc-300">{pinned.team_name}</span>{" "}
+            · {pinned.created_at} UTC
+          </p>
+          <p className="mt-0.5 whitespace-pre-wrap text-sm text-zinc-200">{pinned.body}</p>
+        </div>
+      )}
 
       <div className="mt-3 flex gap-2">
         <textarea
@@ -146,15 +205,30 @@ export function MessageBoard({
                 <p className="mt-0.5 whitespace-pre-wrap text-sm text-zinc-200">{m.body}</p>
               </div>
               {isCommissioner && (
-                <button
-                  type="button"
-                  onClick={() => remove(m.id)}
-                  aria-label={`Remove post by ${m.team_name}`}
-                  title="Remove post (commissioner)"
-                  className="rounded-md p-1.5 text-zinc-600 transition hover:bg-slate-800 hover:text-red-300"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex shrink-0 items-start gap-1">
+                  {/* P5-W39: only the commissioner's own posts are pinnable;
+                      pinning a new one unpins the old one */}
+                  {m.team_id === myTeamId && (
+                    <button
+                      type="button"
+                      onClick={() => pin(m.id)}
+                      aria-label={`Pin post by ${m.team_name}`}
+                      title="Pin as announcement (commissioner)"
+                      className="rounded-md p-1.5 text-zinc-600 transition hover:bg-slate-800 hover:text-trophy-gold"
+                    >
+                      <Pin className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => remove(m.id)}
+                    aria-label={`Remove post by ${m.team_name}`}
+                    title="Remove post (commissioner)"
+                    className="rounded-md p-1.5 text-zinc-600 transition hover:bg-slate-800 hover:text-red-300"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               )}
             </li>
           ))}

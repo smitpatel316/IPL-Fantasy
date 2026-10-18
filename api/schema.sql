@@ -270,14 +270,18 @@ CREATE TABLE IF NOT EXISTS player_notes (
 
 -- P5-W5: persistent league message board (trash talk). Posts are
 -- gated by team identity (P4-W18); commissioner soft-delete via
--- deleted_at (rows are never hard-deleted).
+-- deleted_at (rows are never hard-deleted). P5-W39: the commissioner's
+-- team can pin ONE of its own posts (pinned_at) — it renders in a
+-- pinned strip above the feed instead of in feed order; deleting a
+-- pinned post clears the strip.
 CREATE TABLE IF NOT EXISTS league_messages (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     league_id   INTEGER NOT NULL REFERENCES leagues(id) ON DELETE CASCADE,
     team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     body        TEXT NOT NULL,
     created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-    deleted_at  TEXT
+    deleted_at  TEXT,
+    pinned_at   TEXT
 );
 
 -- P5-W20: per-team notification read markers (the inbox itself is a

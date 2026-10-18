@@ -421,6 +421,18 @@ export const api = {
       method: "DELETE",
       headers: claimHeaders(team_id),
     }),
+  // P5-W39: pinned commissioner announcements. Pin/unpin restricted
+  // server-side to the commissioner's team (403 otherwise).
+  pinMessage: (leagueId: number, messageId: number, team_id: number) =>
+    req<MessageOut>(`/leagues/${leagueId}/messages/${messageId}/pin?team_id=${team_id}`, {
+      method: "POST",
+      headers: claimHeaders(team_id),
+    }),
+  unpinMessage: (leagueId: number, messageId: number, team_id: number) =>
+    req<MessageOut>(`/leagues/${leagueId}/messages/${messageId}/unpin?team_id=${team_id}`, {
+      method: "POST",
+      headers: claimHeaders(team_id),
+    }),
 
   // polls (P5-W24): advisory league votes. Reads open (team_id only
   // marks the viewer's own vote); create/vote/close carry the acting
