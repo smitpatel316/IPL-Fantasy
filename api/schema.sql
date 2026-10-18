@@ -181,7 +181,8 @@ CREATE TABLE IF NOT EXISTS trades (
     proposed_at     TEXT,     -- ISO UTC lifecycle timestamps (P4-W1)
     accepted_at     TEXT,
     vetoed_at       TEXT,
-    executed_at     TEXT
+    executed_at     TEXT,
+    counter_of      INTEGER   -- P5-W36: trades.id this trade counters, if any
 );
 
 -- Phase 3: persisted engine snapshots (api/services.py).

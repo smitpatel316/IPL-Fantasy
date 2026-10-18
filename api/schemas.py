@@ -698,6 +698,15 @@ class TradeCreate(BaseModel):
     receives: list[int]
 
 
+class CounterTradeCreate(BaseModel):
+    # P5-W36: a counter to a pending incoming trade. The counter's
+    # recipient is derived server-side (the original proposer), so
+    # only the countering team + the swapped player lists are sent.
+    from_team_id: int
+    gives: list[int]
+    receives: list[int]
+
+
 class TradeOut(BaseModel):
     id: int
     league_id: int
@@ -713,6 +722,11 @@ class TradeOut(BaseModel):
     accepted_at: Optional[str] = None
     vetoed_at: Optional[str] = None
     executed_at: Optional[str] = None
+    # P5-W36: counter-trade linkage (trades-table ids). counter_of is
+    # set on a trade created as a counter; countered_by lists trades
+    # that counter this one. The original is never mutated by a counter.
+    counter_of: Optional[int] = None
+    countered_by: list[int] = []
 
 
 # ---------- matchups / scoring ----------

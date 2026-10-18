@@ -498,6 +498,9 @@ export interface TradeOut {
   accepted_at: string | null;
   vetoed_at: string | null;
   executed_at: string | null;
+  /** P5-W36: counter-trade linkage (trade ids). */
+  counter_of: number | null;
+  countered_by: number[];
 }
 
 // P5-W1 trade analyzer (read-only projection from pre_draft_ranks + fixture game counts)

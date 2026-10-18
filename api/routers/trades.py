@@ -80,6 +80,27 @@ def list_trades(league_id: int = Query(...), status: Optional[str] = Query(None)
     return [_trade_out(t) for t in services.list_trades(con, league_id, status)]
 
 
+@router.post("/{trade_id}/counter", response_model=schemas.TradeOut)
+def counter_trade(trade_id: int, body: schemas.CounterTradeCreate,
+                  request: Request,
+                  con: sqlite3.Connection = Depends(get_db)):
+    """Counter a pending incoming trade (P5-W36): creates a NEW
+    pending trade back to the original proposer through the existing
+    propose path (all validation unchanged), linked via counter_of.
+    The original trade is not mutated. The countering team must be
+    the original's recipient and presents its claim code if claimed
+    (P4-W18), exactly like propose. League is derived from the
+    original trade row, like accept/reject."""
+    row = con.execute("SELECT league_id FROM trades WHERE id = ?",
+                      (trade_id,)).fetchone()
+    if not row:
+        raise HTTPException(404, f"trade {trade_id} not found")
+    require_team_actor(con, body.from_team_id, request)  # P4-W18
+    return _trade_out(services.counter_trade(
+        con, row["league_id"], trade_id, body.from_team_id,
+        body.gives, body.receives))
+
+
 @router.post("/{trade_id}/accept", response_model=schemas.TradeOut)
 def accept_trade(trade_id: int, request: Request,
                  con: sqlite3.Connection = Depends(get_db)):

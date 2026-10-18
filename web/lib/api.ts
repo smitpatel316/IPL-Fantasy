@@ -342,6 +342,17 @@ export const api = {
     }),
   listTrades: (league_id: number, status?: string) =>
     req<TradeOut[]>(`/trades?league_id=${league_id}${status ? `&status=${status}` : ""}`),
+  // P5-W36: counter a pending incoming trade — creates a NEW trade
+  // back to the original proposer via the existing propose path.
+  counterTrade: (
+    tradeId: number,
+    body: { from_team_id: number; gives: number[]; receives: number[] },
+  ) =>
+    req<TradeOut>(`/trades/${tradeId}/counter`, {
+      method: "POST",
+      headers: claimHeaders(body.from_team_id),
+      body: JSON.stringify(body),
+    }),
   tradeAccept: (tradeId: number, actorTeamId: number) =>
     req<TradeOut>(`/trades/${tradeId}/accept`, {
       method: "POST",
