@@ -618,6 +618,35 @@ function CommissionerTools({
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  // P5-W43: commissioner full-league export — only the commissioner's
+  // team (this browser holding its claim code) sees the button.
+  const [commissionerTeamId, setCommissionerTeamId] = useState<number | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    api
+      .getMessageBoard(league.id, 1)
+      .then((b) => setCommissionerTeamId(b.commissioner_team_id))
+      .catch(() => {});
+  }, [league.id]);
+
+  const canExport =
+    commissionerTeamId != null && getTeamClaim(commissionerTeamId) != null;
+
+  async function exportLeague() {
+    if (commissionerTeamId == null) return;
+    setErr("");
+    setMsg("");
+    setExporting(true);
+    try {
+      await api.exportLeagueJson(league.id, commissionerTeamId);
+      setMsg("League data exported — check your downloads.");
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     api.listAdjustments(league.id).then(setAdjustments).catch(() => {});
@@ -819,6 +848,27 @@ function CommissionerTools({
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* P5-W43: offline backup — the full league snapshot as JSON.
+          Commissioner-only (this browser must hold the commissioner's
+          team claim; the server 403s everyone else). */}
+      {canExport && (
+        <div className="mt-6 rounded-xl border border-slate-800 p-4">
+          <h3 className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400">Offline backup</h3>
+          <p className="mb-3 text-xs text-zinc-500">
+            Download the full league snapshot — settings, teams and rosters,
+            draft picks, trades, waiver history, ledger, polls, and messages.
+          </p>
+          <button
+            type="button"
+            onClick={exportLeague}
+            disabled={exporting}
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-trophy-gold hover:text-white disabled:opacity-50"
+          >
+            {exporting ? "Exporting…" : "Export league data"}
+          </button>
         </div>
       )}
     </section>

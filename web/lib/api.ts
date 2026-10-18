@@ -102,6 +102,27 @@ export const api = {
     req<TeamLedgerOut>(`/leagues/${leagueId}/teams/${teamId}/ledger`, {
       headers: claimHeaders(teamId),
     }),
+  // P5-W43: commissioner full-league export. Fetched with the
+  // commissioner's claim headers (a plain <a> link would 403) and saved
+  // via blob URL so the browser downloads the JSON snapshot.
+  exportLeagueJson: async (leagueId: number, commissionerTeamId: number): Promise<void> => {
+    const res = await fetch(
+      `${BASE}/leagues/${leagueId}/export.json?team_id=${commissionerTeamId}`,
+      { headers: claimHeaders(commissionerTeamId) },
+    );
+    if (!res.ok) {
+      throw new ApiError(res.status, "league export failed");
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ipl-league-${leagueId}-export.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
   // P5-W40: ledger CSV export. Fetched with claim headers (a plain
   // <a> link would 403 for claimed teams) and saved via blob URL so
   // the browser downloads it instead of rendering it.
