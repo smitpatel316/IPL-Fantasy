@@ -533,6 +533,16 @@ class LineupSet(BaseModel):
     slots: dict[str, list[int]]  # {"WK": [pid], "BAT": [pid,...], ...}
 
 
+class CommissionerLineupSet(BaseModel):
+    """P5-W42: commissioner sets another team's lineup. The audit note is
+    mandatory — it lands in league_adjustments (kind 'lineup_set') so the
+    team's ledger shows who changed their XI and why."""
+    commissioner_team_id: int
+    week_no: int = Field(ge=1, le=8)
+    slots: dict[str, list[int]]  # {"WK": [pid], "BAT": [pid,...], ...}
+    note: str = Field(min_length=1, max_length=500)
+
+
 class LineupOut(BaseModel):
     team_id: int
     week_no: int

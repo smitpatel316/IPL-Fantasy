@@ -328,6 +328,22 @@ export const api = {
     }),
   getLineup: (teamId: number | string, week_no: number) =>
     req<LineupOut>(`/teams/${teamId}/lineup?week_no=${week_no}`),
+  // P5-W42: commissioner lineup management — the commissioner's team sets
+  // another team's lineup. The claim header goes through the commissioner's
+  // team (the P4-W18 gate) and the audit note is mandatory server-side.
+  commissionerSetLineup: (
+    teamId: number | string,
+    commissionerTeamId: number | string,
+    body: { week_no: number; slots: Record<string, number[]>; note: string },
+  ) =>
+    req<LineupOut>(`/teams/${teamId}/lineup/commissioner`, {
+      method: "PUT",
+      headers: claimHeaders(Number(commissionerTeamId)),
+      body: JSON.stringify({
+        commissioner_team_id: Number(commissionerTeamId),
+        ...body,
+      }),
+    }),
   // P5-W13: Suggested XI — read-only solver projection; saving still
   // goes through setLineup so lock/IL/D8 validation applies unchanged.
   getLineupSuggestion: (teamId: number | string, week_no: number) =>

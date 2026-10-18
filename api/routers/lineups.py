@@ -48,21 +48,58 @@ def set_lineup(team_id: int, body: schemas.LineupSet, request: Request,
                con: sqlite3.Connection = Depends(get_db)):
     # P4-W18: a claimed team requires its claim code to be set by anyone else.
     team = require_team_actor(con, team_id, request)
-    if not 1 <= body.week_no <= TOTAL_WEEKS:
+    return _apply_lineup(con, team_id, body.week_no, body.slots)
+
+
+@router.put("/teams/{team_id}/lineup/commissioner",
+            response_model=schemas.LineupOut)
+def commissioner_set_lineup(team_id: int, body: schemas.CommissionerLineupSet,
+                            request: Request,
+                            con: sqlite3.Connection = Depends(get_db)):
+    """P5-W42: commissioner sets another team's lineup. Identity = the
+    commissioner's team (P4-W18 claim gate); non-commissioners 403 via
+    _require_commissioner_actor. D5 weekly lock enforced UNCHANGED —
+    the commissioner only sets lineups for unlocked weeks, acting as
+    the team's agent. The mandatory audit note lands in
+    league_adjustments (kind 'lineup_set') so the team's FAAB/
+    transaction ledger shows who changed their XI and why."""
+    from .message_board import _require_commissioner_actor
+    team = get_team(con, team_id)
+    league = get_league(con, team["league_id"])
+    _require_commissioner_actor(con, league, body.commissioner_team_id,
+                                request, "set another team's lineup")
+    out = _apply_lineup(con, team_id, body.week_no, body.slots)
+    con.execute(
+        "INSERT INTO league_adjustments (league_id, team_id, kind, faab_delta,"
+        " faab_after, note) VALUES (?, ?, 'lineup_set', 0, ?, ?)",
+        (league["id"], team_id, team["faab_remaining"],
+         f"Week {body.week_no} — {body.note}"),
+    )
+    con.commit()
+    return out
+
+
+def _apply_lineup(con: sqlite3.Connection, team_id: int, week_no: int,
+                  slots: dict[str, list[int]]) -> schemas.LineupOut:
+    """The shared lineup-save path (P5-W42): D5 lock + D7/D8 validation +
+    ownership + snapshot replace, identical for a manager's own PUT and a
+    commissioner's fiat PUT."""
+    team = get_team(con, team_id)
+    if not 1 <= week_no <= TOTAL_WEEKS:
         raise HTTPException(422, f"week_no must be 1..{TOTAL_WEEKS}")
 
     # D5 weekly lock: no edits once the week's first ball is due.
-    lock = lineup_lock_at(con, team["league_id"], body.week_no)
+    lock = lineup_lock_at(con, team["league_id"], week_no)
     if lock is not None and datetime.now(timezone.utc) >= lock:
         raise HTTPException(
             422,
-            f"lineup for week {body.week_no} is locked — lineups lock at the"
+            f"lineup for week {week_no} is locked — lineups lock at the"
             f" week's first ball ({lock.isoformat()}, D5)",
         )
 
     roles = player_roles_map(con)
     try:
-        summary = validate_lineup(body.slots, roles)
+        summary = validate_lineup(slots, roles)
     except LineupError as e:
         raise HTTPException(422, str(e))
 
@@ -72,29 +109,29 @@ def set_lineup(team_id: int, body: schemas.LineupSet, request: Request,
             "SELECT player_id FROM roster_slots WHERE team_id = ? AND week_no IS NULL", (team_id,)
         )
     }
-    for slot, pids in body.slots.items():
+    for slot, pids in slots.items():
         for pid in pids:
             if pid not in owned_ids:
                 raise HTTPException(422, f"player {pid} is not on team {team_id}'s roster")
 
     # Replace this week's snapshot.
-    con.execute("DELETE FROM roster_slots WHERE team_id = ? AND week_no = ?", (team_id, body.week_no))
-    for slot, pids in body.slots.items():
+    con.execute("DELETE FROM roster_slots WHERE team_id = ? AND week_no = ?", (team_id, week_no))
+    for slot, pids in slots.items():
         for pid in pids:
             con.execute(
                 "INSERT INTO roster_slots (team_id, player_id, slot, week_no) VALUES (?, ?, ?, ?)",
-                (team_id, pid, slot, body.week_no),
+                (team_id, pid, slot, week_no),
             )
     con.commit()
     return schemas.LineupOut(
-        team_id=team_id, week_no=body.week_no, slots=body.slots,
+        team_id=team_id, week_no=week_no, slots=slots,
         overseas_starters=summary["overseas_starters"], valid=True,
         # The save just succeeded, so the week is by definition unlocked;
         # still report the lock instant so clients can show it.
         locked=False, lock_at=lock.isoformat() if lock else None,
         player_availability={
             pid: roles.get(pid, {}).get("availability", "active")
-            for pids in body.slots.values() for pid in pids
+            for pids in slots.values() for pid in pids
         },
     )
 
