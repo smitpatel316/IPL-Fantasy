@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { ApiError, type TeamLedgerOut } from "@/lib/types";
-import { ReceiptText } from "lucide-react";
+import { Download, ReceiptText } from "lucide-react";
 
 export function TeamLedger({
   leagueId,
@@ -18,6 +18,7 @@ export function TeamLedger({
 }) {
   const [data, setData] = useState<TeamLedgerOut | null>(null);
   const [err, setErr] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (teamId == null) return;
@@ -50,9 +51,34 @@ export function TeamLedger({
       aria-label="FAAB and transaction ledger"
       className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5"
     >
-      <h2 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <ReceiptText className="h-4 w-4 text-trophy-gold" /> My ledger
-      </h2>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
+          <ReceiptText className="h-4 w-4 text-trophy-gold" /> My ledger
+        </h2>
+        {data && !err && (
+          <button
+            type="button"
+            disabled={exporting}
+            onClick={() => {
+              setExporting(true);
+              api
+                .exportLedgerCsv(leagueId, teamId!)
+                .catch((e) => {
+                  setErr(
+                    e instanceof ApiError
+                      ? "CSV export failed — try again."
+                      : "CSV export failed",
+                  );
+                })
+                .finally(() => setExporting(false));
+            }}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-2.5 py-1 text-xs font-medium text-zinc-200 hover:border-trophy-gold disabled:opacity-50"
+          >
+            <Download className="h-3.5 w-3.5" />
+            {exporting ? "Exporting…" : "Export CSV"}
+          </button>
+        )}
+      </div>
       {err && <p className="text-sm text-zinc-500">{err}</p>}
       {data && data.entries.length <= 1 && (
         <p className="text-sm text-zinc-500">
