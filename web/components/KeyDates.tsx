@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 const STATE_STYLE: Record<string, string> = {
   past: "text-zinc-500",
-  "next-up": "text-trophy-gold font-semibold",
+  "next-up": "text-gold-ink font-semibold",
   upcoming: "text-zinc-300",
 };
 
@@ -40,11 +40,11 @@ export function KeyDates({ leagueId }: { leagueId: number }) {
       className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5"
     >
       <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <CalendarClock className="h-4 w-4 text-trophy-gold" /> Key dates
+        <CalendarClock className="h-4 w-4 text-gold-ink" /> Key dates
         <a
           href={api.keyDatesIcsUrl(leagueId)}
           download
-          className="ml-auto text-[11px] font-semibold normal-case tracking-normal text-pitch-green hover:underline"
+          className="ml-auto text-[11px] font-semibold normal-case tracking-normal text-win-ink hover:underline"
         >
           Add to calendar (.ics)
         </a>

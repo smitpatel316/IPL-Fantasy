@@ -20,24 +20,24 @@ export function DraftClock({ secsLeft, totalSecs, teamName, myTurn }: DraftClock
   const urgent = secsLeft != null && secsLeft < 15;
   const R = 30;
   const C = 2 * Math.PI * R;
-  const ring = urgent ? "#ef4444" : "#f59e0b";
+  /* Theme-aware via CSS vars (applied through style so the var resolves). */
+  const ring = urgent ? "var(--color-clay-400)" : "var(--color-gold-500)";
 
   return (
     <div className="flex items-center gap-4">
       <div className={`relative h-20 w-20 shrink-0 ${urgent ? styles.urgent : ""}`}>
         <svg viewBox="0 0 72 72" className="h-20 w-20 -rotate-90" aria-hidden="true">
-          <circle cx="36" cy="36" r={R} fill="none" stroke="#1e293b" strokeWidth="7" />
+          <circle cx="36" cy="36" r={R} fill="none" className="stroke-ink-800" strokeWidth="7" />
           <circle
             cx="36"
             cy="36"
             r={R}
             fill="none"
-            stroke={ring}
             strokeWidth="7"
             strokeLinecap="round"
             strokeDasharray={C}
             strokeDashoffset={C * (1 - frac)}
-            style={{ transition: "stroke-dashoffset 1s linear, stroke 0.3s" }}
+            style={{ transition: "stroke-dashoffset 1s linear, stroke 0.3s", stroke: ring }}
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">

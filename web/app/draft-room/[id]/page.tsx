@@ -355,7 +355,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
   return (
     <div>
       <PageHeader title="Draft room" sub="Live snake draft · pick clock with auto-pick (D2)" />
-      <p className="mb-4 text-xs"><a href="/cheat-sheet" className="font-medium text-trophy-gold hover:underline">Draft cheat sheet →</a></p>
+      <p className="mb-4 text-xs"><a href="/cheat-sheet" className="font-medium text-gold-ink hover:underline">Draft cheat sheet →</a></p>
       {err && (
         <div className="mb-4">
           <ErrorBox message={err} />
@@ -467,7 +467,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
                         key={`${tid}-${i}`}
                         className={`shrink-0 rounded-full px-2 py-0.5 ${
                           i === 0
-                            ? "bg-trophy-gold/20 font-semibold text-trophy-gold"
+                            ? "bg-trophy-gold/20 font-semibold text-gold-ink"
                             : "bg-slate-800 text-slate-400"
                         }`}
                       >
@@ -504,7 +504,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
                     {filtered.length}
                   </span>
                 </div>
-                <div className="mb-2 rounded-lg border border-slate-800 bg-midnight/60 p-2">
+                <div className="mb-2 rounded-lg border border-slate-800 bg-ink-950/60 p-2">
                   <ScheduleWeekPicker weeks={sched.weeks} week={sched.week} setWeek={sched.setWeek} />
                   {sched.range && !sched.loading && (
                     <p className="mt-1 text-[11px] text-slate-500">
@@ -516,7 +516,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search players…"
-                  className="mb-2 w-full rounded-lg border border-slate-700 bg-midnight px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-trophy-gold/60 focus:outline-none"
+                  className="mb-2 w-full rounded-lg border border-slate-700 bg-ink-950 px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-trophy-gold/60 focus:outline-none"
                 />
                 <div className="flex flex-wrap gap-1.5">
                   {ROLE_FILTERS.map((r) => (
@@ -620,7 +620,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
                   ranks as CSV, edit, and import them back (player_id or exact player name,
                   one row per rank).
                 </p>
-                {ranksMsg && <p className="mb-2 text-xs text-pitch-green">{ranksMsg}</p>}
+                {ranksMsg && <p className="mb-2 text-xs text-win-ink">{ranksMsg}</p>}
                 <ol className="max-h-[420px] space-y-1 overflow-y-auto pr-1">
                   {rankOrder.map((pid, i) => {
                     const p = playerById.get(pid);
@@ -669,7 +669,7 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
                   )}
                   {chat.map((m) => (
                     <p key={m.seq} className="text-sm">
-                      <span className={m.team_id === myTeamId ? "font-bold text-trophy-gold" : "font-bold text-zinc-300"}>
+                      <span className={m.team_id === myTeamId ? "font-bold text-gold-ink" : "font-bold text-zinc-300"}>
                         {m.team_name}
                       </span>{" "}
                       <span className="text-zinc-300">{m.text}</span>

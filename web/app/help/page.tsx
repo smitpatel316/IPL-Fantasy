@@ -139,7 +139,7 @@ export default function HelpPage() {
           <ol className="list-decimal space-y-1.5 pl-5">
             <li>
               <strong>Claim your team</strong> — open your{" "}
-              <Link href="/league/1" className="font-semibold text-pitch-green hover:underline">
+              <Link href="/league/1" className="font-semibold text-win-ink hover:underline">
                 league page
               </Link>{" "}
               and claim your team in the standings so only you can manage it.

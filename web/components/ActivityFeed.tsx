@@ -54,13 +54,13 @@ export function ActivityFeed({ leagueId }: { leagueId: number }) {
       className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-5"
     >
       <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <Activity className="h-4 w-4 text-trophy-gold" /> League activity
+        <Activity className="h-4 w-4 text-gold-ink" /> League activity
         <span className="text-[11px] font-medium normal-case tracking-normal text-zinc-500">
           {total} event{total === 1 ? "" : "s"} · draft, waivers, trades, commissioner moves
         </span>
       </h2>
 
-      {err && <p className="mt-2 text-xs text-brick-red">{err}</p>}
+      {err && <p className="mt-2 text-xs text-loss-ink">{err}</p>}
 
       {entries.length === 0 && !err ? (
         <p className="mt-4 text-sm text-zinc-500">

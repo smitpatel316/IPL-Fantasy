@@ -14,7 +14,7 @@ export const AVAILABILITY_META: Record<
   Availability,
   { dot: string; label: string; text: string }
 > = {
-  active: { dot: "bg-pitch-green", label: "Available", text: "text-pitch-green" },
+  active: { dot: "bg-pitch-green", label: "Available", text: "text-win-ink" },
   out: { dot: "bg-red-400", label: "Out — injured / expected to miss", text: "text-red-300" },
   retired: { dot: "bg-zinc-500", label: "Retired", text: "text-zinc-500" },
 };

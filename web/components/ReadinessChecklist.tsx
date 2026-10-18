@@ -41,7 +41,7 @@ export function ReadinessChecklist({ leagueId }: { leagueId: number }) {
       className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-5"
     >
       <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <ClipboardCheck className="h-4 w-4 text-trophy-gold" /> Season-start checklist
+        <ClipboardCheck className="h-4 w-4 text-gold-ink" /> Season-start checklist
         <span className="text-[11px] font-medium normal-case tracking-normal text-zinc-500">
           {allDone
             ? "all set — this league is ready for week 1"
@@ -53,7 +53,7 @@ export function ReadinessChecklist({ leagueId }: { leagueId: number }) {
           {data.items.map((i) => (
             <li key={i.key} className="flex items-start gap-2.5 text-sm">
               {i.done ? (
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-pitch-green" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-win-ink" />
               ) : (
                 <Circle className="mt-0.5 h-4 w-4 shrink-0 text-zinc-600" />
               )}
@@ -66,7 +66,7 @@ export function ReadinessChecklist({ leagueId }: { leagueId: number }) {
               {!i.done && (
                 <Link
                   href={i.fix_href}
-                  className="shrink-0 text-xs font-semibold text-pitch-green hover:underline"
+                  className="shrink-0 text-xs font-semibold text-win-ink hover:underline"
                 >
                   Fix →
                 </Link>

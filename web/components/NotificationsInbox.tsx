@@ -52,7 +52,7 @@ export function NotificationsInbox({
       className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-5"
     >
       <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <Bell className="h-4 w-4 text-trophy-gold" /> For you
+        <Bell className="h-4 w-4 text-gold-ink" /> For you
         {data && data.unread_count > 0 && (
           <span className="rounded-full bg-trophy-gold px-2 py-0.5 text-[11px] font-extrabold text-midnight">
             {data.unread_count} unread
@@ -74,7 +74,7 @@ export function NotificationsInbox({
           Pick your team above to see trades, waiver results, and commissioner moves that touch it.
         </p>
       ) : err ? (
-        <p className="mt-2 text-xs text-brick-red">{err}</p>
+        <p className="mt-2 text-xs text-loss-ink">{err}</p>
       ) : !data ? (
         <p className="mt-4 text-sm text-zinc-500">Loading your inbox…</p>
       ) : data.entries.length === 0 ? (

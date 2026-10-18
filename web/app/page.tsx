@@ -240,7 +240,7 @@ export default function Home() {
           ))}
         </div>
         <p className="mt-6 text-center text-sm">
-          <a href="/help" className="font-semibold text-pitch-green hover:underline">
+          <a href="/help" className="font-semibold text-win-ink hover:underline">
             Read the full how-to-play guide →
           </a>
         </p>

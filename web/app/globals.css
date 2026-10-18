@@ -34,6 +34,96 @@
   --color-midnight: #0f172a;
   --color-midnight-soft: #1e293b;
   --color-midnight-softer: #334155;
+
+  /* ---- Semantic tokens: constant in both themes ---- */
+  /* Dark text that always sits on gold/accent fills (btn-gold, brand
+     mark). Kept constant so the dark look is byte-identical. */
+  --color-on-gold: #09090c;
+
+  /* ---- Semantic text tokens: vivid on dark, deepened on light ---- */
+  --color-gold-ink: #f59e0b;
+  --color-win-ink: #10b981;
+  --color-loss-ink: #ef4444;
+  --color-info-ink: #3b82f6;
+}
+
+/* ------------------------------------------------------------------
+   Light theme. Dark is the default (tokens above). Setting
+   data-theme="light" on <html> flips the ink ramp, surfaces, and
+   text/status tokens so every page inverts coherently — no per-page
+   forks. Shades already readable on light (zinc-500+, slate-500+,
+   vivid solid fills) are intentionally left untouched.
+   ------------------------------------------------------------------ */
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Ink ramp → paper */
+  --color-ink-950: #fbfbfd;
+  --color-ink-900: #ffffff;
+  --color-ink-850: #f3f3f6;
+  --color-ink-800: #e9e9ee;
+  --color-ink-700: #d8d8e0;
+
+  /* Legacy panel surface */
+  --color-midnight-soft: #f0f0f4;
+
+  /* white/* utilities invert (text, hairlines, ghost buttons) */
+  --color-white: #17171c;
+
+  /* Zinc text ramp */
+  --color-zinc-100: #18181b;
+  --color-zinc-200: #27272a;
+  --color-zinc-300: #3f3f46;
+  --color-zinc-400: #52525b;
+
+  /* Slate text + surfaces */
+  --color-slate-200: #27272a;
+  --color-slate-300: #3f3f46;
+  --color-slate-400: #52525b;
+  --color-slate-700: #e2e2e9;
+  --color-slate-800: #efeff3;
+  --color-slate-900: #f7f7fa;
+
+  /* Status text ramps → deepened for contrast on light */
+  --color-red-200: #b91c1c;
+  --color-red-300: #dc2626;
+  --color-rose-300: #be123c;
+  --color-amber-200: #92400e;
+  --color-amber-300: #b45309;
+  --color-yellow-300: #a16207;
+  --color-green-300: #15803d;
+  --color-emerald-200: #047857;
+  --color-emerald-300: #059669;
+  --color-blue-300: #1d4ed8;
+  --color-sky-300: #0369a1;
+  --color-purple-300: #7e22ce;
+
+  /* Tinted status surfaces → pale tints */
+  --color-red-950: #fee2e2;
+  --color-red-900: #fecaca;
+  --color-red-800: #fca5a5;
+  --color-red-700: #f87171;
+  --color-rose-950: #ffe4e6;
+  --color-rose-800: #fda4af;
+  --color-amber-950: #fef3c7;
+  --color-amber-800: #fcd34d;
+  --color-emerald-950: #d1fae5;
+  --color-emerald-900: #a7f3d0;
+  --color-emerald-800: #6ee7b7;
+
+  /* Gold accents readable on light */
+  --color-gold-300: #b45309;
+  --color-gold-400: #d97706;
+
+  /* Semantic status text */
+  --color-gold-ink: #b45309;
+  --color-win-ink: #047857;
+  --color-loss-ink: #dc2626;
+  --color-info-ink: #1d4ed8;
+
+  /* Status tones */
+  --color-pine-400: #047857;
+  --color-clay-400: #dc2626;
 }
 
 html {
@@ -109,7 +199,7 @@ body {
     active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
 }
 @utility btn-gold {
-  @apply btn bg-gold-500 text-ink-950 shadow-[0_8px_24px_-8px_rgb(245_158_11/0.5)] hover:bg-gold-400;
+  @apply btn bg-gold-500 text-on-gold shadow-[0_8px_24px_-8px_rgb(245_158_11/0.5)] hover:bg-gold-400;
 }
 @utility btn-ghost {
   @apply btn border border-white/15 bg-white/[0.03] text-white hover:border-white/25 hover:bg-white/[0.07];

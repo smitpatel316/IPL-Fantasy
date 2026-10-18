@@ -51,7 +51,7 @@ export function TeamLedger({
       className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5"
     >
       <h2 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <ReceiptText className="h-4 w-4 text-trophy-gold" /> My ledger
+        <ReceiptText className="h-4 w-4 text-gold-ink" /> My ledger
       </h2>
       {err && <p className="text-sm text-zinc-500">{err}</p>}
       {data && data.entries.length <= 1 && (
@@ -65,7 +65,7 @@ export function TeamLedger({
             <li key={e.id} className="flex flex-wrap items-baseline gap-x-3 py-2 text-sm text-zinc-300">
               <span className="flex-1">{e.text}</span>
               {e.faab_delta !== 0 && (
-                <span className={e.faab_delta > 0 ? "text-pitch-green" : "text-brick-red"}>
+                <span className={e.faab_delta > 0 ? "text-win-ink" : "text-loss-ink"}>
                   {e.faab_delta > 0 ? `+$${e.faab_delta}` : `-$${-e.faab_delta}`}
                 </span>
               )}

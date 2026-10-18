@@ -98,7 +98,7 @@ export default function CheatSheetPage() {
                             "text-zinc-300"
                           }
                         >
-                          <td className="px-3 py-2 font-semibold text-trophy-gold">
+                          <td className="px-3 py-2 font-semibold text-gold-ink">
                             {p.tier}
                           </td>
                           <td className="px-3 py-2">

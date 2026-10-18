@@ -90,13 +90,13 @@ export function LeaguePolls({
       className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-5"
     >
       <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <BarChart3 className="h-4 w-4 text-trophy-gold" /> League polls
+        <BarChart3 className="h-4 w-4 text-gold-ink" /> League polls
         <span className="text-[11px] font-medium normal-case tracking-normal text-zinc-500">
           advisory only — results never change league settings
         </span>
       </h2>
 
-      {err && <p className="mt-3 text-xs text-brick-red">{err}</p>}
+      {err && <p className="mt-3 text-xs text-loss-ink">{err}</p>}
 
       {polls.length === 0 && !err && (
         <p className="mt-3 text-sm text-zinc-500">
@@ -152,7 +152,7 @@ export function LeaguePolls({
                       <span className="relative flex items-center justify-between gap-2">
                         <span className="flex items-center gap-1.5">
                           {o.label}
-                          {mine && <Check className="h-3.5 w-3.5 text-trophy-gold" />}
+                          {mine && <Check className="h-3.5 w-3.5 text-gold-ink" />}
                         </span>
                         <span className="tabular-nums text-zinc-400">
                           {o.votes} · {o.pct.toFixed(1)}%

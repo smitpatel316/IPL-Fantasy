@@ -138,7 +138,7 @@ export function DraftAlertControls({
         onClick={toggle}
         className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition ${
           enabled
-            ? "border-trophy-gold/60 bg-trophy-gold/10 text-trophy-gold"
+            ? "border-trophy-gold/60 bg-trophy-gold/10 text-gold-ink"
             : "border-slate-700 bg-slate-800/50 text-slate-400 hover:text-slate-200"
         }`}
       >
