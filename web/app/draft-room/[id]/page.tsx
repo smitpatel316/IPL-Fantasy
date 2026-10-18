@@ -426,6 +426,12 @@ export default function DraftRoomPage({ params }: { params: Promise<{ id: string
               <p className="mt-1 text-sm text-slate-400">
                 Week-1 lineups are set (best available XI); adjust them before the weekly lock.
               </p>
+              <a
+                href={`/draft-board/${draftId}`}
+                className="mt-3 inline-block rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:border-trophy-gold"
+              >
+                View draft board
+              </a>
             </div>
           ) : (
             <div
