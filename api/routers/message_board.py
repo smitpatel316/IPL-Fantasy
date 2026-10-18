@@ -46,10 +46,37 @@ def _commissioner_team_id(con: sqlite3.Connection, league: dict):
 def _out(con: sqlite3.Connection, row: sqlite3.Row) -> schemas.MessageOut:
     team = con.execute(
         "SELECT name FROM teams WHERE id = ?", (row["team_id"],)).fetchone()
+    cols = row.keys() if isinstance(row, sqlite3.Row) else []
+    pinned_at = row["pinned_at"] if "pinned_at" in cols else None
     return schemas.MessageOut(
         id=row["id"], league_id=row["league_id"], team_id=row["team_id"],
         team_name=team["name"] if team else "",
-        body=row["body"], created_at=row["created_at"])
+        body=row["body"], created_at=row["created_at"],
+        pinned_at=pinned_at)
+
+
+def _pinned_row(con: sqlite3.Connection, league_id: int):
+    """The one active pinned post for a league (None when no pin).
+    Soft-deleted posts never count — deleting a pinned post clears
+    the strip. At most one active pin is enforced by the pin endpoint;
+    take the latest in case of legacy drift."""
+    return con.execute(
+        "SELECT * FROM league_messages"
+        " WHERE league_id = ? AND deleted_at IS NULL AND pinned_at IS NOT NULL"
+        " ORDER BY pinned_at DESC LIMIT 1", (league_id,)).fetchone()
+
+
+def _require_commissioner_actor(con, league, team_id: int, request, action: str):
+    """Gate shared by delete/pin/unpin: the acting team must be the
+    commissioner's team (and pass the P4-W18 claim gate)."""
+    actor = require_team_actor(con, team_id, request)
+    if actor["league_id"] != league["id"]:
+        raise HTTPException(
+            422, f"team {team_id} is not in league {league['id']}")
+    if team_id != _commissioner_team_id(con, league):
+        raise HTTPException(
+            403, f"only the commissioner's team can {action}")
+    return actor
 
 
 @router.get("/{league_id}/messages",
@@ -57,22 +84,30 @@ def _out(con: sqlite3.Connection, row: sqlite3.Row) -> schemas.MessageOut:
 def list_messages(league_id: int, limit: int = Query(50, ge=1, le=100),
                   offset: int = Query(0, ge=0),
                   con: sqlite3.Connection = Depends(get_db)):
-    """Newest first, soft-deleted posts excluded. `total` counts the
-    visible posts so the UI can page older ones in."""
+    """Newest first, soft-deleted posts excluded. The pinned post (if
+    any) is returned separately as `pinned_message` and excluded from
+    the feed so it renders in the strip above it. `total` counts the
+    visible feed posts so the UI can page older ones in."""
     league = get_league(con, league_id)  # 404 if missing
+    pinned = _pinned_row(con, league_id)
+    pinned_id = pinned["id"] if pinned else None
     total = con.execute(
         "SELECT COUNT(*) FROM league_messages"
-        " WHERE league_id = ? AND deleted_at IS NULL",
-        (league_id,)).fetchone()[0]
+        " WHERE league_id = ? AND deleted_at IS NULL"
+        " AND (? IS NULL OR id != ?)",
+        (league_id, pinned_id, pinned_id)).fetchone()[0]
     rows = con.execute(
         "SELECT * FROM league_messages"
         " WHERE league_id = ? AND deleted_at IS NULL"
+        " AND (? IS NULL OR id != ?)"
         " ORDER BY id DESC LIMIT ? OFFSET ?",
-        (league_id, limit, offset)).fetchall()
+        (league_id, pinned_id, pinned_id, limit, offset)).fetchall()
     return schemas.MessageBoardOut(
         league_id=league_id,
         commissioner_team_id=_commissioner_team_id(con, league),
-        total=total, messages=[_out(con, r) for r in rows])
+        total=total,
+        pinned_message=_out(con, pinned) if pinned else None,
+        messages=[_out(con, r) for r in rows])
 
 
 @router.post("/{league_id}/messages", status_code=201,
@@ -104,15 +139,11 @@ def delete_message(league_id: int, message_id: int, request: Request,
                    team_id: int = Query(...),
                    con: sqlite3.Connection = Depends(get_db)):
     """Commissioner soft-delete. The acting team must be the
-    commissioner's team (and pass the P4-W18 claim gate)."""
+    commissioner's team (and pass the P4-W18 claim gate). Deleting a
+    pinned post clears the strip (soft-deleted rows never count as
+    pinned)."""
     league = get_league(con, league_id)  # 404 if missing
-    actor = require_team_actor(con, team_id, request)
-    if actor["league_id"] != league_id:
-        raise HTTPException(
-            422, f"team {team_id} is not in league {league_id}")
-    if team_id != _commissioner_team_id(con, league):
-        raise HTTPException(
-            403, "only the commissioner's team can remove board posts")
+    _require_commissioner_actor(con, league, team_id, request, "remove board posts")
     row = con.execute(
         "SELECT id FROM league_messages"
         " WHERE id = ? AND league_id = ? AND deleted_at IS NULL",
@@ -124,3 +155,65 @@ def delete_message(league_id: int, message_id: int, request: Request,
         " WHERE id = ?", (message_id,))
     con.commit()
     return Response(status_code=204)
+
+
+@router.post("/{league_id}/messages/{message_id}/pin",
+             response_model=schemas.MessageOut)
+def pin_message(league_id: int, message_id: int, request: Request,
+                team_id: int = Query(...),
+                con: sqlite3.Connection = Depends(get_db)):
+    """Pin a commissioner announcement (P5-W39). Only the
+    commissioner's team (P4-W18 claim gate) can pin, and only its OWN
+    posts are pinnable. One active pin per league: pinning a new post
+    unpins the old one. Deleted posts cannot be pinned."""
+    league = get_league(con, league_id)  # 404 if missing
+    _require_commissioner_actor(con, league, team_id, request, "pin board posts")
+    comm_team = _commissioner_team_id(con, league)
+    row = con.execute(
+        "SELECT * FROM league_messages"
+        " WHERE id = ? AND league_id = ? AND deleted_at IS NULL",
+        (message_id, league_id)).fetchone()
+    if not row:
+        raise HTTPException(404, f"message {message_id} not found")
+    if row["team_id"] != comm_team:
+        raise HTTPException(
+            422, "only the commissioner's own posts can be pinned")
+    con.execute(
+        "UPDATE league_messages SET pinned_at = NULL"
+        " WHERE league_id = ? AND pinned_at IS NOT NULL",
+        (league_id,))
+    con.execute(
+        "UPDATE league_messages SET pinned_at = datetime('now')"
+        " WHERE id = ?", (message_id,))
+    con.commit()
+    row = con.execute(
+        "SELECT * FROM league_messages WHERE id = ?",
+        (message_id,)).fetchone()
+    return _out(con, row)
+
+
+@router.post("/{league_id}/messages/{message_id}/unpin",
+             response_model=schemas.MessageOut)
+def unpin_message(league_id: int, message_id: int, request: Request,
+                  team_id: int = Query(...),
+                  con: sqlite3.Connection = Depends(get_db)):
+    """Unpin the commissioner's announcement (P5-W39). Only the
+    commissioner's team can unpin; the post returns to normal feed
+    order. A no-op on an already-unpinned post is a 422."""
+    league = get_league(con, league_id)  # 404 if missing
+    _require_commissioner_actor(con, league, team_id, request, "unpin board posts")
+    row = con.execute(
+        "SELECT * FROM league_messages"
+        " WHERE id = ? AND league_id = ? AND deleted_at IS NULL",
+        (message_id, league_id)).fetchone()
+    if not row:
+        raise HTTPException(404, f"message {message_id} not found")
+    if row["pinned_at"] is None:
+        raise HTTPException(422, f"message {message_id} is not pinned")
+    con.execute("UPDATE league_messages SET pinned_at = NULL WHERE id = ?",
+                (message_id,))
+    con.commit()
+    row = con.execute(
+        "SELECT * FROM league_messages WHERE id = ?",
+        (message_id,)).fetchone()
+    return _out(con, row)

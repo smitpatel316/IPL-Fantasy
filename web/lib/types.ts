@@ -625,12 +625,17 @@ export interface MessageOut {
   team_name: string;
   body: string;
   created_at: string;
+  /** P5-W39: set while the post is the pinned announcement. */
+  pinned_at: string | null;
 }
 
 export interface MessageBoardOut {
   league_id: number;
   commissioner_team_id: number | null;
   total: number;
+  /** P5-W39: the one active pinned post (strip above the feed);
+   * excluded from `messages`. */
+  pinned_message: MessageOut | null;
   messages: MessageOut[];
 }
 

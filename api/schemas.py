@@ -312,12 +312,16 @@ class MessageOut(BaseModel):
     team_name: str
     body: str
     created_at: str
+    pinned_at: Optional[str] = None  # P5-W39: set while the post is pinned
 
 
 class MessageBoardOut(BaseModel):
     league_id: int
     commissioner_team_id: Optional[int] = None
     total: int
+    # P5-W39: the one active pinned post, rendered in the strip above
+    # the feed; excluded from `messages`.
+    pinned_message: Optional[MessageOut] = None
     messages: list[MessageOut] = []
 
 
