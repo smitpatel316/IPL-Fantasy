@@ -26,8 +26,20 @@ Rules implemented:
   (default 3 days) — the offeree's silence is not consent.
 - Execution swaps the rosters atomically; executed trades are immutable.
 
-Determinism: IDs are sequential ints; time comes from an injectable
-clock. JSON contract: to_dict()/from_dict() for persistence.
+P5-W37 multi-team deals: a deal is a set of directed player legs
+[{giver_id, receiver_id, player_ids}] sharing one deal_id. Legs may be
+cyclic (A->B, B->C, C->A) or cross (A->B, A->C). The first leg's giver
+is the proposer and counts as accepted; every other party must accept
+before the deal enters its single 2-day review window. One-third veto
+applies to the deal as a whole (same league-wide threshold as trades).
+Any party rejecting, or the proposer withdrawing, dissolves the entire
+deal into one terminal status. Guard: per-team roster-count invariance
+(every team gives as many as it receives); execution is atomic with
+validate-before-mutate across all legs.
+
+Determinism: IDs are sequential ints (trades and deals keep separate
+namespaces); time comes from an injectable clock. JSON contract:
+to_dict()/from_dict() for persistence.
 """
 
 from __future__ import annotations
@@ -129,6 +141,8 @@ class TradeEngine:
         self.clock = clock or time.time
         self._trades: dict = {}   # trade_id -> trade dict
         self._next_id = 1
+        self._deals: dict = {}    # deal_id -> deal dict (P5-W37)
+        self._next_deal_id = 1
 
     # -- guards ------------------------------------------------------------
     def _require_team(self, team_id):
@@ -142,8 +156,11 @@ class TradeEngine:
             raise TradeError(f"unknown trade_id {trade_id!r}")
 
     def _pending_count(self, team_id) -> int:
-        return sum(1 for t in self._trades.values()
-                   if t["status"] in self._PENDING and team_id in t["parties"])
+        return (sum(1 for t in self._trades.values()
+                    if t["status"] in self._PENDING and team_id in t["parties"])
+                + sum(1 for d in self._deals.values()
+                      if d["status"] in self._PENDING
+                      and team_id in d["parties"]))
 
     def veto_threshold(self) -> int:
         """Vetoes needed: ceil((num_teams - 2) / 3), floored at 1.
@@ -337,6 +354,223 @@ class TradeEngine:
                 changed.append(trade["id"])
         return changed
 
+    # -- multi-team deals (P5-W37) ---------------------------------------
+    def _get_deal(self, deal_id) -> dict:
+        try:
+            return self._deals[deal_id]
+        except KeyError:
+            raise TradeError(f"unknown deal_id {deal_id!r}")
+
+    def _expire_deal_if_stale(self, deal, now) -> bool:
+        if deal["status"] == self.STATUS_PROPOSED and now > deal["expires_at"]:
+            deal["status"] = self.STATUS_EXPIRED
+            deal["decided_at"] = now
+            return True
+        return False
+
+    def propose_deal(self, proposer, legs: list, week: int, now=None) -> dict:
+        """Propose a multi-team deal.
+
+        legs: [{giver_id, receiver_id, player_ids}]. The proposer is
+        the first leg's giver (callers pass legs[0]["giver_id"]) and
+        counts as accepted. Guards: every leg's players must be on the
+        giver's roster at proposal time; no player moves twice in one
+        deal; EVERY team must give exactly as many players as it
+        receives (roster-count invariance); every party must be under
+        the pending cap; the week-6 deadline applies to the deal.
+        """
+        now = self.clock() if now is None else now
+        if not legs:
+            raise TradeError("a deal needs at least one leg")
+        if week > TRADE_DEADLINE_WEEK:
+            raise TradeDeadlinePassed(
+                f"trade deadline was end of week {TRADE_DEADLINE_WEEK}")
+        norm_legs = []
+        for leg in legs:
+            giver = leg["giver_id"]
+            receiver = leg["receiver_id"]
+            pids = list(leg["player_ids"])
+            self._require_team(giver)
+            self._require_team(receiver)
+            if giver == receiver:
+                raise TradeError("a deal leg cannot send players to the same team")
+            if not pids:
+                raise TradeError("each deal leg must move at least one player")
+            if len(set(pids)) != len(pids):
+                raise TradeError("duplicate player in deal leg")
+            for pid in pids:
+                if pid not in self._rosters[giver]:
+                    raise UnknownPlayer(
+                        f"player {pid!r} not on {giver!r}'s roster")
+            norm_legs.append({"giver_id": giver, "receiver_id": receiver,
+                              "player_ids": pids})
+        seen = {}
+        for leg in norm_legs:
+            for pid in leg["player_ids"]:
+                if pid in seen:
+                    raise TradeError(
+                        f"player {pid!r} moves twice in one deal")
+                seen[pid] = leg["giver_id"]
+        parties = sorted({l["giver_id"] for l in norm_legs}
+                         | {l["receiver_id"] for l in norm_legs})
+        if proposer not in parties:
+            raise TradeError("proposer must be a party to the deal")
+        gives_n = {t: 0 for t in parties}
+        recv_n = {t: 0 for t in parties}
+        for leg in norm_legs:
+            gives_n[leg["giver_id"]] += len(leg["player_ids"])
+            recv_n[leg["receiver_id"]] += len(leg["player_ids"])
+        for t in parties:
+            if gives_n[t] != recv_n[t]:
+                raise UnbalancedTrade(
+                    f"team {t!r} gives {gives_n[t]} but receives "
+                    f"{recv_n[t]} — roster-size invariance")
+        for t in parties:
+            if self._pending_count(t) >= MAX_PENDING_OUT:
+                raise PendingCapExceeded(
+                    f"team {t!r} already has {MAX_PENDING_OUT} pending trades")
+        did = self._next_deal_id
+        self._next_deal_id += 1
+        deal = {
+            "id": did,
+            "proposer": proposer,
+            "legs": norm_legs,
+            "parties": tuple(parties),
+            "accepts": [proposer],   # proposer counts as accepted
+            "week": week,
+            "status": self.STATUS_PROPOSED,
+            "proposed_at": now,
+            "expires_at": now + PROPOSAL_TTL_SECS,
+            "accepted_at": None,
+            "review_until": None,
+            "decided_at": None,
+            "vetoes": [],
+        }
+        self._deals[did] = deal
+        return dict(deal)
+
+    def accept_deal(self, deal_id, team_id, now=None) -> dict:
+        """A party accepts. When every party has accepted the deal
+        enters the single 2-day review window."""
+        deal = self._get_deal(deal_id)
+        now = self.clock() if now is None else now
+        if team_id not in deal["parties"]:
+            raise NotAParty("only a deal party may accept")
+        if self._expire_deal_if_stale(deal, now):
+            raise InvalidTradeState("deal proposal already expired")
+        if deal["status"] != self.STATUS_PROPOSED:
+            raise InvalidTradeState(
+                f"cannot accept a {deal['status']} deal")
+        if team_id in deal["accepts"]:
+            raise InvalidTradeState(f"team {team_id!r} already accepted")
+        deal["accepts"].append(team_id)
+        if set(deal["accepts"]) == set(deal["parties"]):
+            deal["status"] = self.STATUS_UNDER_REVIEW
+            deal["accepted_at"] = now
+            deal["review_until"] = now + REVIEW_WINDOW_SECS
+        return dict(deal)
+
+    def decline_deal(self, deal_id, team_id, now=None) -> dict:
+        """Any party rejecting dissolves the entire deal."""
+        deal = self._get_deal(deal_id)
+        now = self.clock() if now is None else now
+        if team_id not in deal["parties"]:
+            raise NotAParty("only a deal party may reject")
+        if deal["status"] != self.STATUS_PROPOSED:
+            raise InvalidTradeState(
+                f"cannot reject a {deal['status']} deal")
+        deal["status"] = self.STATUS_DECLINED
+        deal["decided_at"] = now
+        return dict(deal)
+
+    def withdraw_deal(self, deal_id, team_id, now=None) -> dict:
+        """The proposer withdraws before all parties accept —
+        dissolves the entire deal."""
+        deal = self._get_deal(deal_id)
+        now = self.clock() if now is None else now
+        if team_id != deal["proposer"]:
+            raise NotAParty("only the proposer may withdraw")
+        if deal["status"] != self.STATUS_PROPOSED:
+            raise InvalidTradeState(
+                f"cannot withdraw a {deal['status']} deal")
+        deal["status"] = self.STATUS_WITHDRAWN
+        deal["decided_at"] = now
+        return dict(deal)
+
+    def veto_deal(self, deal_id, team_id, now=None) -> dict:
+        """A non-party team casts a veto vote during the deal's review
+        window. Same one-third-of-league threshold as trades, computed
+        on the whole league."""
+        deal = self._get_deal(deal_id)
+        self._require_team(team_id)
+        now = self.clock() if now is None else now
+        if deal["status"] != self.STATUS_UNDER_REVIEW:
+            raise VetoNotAllowed("deal is not under review")
+        if now >= deal["review_until"]:
+            raise VetoNotAllowed("review window has closed")
+        if team_id in deal["parties"]:
+            raise VetoNotAllowed("deal parties may not veto")
+        if team_id in deal["vetoes"]:
+            raise VetoNotAllowed(f"team {team_id!r} already vetoed")
+        deal["vetoes"].append(team_id)
+        if len(deal["vetoes"]) >= self.veto_threshold():
+            deal["status"] = self.STATUS_VETOED
+            deal["decided_at"] = now
+        return dict(deal)
+
+    def execute_deal(self, deal_id, team_id=None, now=None) -> dict:
+        """Execute after the deal's review window closes unvetoed.
+
+        Atomic multi-leg swap: validate BEFORE mutating — every leg's
+        players must still be on the giver's roster — so a competing
+        execution fails cleanly with all rosters untouched (P4-L1).
+        """
+        deal = self._get_deal(deal_id)
+        now = self.clock() if now is None else now
+        if deal["status"] != self.STATUS_UNDER_REVIEW:
+            raise InvalidTradeState(
+                f"cannot execute a {deal['status']} deal")
+        if now < deal["review_until"]:
+            raise InvalidTradeState(
+                f"review window still open until {deal['review_until']}")
+        if len(deal["vetoes"]) >= self.veto_threshold():
+            deal["status"] = self.STATUS_VETOED
+            deal["decided_at"] = now
+            return dict(deal)
+        missing = [pid for leg in deal["legs"] for pid in leg["player_ids"]
+                   if pid not in self._rosters[leg["giver_id"]]]
+        if missing:
+            raise InvalidTradeState(
+                f"players no longer on the giving rosters: {missing} "
+                f"(already traded away?) — deal cannot execute")
+        for leg in deal["legs"]:
+            for pid in leg["player_ids"]:
+                self._rosters[leg["giver_id"]].remove(pid)
+        for leg in deal["legs"]:
+            self._rosters[leg["receiver_id"]].extend(leg["player_ids"])
+        deal["status"] = self.STATUS_EXECUTED
+        deal["decided_at"] = now
+        return dict(deal)
+
+    def sweep_deals(self, now=None) -> list:
+        """Expire stale deal proposals; returns ids whose status changed."""
+        now = self.clock() if now is None else now
+        changed = []
+        for deal in self._deals.values():
+            if self._expire_deal_if_stale(deal, now):
+                changed.append(deal["id"])
+        return changed
+
+    def get_deal(self, deal_id):
+        d = self._get_deal(deal_id)
+        return {**d, "parties": list(d["parties"]),
+                "accepts": list(d["accepts"]),
+                "vetoes": list(d["vetoes"]),
+                "legs": [{"giver_id": l["giver_id"],
+                          "receiver_id": l["receiver_id"],
+                          "player_ids": list(l["player_ids"])}
+                         for l in d["legs"]]}
+
     # -- reads -------------------------------------------------------------
     def get_trade(self, trade_id):
         t = self._get(trade_id)
@@ -363,6 +597,16 @@ class TradeEngine:
                                   "gives": {k: list(v)
                                             for k, v in t["gives"].items()}}
                        for tid, t in self._trades.items()},
+            # P5-W37 deals: separate sequential id namespace from trades.
+            "next_deal_id": self._next_deal_id,
+            "deals": {str(did): {**d, "parties": list(d["parties"]),
+                                 "accepts": list(d["accepts"]),
+                                 "vetoes": list(d["vetoes"]),
+                                 "legs": [{"giver_id": l["giver_id"],
+                                           "receiver_id": l["receiver_id"],
+                                           "player_ids": list(l["player_ids"])}
+                                          for l in d["legs"]]}
+                      for did, d in self._deals.items()},
         }
 
     @classmethod
@@ -374,5 +618,17 @@ class TradeEngine:
                 **t, "parties": tuple(t["parties"]),
                 "vetoes": list(t["vetoes"]),
                 "gives": {k: list(v) for k, v in t["gives"].items()},
+            }
+        # Pre-P5-W37 engine states carry no deals — default to empty.
+        eng._next_deal_id = state.get("next_deal_id", 1)
+        for did_s, d in state.get("deals", {}).items():
+            eng._deals[int(did_s)] = {
+                **d, "parties": tuple(d["parties"]),
+                "accepts": list(d.get("accepts", [])),
+                "vetoes": list(d["vetoes"]),
+                "legs": [{"giver_id": l["giver_id"],
+                          "receiver_id": l["receiver_id"],
+                          "player_ids": list(l["player_ids"])}
+                         for l in d["legs"]],
             }
         return eng

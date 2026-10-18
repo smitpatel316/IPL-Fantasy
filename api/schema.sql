@@ -182,7 +182,9 @@ CREATE TABLE IF NOT EXISTS trades (
     accepted_at     TEXT,
     vetoed_at       TEXT,
     executed_at     TEXT,
-    counter_of      INTEGER   -- P5-W36: trades.id this trade counters, if any
+    counter_of      INTEGER,  -- P5-W36: trades.id this trade counters, if any
+    kind            TEXT NOT NULL DEFAULT 'trade',  -- P5-W37: 'trade' | 'deal'
+    legs            TEXT  -- P5-W37: JSON [{giver_id, receiver_id, player_ids}] for deals
 );
 
 -- Phase 3: persisted engine snapshots (api/services.py).

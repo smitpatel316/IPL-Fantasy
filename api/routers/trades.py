@@ -138,3 +138,95 @@ def veto_trade(trade_id: int, request: Request, team_id: Optional[int] = Query(N
         require_team_actor(con, team_id, request)
     return _trade_out(services.respond_trade(
         con, row["league_id"], trade_id, "veto", team_id=team_id))
+
+
+# ---------- multi-team deals (P5-W37) ----------
+def _deal_out(d: dict) -> schemas.DealOut:
+    return schemas.DealOut(**d)
+
+
+def _deal_row(con: sqlite3.Connection, deal_id: int) -> sqlite3.Row:
+    row = con.execute("SELECT league_id FROM trades WHERE id = ?",
+                      (deal_id,)).fetchone()
+    if not row:
+        raise HTTPException(404, f"deal {deal_id} not found")
+    return row
+
+
+@router.post("/deal", response_model=schemas.DealOut)
+def propose_deal(body: schemas.DealCreate, request: Request,
+                 con: sqlite3.Connection = Depends(get_db)):
+    """Propose a multi-team deal (P5-W37): a set of directed player
+    legs sharing one deal_id. The first leg's giver is the proposer —
+    they present their claim code if claimed (P4-W18), exactly like
+    propose — and count as accepted; every other party must accept
+    before the deal enters its single 2-day review window. Guards:
+    per-team roster-count invariance, the P4-W24 D8-reachability guard
+    on EVERY participating team, the week-6 deadline, and the per-team
+    pending cap."""
+    get_league(con, body.league_id)
+    if not body.legs:
+        raise HTTPException(422, "a deal needs at least one leg")
+    require_team_actor(con, body.legs[0].giver_id, request)  # P4-W18
+    return _deal_out(services.propose_deal(
+        con, body.league_id, [leg.model_dump() for leg in body.legs]))
+
+
+@router.get("/deals", response_model=list[schemas.DealOut])
+def list_deals(league_id: int = Query(...), status: Optional[str] = Query(None),
+               con: sqlite3.Connection = Depends(get_db)):
+    get_league(con, league_id)
+    return [_deal_out(d) for d in services.list_deals(con, league_id, status)]
+
+
+@router.get("/deal/{deal_id}", response_model=schemas.DealOut)
+def get_deal(deal_id: int, con: sqlite3.Connection = Depends(get_db)):
+    row = _deal_row(con, deal_id)
+    return _deal_out(services.get_deal(con, row["league_id"], deal_id))
+
+
+def _deal_respond(deal_id: int, team_id: int, request: Request,
+                  con: sqlite3.Connection, action: str) -> schemas.DealOut:
+    row = _deal_row(con, deal_id)
+    # The acting team must present its claim code if claimed (P4-W18).
+    require_team_actor(con, team_id, request)
+    return _deal_out(services.respond_deal(
+        con, row["league_id"], deal_id, action, team_id=team_id))
+
+
+@router.post("/deal/{deal_id}/accept", response_model=schemas.DealOut)
+def accept_deal(deal_id: int, body: schemas.DealAct, request: Request,
+                con: sqlite3.Connection = Depends(get_db)):
+    """A deal party accepts (P5-W37). The proposer counts as accepted
+    from proposal time; when every party has accepted, the deal enters
+    its single 2-day review window."""
+    return _deal_respond(deal_id, body.team_id, request, con, "accept")
+
+
+@router.post("/deal/{deal_id}/reject", response_model=schemas.DealOut)
+def reject_deal(deal_id: int, body: schemas.DealAct, request: Request,
+                con: sqlite3.Connection = Depends(get_db)):
+    """Any party rejecting dissolves the entire deal (P5-W37)."""
+    return _deal_respond(deal_id, body.team_id, request, con, "reject")
+
+
+@router.post("/deal/{deal_id}/withdraw", response_model=schemas.DealOut)
+def withdraw_deal(deal_id: int, body: schemas.DealAct, request: Request,
+                  con: sqlite3.Connection = Depends(get_db)):
+    """The proposer withdraws before all parties accept (P5-W37) —
+    dissolves the entire deal."""
+    return _deal_respond(deal_id, body.team_id, request, con, "withdraw")
+
+
+@router.post("/deal/{deal_id}/veto", response_model=schemas.DealOut)
+def veto_deal(deal_id: int, request: Request, team_id: Optional[int] = Query(None),
+              con: sqlite3.Connection = Depends(get_db)):
+    """A non-party team vetoes the deal during its 2-day review window
+    (P5-W37); the casting team must present its claim code if claimed
+    (P4-W18). One-third-of-league threshold, computed on the whole
+    league like trades."""
+    row = _deal_row(con, deal_id)
+    if team_id is not None:
+        require_team_actor(con, team_id, request)
+    return _deal_out(services.respond_deal(
+        con, row["league_id"], deal_id, "veto", team_id=team_id))
