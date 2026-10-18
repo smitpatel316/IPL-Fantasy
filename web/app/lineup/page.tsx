@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
+import { getTeamClaim } from "@/lib/identity";
 import { ApiError, type Availability, type PlayerOut, type TeamOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { AvailabilityDot, AvailabilityLegend, AVAILABILITY_META } from "@/components/AvailabilityDot";
@@ -56,6 +57,21 @@ export default function LineupPage() {
   const [copying, setCopying] = useState(false);
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
+  // P5-W42: commissioner mode — the commissioner's team can set another
+  // team's lineup with a mandatory audit note.
+  const [commissionerTeamId, setCommissionerTeamId] = useState<number | null>(null);
+  const [commMode, setCommMode] = useState(false);
+  const [auditNote, setAuditNote] = useState("");
+
+  useEffect(() => {
+    api
+      .getMessageBoard(leagueId, 1)
+      .then((b) => setCommissionerTeamId(b.commissioner_team_id))
+      .catch(() => {});
+  }, [leagueId]);
+
+  const canCommish =
+    commissionerTeamId != null && getTeamClaim(commissionerTeamId) != null;
 
   useEffect(() => {
     api
@@ -182,11 +198,27 @@ export default function LineupPage() {
     setMsg("");
     setSaving(true);
     try {
-      const out = await api.setLineup(teamId, week, slots);
-      setCarriedFrom(null);
-      setAvailMap(out.player_availability ?? {});
-      setLockAt(out.lock_at);
-      setMsg(`Lineup saved · ${out.overseas_starters}/${OVERSEAS_CAP} overseas starters`);
+      if (commMode && canCommish && commissionerTeamId != null) {
+        // P5-W42: commissioner fiat — the D5 lock and D7/D8 validation
+        // apply unchanged server-side; the audit note is mandatory.
+        const out = await api.commissionerSetLineup(teamId, commissionerTeamId, {
+          week_no: week,
+          slots,
+          note: auditNote.trim(),
+        });
+        setCarriedFrom(null);
+        setAvailMap(out.player_availability ?? {});
+        setLockAt(out.lock_at);
+        setMsg(
+          `Commissioner lineup saved for ${teams.find((t) => t.id === teamId)?.name ?? `team ${teamId}`} · note recorded in the ledger`,
+        );
+      } else {
+        const out = await api.setLineup(teamId, week, slots);
+        setCarriedFrom(null);
+        setAvailMap(out.player_availability ?? {});
+        setLockAt(out.lock_at);
+        setMsg(`Lineup saved · ${out.overseas_starters}/${OVERSEAS_CAP} overseas starters`);
+      }
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "save failed");
     } finally {
@@ -313,11 +345,11 @@ export default function LineupPage() {
           )}
           <button
             onClick={save}
-            disabled={saving || !teamId || locked}
+            disabled={saving || !teamId || locked || (commMode && canCommish && !auditNote.trim())}
             className="inline-flex items-center gap-2 rounded-lg bg-trophy-gold px-5 py-2 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
-            {saving ? "Saving…" : "Save lineup"}
+            {saving ? "Saving…" : commMode && canCommish ? "Save as commissioner" : "Save lineup"}
           </button>
         </div>
         {overCap && (
@@ -326,6 +358,42 @@ export default function LineupPage() {
           </p>
         )}
       </div>
+
+      {/* P5-W42: commissioner lineup management — only visible to the
+          commissioner (this browser holds their team's claim code). The
+          team selector above picks the TARGET team; the audit note is
+          mandatory and lands in the target team's ledger. */}
+      {canCommish && (
+        <div className="mb-5 rounded-xl border border-trophy-gold/30 bg-midnight-soft p-4">
+          <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-zinc-200">
+            <input
+              type="checkbox"
+              checked={commMode}
+              onChange={(e) => {
+                setCommMode(e.target.checked);
+                setMsg("");
+              }}
+              className="h-4 w-4 accent-yellow-500"
+            />
+            Commissioner mode — set this lineup for the selected team
+          </label>
+          {commMode && (
+            <div className="mt-3">
+              <label htmlFor="comm-note" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                Audit note (required — appears in the team&apos;s ledger)
+              </label>
+              <textarea
+                id="comm-note"
+                value={auditNote}
+                onChange={(e) => setAuditNote(e.target.value)}
+                placeholder="e.g. manager asked over chat to swap in Kohli before the lock"
+                rows={2}
+                className="w-full rounded-lg border border-slate-700 bg-ink-950 px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none"
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* P5-W21: roster-health / IL assistant for the selected team */}
       <RosterHealth leagueId={leagueId} teamId={teamId} />

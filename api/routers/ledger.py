@@ -88,6 +88,12 @@ def _collect_raw(con: sqlite3.Connection, league_id: int,
                         "text": f"Commissioner {verb} {r['player_name']} — {r['note']}",
                         "occurred_at": r["created_at"], "amount": None,
                         "faab_delta": 0, "player": r["player_name"] or ""})
+        elif r["kind"] == "lineup_set":
+            # P5-W42: commissioner set a team's lineup with an audit note.
+            raw.append({"id": f"adj-{r['id']}", "kind": "commissioner_lineup",
+                        "text": f"Commissioner set lineup — {r['note']}",
+                        "occurred_at": r["created_at"], "amount": None,
+                        "faab_delta": 0, "player": ""})
     for r in con.execute(
             """SELECT * FROM trades WHERE league_id = ? AND status = 'executed'
                AND (from_team_id = ? OR to_team_id = ?) ORDER BY created_at, id""",

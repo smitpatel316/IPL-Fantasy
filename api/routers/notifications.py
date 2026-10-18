@@ -118,6 +118,9 @@ def _entries(con: sqlite3.Connection, league_id: int,
             text = f"Commissioner added {r['player_name']} to your team — {r['note']}"
         elif r["kind"] == "roster_drop":
             text = f"Commissioner dropped {r['player_name']} from your team — {r['note']}"
+        elif r["kind"] == "lineup_set":
+            # P5-W42: commissioner set this team's lineup with an audit note.
+            text = f"Commissioner set your lineup — {r['note']}"
         else:
             delta = r["faab_delta"]
             text = (f"Commissioner adjusted your FAAB by "
