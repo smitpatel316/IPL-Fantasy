@@ -729,6 +729,47 @@ class TradeOut(BaseModel):
     countered_by: list[int] = []
 
 
+# ---------- multi-team deals (P5-W37) ----------
+class DealLeg(BaseModel):
+    giver_id: int
+    receiver_id: int
+    player_ids: list[int]
+
+
+class DealCreate(BaseModel):
+    # P5-W37: a deal is a set of directed player legs sharing one
+    # deal_id. The first leg's giver is the proposer (and counts as
+    # accepted); every other party must accept before the deal enters
+    # its single 2-day review window.
+    league_id: int
+    legs: list[DealLeg]
+
+
+class DealAct(BaseModel):
+    # Acting team for deal accept / reject / withdraw.
+    team_id: int
+
+
+class DealOut(BaseModel):
+    id: int
+    league_id: int
+    proposer: int
+    parties: list[int]
+    legs: list[DealLeg]
+    accepts: list[int]
+    status: str  # proposed | accepted | rejected | vetoed | expired
+    review_deadline: Optional[str]
+    # History detail (P4-W1): veto votes cast + lifecycle timestamps (ISO UTC).
+    veto_count: int = 0
+    proposed_at: Optional[str] = None
+    accepted_at: Optional[str] = None
+    vetoed_at: Optional[str] = None
+    executed_at: Optional[str] = None
+    # P5-W37: how this deal is projected into the 2-team-shaped trades
+    # table (one row per deal; see services._DEAL_DB_MAPPING_NOTE).
+    db_mapping: str = ""
+
+
 # ---------- matchups / scoring ----------
 
 

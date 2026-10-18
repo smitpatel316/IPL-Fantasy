@@ -1012,6 +1012,19 @@ def _revive_trade(con: sqlite3.Connection, league_id: int) -> TradeEngine:
                                   for k, v in t["gives"].items()}}
                 for tid_s, t in state["trades"].items()
             },
+            # P5-W37 deals (absent in pre-P5-W37 engine states).
+            "next_deal_id": state.get("next_deal_id", 1),
+            "deals": {
+                did_s: {**d,
+                        "parties": [int(p) for p in d["parties"]],
+                        "accepts": [int(a) for a in d.get("accepts", [])],
+                        "vetoes": [int(v) for v in d["vetoes"]],
+                        "legs": [{"giver_id": int(l["giver_id"]),
+                                  "receiver_id": int(l["receiver_id"]),
+                                  "player_ids": [int(p) for p in l["player_ids"]]}
+                                 for l in d["legs"]]}
+                for did_s, d in state.get("deals", {}).items()
+            },
         })
     _registry[("trade", league_id)] = eng
     return eng
@@ -1096,8 +1109,12 @@ def _counter_fields(con: sqlite3.Connection, league_id: int,
 
 def _db_id_for_engine(con: sqlite3.Connection, league_id: int, engine_id: int) -> int:
     """trades-table id for an engine trade id (must exist after sync)."""
+    # P5-W37: deals share the trades table with their own engine-id
+    # namespace — always scope 2-team lookups with kind='trade'.
+    _ensure_deal_columns(con)
     row = con.execute(
-        "SELECT id FROM trades WHERE league_id = ? AND engine_id = ?",
+        "SELECT id FROM trades WHERE league_id = ? AND engine_id = ?"
+        " AND kind = 'trade'",
         (league_id, engine_id),
     ).fetchone()
     if not row:
@@ -1110,9 +1127,13 @@ def _sync_trade_row(con: sqlite3.Connection, league_id: int, trade: dict) -> int
 
     Returns the trades-table id — the only trade id the API exposes.
     """
+    # P5-W37: deals share the trades table with their own engine-id
+    # namespace — always scope 2-team lookups with kind='trade'.
+    _ensure_deal_columns(con)
     detail = _trade_detail(trade)
     row = con.execute(
-        "SELECT id FROM trades WHERE league_id = ? AND engine_id = ?",
+        "SELECT id FROM trades WHERE league_id = ? AND engine_id = ?"
+        " AND kind = 'trade'",
         (league_id, trade["id"]),
     ).fetchone()
     if row:
@@ -1145,6 +1166,186 @@ def _sync_trade_row(con: sqlite3.Connection, league_id: int, trade: dict) -> int
          out["executed_at"], db_id),
     )
     return db_id
+
+
+# ---------------------------------------------------------------------------
+# P5-W37 multi-team deals
+# ---------------------------------------------------------------------------
+
+_DEAL_DB_MAPPING_NOTE = (
+    "DB projection: one trades row per deal (kind='deal'). engine_id is "
+    "the engine deal id — a separate sequential namespace from 2-team "
+    "trades, so deal rows must always be queried with kind='deal'. "
+    "from_team_id is the proposer and to_team_id the lowest-id other "
+    "party (display anchors only); gives/receives are the proposer's own "
+    "give/receive player lists. The deal's real parties and legs live in "
+    "the legs column (JSON [{giver_id, receiver_id, player_ids}])."
+)
+
+
+def _ensure_deal_columns(con: sqlite3.Connection) -> None:
+    """Lazy migration for the P5-W37 deal columns on the trades table.
+
+    Fresh DBs get them from schema.sql; DBs created before P5-W37 gain
+    them here, idempotently, on the first deal write/read.
+    """
+    cols = {r["name"] for r in con.execute("PRAGMA table_info(trades)")}
+    if "kind" not in cols:
+        con.execute(
+            "ALTER TABLE trades ADD COLUMN kind TEXT NOT NULL DEFAULT 'trade'")
+    if "legs" not in cols:
+        con.execute("ALTER TABLE trades ADD COLUMN legs TEXT")
+    con.commit()
+
+
+def _deal_detail(deal: dict) -> dict:
+    """History detail for a deal: veto count + lifecycle timestamps,
+    plus the trades-table projection mapping (P5-W37)."""
+    decided_at = deal.get("decided_at")
+    status = deal["status"]
+    return {
+        "veto_count": len(deal.get("vetoes") or []),
+        "proposed_at": _iso(deal.get("proposed_at")),
+        "accepted_at": _iso(deal.get("accepted_at")),
+        "vetoed_at": _iso(decided_at)
+                     if status == TradeEngine.STATUS_VETOED else None,
+        "executed_at": _iso(decided_at)
+                       if status == TradeEngine.STATUS_EXECUTED else None,
+        "db_mapping": _DEAL_DB_MAPPING_NOTE,
+    }
+
+
+def _deal_to_out(deal: dict, db_id: int, league_id: int) -> dict:
+    """Project an engine deal to the API contract.
+
+    db_id is the trades-table id — the only deal id the API ever exposes.
+    The engine-internal deal id never leaves the service layer.
+    """
+    return {
+        "id": db_id,
+        "league_id": league_id,
+        "proposer": deal["proposer"],
+        "parties": list(deal["parties"]),
+        "legs": [{"giver_id": leg["giver_id"],
+                  "receiver_id": leg["receiver_id"],
+                  "player_ids": list(leg["player_ids"])}
+                 for leg in deal["legs"]],
+        "accepts": list(deal.get("accepts") or []),
+        "status": _TRADE_STATUS_MAP[deal["status"]],
+        "review_deadline": _iso(deal.get("review_until")),
+        **_deal_detail(deal),
+    }
+
+
+def _db_deal_engine_id(con: sqlite3.Connection, league_id: int,
+                       deal_id: int) -> int:
+    """DB deal id -> engine deal id (404 unless the row is a deal)."""
+    cols = {r["name"] for r in con.execute("PRAGMA table_info(trades)")}
+    if "kind" not in cols:
+        raise HTTPException(404, f"deal {deal_id} not found")
+    row = con.execute(
+        "SELECT engine_id FROM trades WHERE id = ? AND league_id = ?"
+        " AND kind = 'deal'",
+        (deal_id, league_id),
+    ).fetchone()
+    if not row or row["engine_id"] is None:
+        raise HTTPException(404, f"deal {deal_id} not found")
+    return row["engine_id"]
+
+
+def _db_id_for_deal_engine(con: sqlite3.Connection, league_id: int,
+                           engine_id: int) -> int:
+    """Engine deal id -> trades-table id (must exist after sync)."""
+    row = con.execute(
+        "SELECT id FROM trades WHERE league_id = ? AND kind = 'deal'"
+        " AND engine_id = ?",
+        (league_id, engine_id),
+    ).fetchone()
+    if not row:
+        raise HTTPException(500, f"deal engine_id {engine_id} has no DB row")
+    return row["id"]
+
+
+def _sync_deal_row(con: sqlite3.Connection, league_id: int, deal: dict) -> int:
+    """Mirror an engine deal into the trades table (read projection).
+
+    One row per deal — the column mapping is documented in
+    _DEAL_DB_MAPPING_NOTE. Returns the trades-table id — the only deal
+    id the API exposes.
+    """
+    _ensure_deal_columns(con)
+    detail = _deal_detail(deal)
+    row = con.execute(
+        "SELECT id FROM trades WHERE league_id = ? AND kind = 'deal'"
+        " AND engine_id = ?",
+        (league_id, deal["id"]),
+    ).fetchone()
+    proposer = deal["proposer"]
+    parties = list(deal["parties"])
+    anchor = min(p for p in parties if p != proposer)
+    gives_p = [pid for leg in deal["legs"] if leg["giver_id"] == proposer
+               for pid in leg["player_ids"]]
+    receives_p = [pid for leg in deal["legs"] if leg["receiver_id"] == proposer
+                  for pid in leg["player_ids"]]
+    if row:
+        db_id = row["id"]
+    else:
+        # Insert first so _deal_to_out can carry the real DB id.
+        cur = con.execute(
+            "INSERT INTO trades (league_id, kind, from_team_id, to_team_id,"
+            " gives, receives, legs, status, review_deadline, engine_id,"
+            " veto_count, proposed_at, accepted_at, vetoed_at, executed_at)"
+            " VALUES (?, 'deal', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (league_id, proposer, anchor,
+             json.dumps(gives_p), json.dumps(receives_p),
+             json.dumps(deal["legs"]),
+             _TRADE_STATUS_MAP[deal["status"]],
+             _iso(deal.get("review_until")),
+             deal["id"],
+             detail["veto_count"], detail["proposed_at"],
+             detail["accepted_at"], detail["vetoed_at"],
+             detail["executed_at"]),
+        )
+        db_id = cur.lastrowid
+    out = _deal_to_out(deal, db_id, league_id)
+    con.execute(
+        "UPDATE trades SET status = ?, review_deadline = ?, veto_count = ?,"
+        " proposed_at = ?, accepted_at = ?, vetoed_at = ?, executed_at = ?,"
+        " legs = ? WHERE id = ?",
+        (out["status"], out["review_deadline"], out["veto_count"],
+         out["proposed_at"], out["accepted_at"], out["vetoed_at"],
+         out["executed_at"], json.dumps(deal["legs"]), db_id),
+    )
+    return db_id
+
+
+def _swap_week1_slots_deal(con: sqlite3.Connection,
+                           moves: dict[int, dict]) -> None:
+    """Paired week-1 slot swap for an executed multi-team deal.
+
+    moves[team_id] = {"in": [player_ids arriving],
+                      "out": [player_ids leaving]} — equal lengths by the
+    engine's per-team roster-count invariance. Each arriving player
+    takes the vacated week-1 slot of its paired departing player on
+    that team: the per-team generalization of _swap_week1_slots'
+    Yahoo convention (which keeps every lineup's slot counts intact).
+    """
+    for tid, m in moves.items():
+        incoming, outgoing = m["in"], m["out"]
+        slots = {pid: _week1_slot(con, tid, pid) for pid in outgoing}
+        for inc, outc in zip(incoming, outgoing):
+            slot = slots[outc]
+            if slot is not None:
+                con.execute(
+                    "DELETE FROM roster_slots WHERE team_id = ? AND player_id = ?"
+                    " AND week_no = 1",
+                    (tid, outc),
+                )
+                con.execute(
+                    "INSERT INTO roster_slots (team_id, player_id, slot, week_no)"
+                    " VALUES (?, ?, ?, 1)",
+                    (tid, inc, slot),
+                )
 
 
 def _role_counts(player_ids, roles: dict) -> tuple[dict, dict]:
@@ -1193,6 +1394,7 @@ def _settle_trades(con: sqlite3.Connection, league_id: int) -> None:
         return
     now = time.time()
     changed = eng.sweep(now=now)
+    changed += eng.sweep_deals(now=now)
     for tid, trade in list(eng._trades.items()):
         if trade["status"] == TradeEngine.STATUS_UNDER_REVIEW \
                 and now >= (trade["review_until"] or float("inf")):
@@ -1247,9 +1449,70 @@ def _settle_trades(con: sqlite3.Connection, league_id: int) -> None:
                 # D7 slot counts (Yahoo convention).
                 _swap_week1_slots(con, a, b, gives[a], gives[b])
             changed.append(tid)
+    for did, deal in list(eng._deals.items()):
+        if deal["status"] == TradeEngine.STATUS_UNDER_REVIEW \
+                and now >= (deal["review_until"] or float("inf")):
+            # Deal-level D8 re-check across ALL participating teams
+            # (P5-W37): rosters may have changed during the review
+            # window (another trade/deal executed first), so legs that
+            # were legal at proposal can now brick a team's lineup.
+            after = {}
+            for t in deal["parties"]:
+                gives_t = [pid for leg in deal["legs"]
+                           if leg["giver_id"] == t
+                           for pid in leg["player_ids"]]
+                recv_t = [pid for leg in deal["legs"]
+                          if leg["receiver_id"] == t
+                          for pid in leg["player_ids"]]
+                after[t] = ([p for p in eng._rosters[t] if p not in gives_t]
+                            + recv_t)
+            bad = _unfieldable_after_swap(con, after)
+            if bad is not None:
+                log.warning(
+                    "league %s: deal %s would leave team %s unable to field "
+                    "a legal XI (D8) — expiring it instead of executing",
+                    league_id, did, bad)
+                deal["status"] = TradeEngine.STATUS_EXPIRED
+                deal["decided_at"] = now
+                changed.append(did)
+                continue
+            try:
+                result = eng.execute_deal(did, now=now)
+            except TradeError as e:
+                # P4-W23, deal flavor: the deal can never execute — its
+                # players were already moved by another executed
+                # trade/deal (the engine validates before mutating,
+                # P4-L1, so rosters are untouched). Defined terminal
+                # fate — expire it, never 500.
+                log.warning(
+                    "league %s: deal %s cannot execute (%s) — expiring it",
+                    league_id, did, e)
+                deal["status"] = TradeEngine.STATUS_EXPIRED
+                deal["decided_at"] = now
+                changed.append(did)
+                continue
+            if result["status"] == TradeEngine.STATUS_EXECUTED:
+                moves: dict[int, dict] = {}
+                for leg in result["legs"]:
+                    g, r = leg["giver_id"], leg["receiver_id"]
+                    for pid in leg["player_ids"]:
+                        con.execute(
+                            "UPDATE roster_slots SET team_id = ? WHERE team_id = ?"
+                            " AND player_id = ? AND week_no IS NULL",
+                            (r, g, pid))
+                    moves.setdefault(g, {"in": [], "out": []})["out"].extend(
+                        leg["player_ids"])
+                    moves.setdefault(r, {"in": [], "out": []})["in"].extend(
+                        leg["player_ids"])
+                # Week-1 lineups: per-team paired slot swap so every XI
+                # keeps its D7 slot counts (Yahoo convention).
+                _swap_week1_slots_deal(con, moves)
+            changed.append(did)
     with con:
         for tid in eng._trades:
             _sync_trade_row(con, league_id, eng._trades[tid])
+        for did in eng._deals:
+            _sync_deal_row(con, league_id, eng._deals[did])
     if changed:
         _put_cached("trade", league_id, eng, con)
 
@@ -1296,6 +1559,154 @@ def propose_trade(con: sqlite3.Connection, league_id: int, from_team_id: int,
     out = _trade_to_out(trade, db_id)
     out["league_id"] = league_id
     out.update(_counter_fields(con, league_id, db_id))
+    return out
+
+
+def propose_deal(con: sqlite3.Connection, league_id: int,
+                 legs: list[dict]) -> dict:
+    """Propose a multi-team deal (P5-W37): a set of directed player
+    legs [{giver_id, receiver_id, player_ids}] sharing one deal_id.
+
+    The first leg's giver is the proposer and counts as accepted; every
+    other party must accept before the deal enters its single 2-day
+    review window. Guards: per-team roster-count invariance and the
+    P4-W24 D8-reachability guard applied to EVERY participating team;
+    the week-6 deadline; the per-team pending cap; one deal-level
+    review window with the league-wide one-third veto rule. Any party
+    rejecting, or the proposer withdrawing, dissolves the whole deal.
+    """
+    get_league(con, league_id)
+    _settle_trades(con, league_id)
+    if not legs:
+        raise HTTPException(422, "a deal needs at least one leg")
+    # D8-reachability guard (P4-W24) across ALL participating teams,
+    # on the post-swap rosters — only when every offered player is
+    # actually on the giver's roster, otherwise the engine's own
+    # validation raises the right 422.
+    rosters = {t["id"]: _roster_pids(con, t["id"])
+               for t in _teams(con, league_id)}
+    parties: set[int] = set()
+    on_rosters = True
+    for leg in legs:
+        parties.add(leg["giver_id"])
+        parties.add(leg["receiver_id"])
+        if leg["giver_id"] not in rosters \
+                or not set(leg["player_ids"]) <= set(rosters[leg["giver_id"]]):
+            on_rosters = False
+    if on_rosters:
+        after = {}
+        for t in parties:
+            gives_t = [pid for leg in legs if leg["giver_id"] == t
+                       for pid in leg["player_ids"]]
+            recv_t = [pid for leg in legs if leg["receiver_id"] == t
+                      for pid in leg["player_ids"]]
+            after[t] = ([p for p in rosters[t] if p not in gives_t] + recv_t)
+        bad = _unfieldable_after_swap(con, after)
+        if bad is not None:
+            name = next((t["name"] for t in _teams(con, league_id)
+                         if t["id"] == bad), f"team {bad}")
+            raise HTTPException(
+                422,
+                f"deal would leave {name} unable to field a legal XI "
+                "(role minimums / overseas cap) — rejected by the D8 guard")
+    try:
+        # Revive inside the try (P4-W29): same construction-failure ->
+        # 422 conversion as propose_trade, never a 500.
+        eng = _revive_trade(con, league_id)
+        deal = eng.propose_deal(legs[0]["giver_id"], legs,
+                                week=current_week(con, league_id))
+    except TradeError as e:
+        raise HTTPException(422, str(e))
+    with con:
+        _sync_deal_row(con, league_id, deal)
+    _put_cached("trade", league_id, eng, con)
+    db_id = _db_id_for_deal_engine(con, league_id, deal["id"])
+    return _deal_to_out(deal, db_id, league_id)
+
+
+def respond_deal(con: sqlite3.Connection, league_id: int, deal_id: int,
+                 action: str, team_id: int | None = None) -> dict:
+    """Accept / reject / withdraw / veto a multi-team deal (P5-W37).
+
+    team_id is the acting team (required): a party for accept/reject/
+    withdraw (withdraw: the proposer only), a non-party team for veto.
+    A reject by any party, or a withdraw by the proposer, dissolves
+    the entire deal into one terminal status.
+    """
+    get_league(con, league_id)
+    # 404 on unknown deal before touching engine state.
+    eid = _db_deal_engine_id(con, league_id, deal_id)
+    _settle_trades(con, league_id)
+    try:
+        # Revive inside the try (P4-W29): same construction-failure ->
+        # 422 conversion as respond_trade, never a 500.
+        eng = _revive_trade(con, league_id)
+        if action == "accept":
+            if team_id is None:
+                raise HTTPException(422, "accept requires team_id")
+            deal = eng.accept_deal(eid, team_id)
+        elif action == "reject":
+            if team_id is None:
+                raise HTTPException(422, "reject requires team_id")
+            deal = eng.decline_deal(eid, team_id)
+        elif action == "withdraw":
+            if team_id is None:
+                raise HTTPException(422, "withdraw requires team_id")
+            deal = eng.withdraw_deal(eid, team_id)
+        elif action == "veto":
+            if team_id is None:
+                raise HTTPException(422, "veto requires team_id")
+            deal = eng.veto_deal(eid, team_id)
+        else:
+            raise HTTPException(400, f"unknown action {action}")
+    except TradeError as e:
+        raise HTTPException(422, str(e))
+    with con:
+        _sync_deal_row(con, league_id, deal)
+    _put_cached("trade", league_id, eng, con)
+    db_id = _db_id_for_deal_engine(con, league_id, deal["id"])
+    return _deal_to_out(deal, db_id, league_id)
+
+
+def get_deal(con: sqlite3.Connection, league_id: int, deal_id: int) -> dict:
+    """Read one deal (settles first, like the trade reads)."""
+    get_league(con, league_id)
+    eid = _db_deal_engine_id(con, league_id, deal_id)
+    _settle_trades(con, league_id)
+    try:
+        eng = _revive_trade(con, league_id)
+    except TradeError as e:
+        raise HTTPException(422, str(e))
+    return _deal_to_out(eng.get_deal(eid), deal_id, league_id)
+
+
+def list_deals(con: sqlite3.Connection, league_id: int,
+               status: str | None = None) -> list[dict]:
+    """List deals for a league, newest first (settles first).
+
+    Projected from the engine (the source of truth) after settle —
+    equivalent to the trades-table rows, which the settle syncs.
+    """
+    get_league(con, league_id)
+    _ensure_deal_columns(con)
+    _settle_trades(con, league_id)
+    try:
+        eng = _revive_trade(con, league_id)
+    except TradeError:
+        # P4-W29: engine unconstructable — no deal state is readable.
+        return []
+    db_ids = {r["engine_id"]: r["id"] for r in con.execute(
+        "SELECT id, engine_id FROM trades WHERE league_id = ?"
+        " AND kind = 'deal'",
+        (league_id,))}
+    out = []
+    for did, deal in eng._deals.items():
+        if did not in db_ids:
+            continue
+        d = _deal_to_out(deal, db_ids[did], league_id)
+        if status is None or d["status"] == status:
+            out.append(d)
+    out.sort(key=lambda d: d["id"], reverse=True)
     return out
 
 
@@ -1883,6 +2294,12 @@ def list_trades(con: sqlite3.Connection, league_id: int,
     _settle_trades(con, league_id)
     sql = "SELECT * FROM trades WHERE league_id = ?"
     params: list = [league_id]
+    if "kind" in {r["name"] for r in con.execute("PRAGMA table_info(trades)")}:
+        # P5-W37: deals project into their own trades rows
+        # (kind='deal') with their own endpoints — the 2-team list
+        # stays 2-team. Pre-migration DBs have no kind column and no
+        # deals, so every row is a trade.
+        sql += " AND kind = 'trade'"
     if status:
         sql += " AND status = ?"
         params.append(status)
