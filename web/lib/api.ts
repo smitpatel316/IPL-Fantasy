@@ -102,6 +102,27 @@ export const api = {
     req<TeamLedgerOut>(`/leagues/${leagueId}/teams/${teamId}/ledger`, {
       headers: claimHeaders(teamId),
     }),
+  // P5-W40: ledger CSV export. Fetched with claim headers (a plain
+  // <a> link would 403 for claimed teams) and saved via blob URL so
+  // the browser downloads it instead of rendering it.
+  exportLedgerCsv: async (leagueId: number, teamId: number): Promise<void> => {
+    const res = await fetch(
+      `${BASE}/leagues/${leagueId}/teams/${teamId}/ledger.csv`,
+      { headers: claimHeaders(teamId) },
+    );
+    if (!res.ok) {
+      throw new ApiError(res.status, "ledger CSV export failed");
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ledger-team-${teamId}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
   getNotifications: (leagueId: number, teamId: number) =>
     req<NotificationsOut>(`/leagues/${leagueId}/notifications?team_id=${teamId}`, {
       headers: claimHeaders(teamId),
