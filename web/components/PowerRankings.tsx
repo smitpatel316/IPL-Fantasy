@@ -42,7 +42,7 @@ export function PowerRankings({ leagueId }: { leagueId: number }) {
       className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-5"
     >
       <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <Zap className="h-4 w-4 text-trophy-gold" /> Power rankings
+        <Zap className="h-4 w-4 text-gold-ink" /> Power rankings
         <span className="text-[11px] font-medium normal-case tracking-normal text-zinc-500">
           {preseason
             ? "pre-season — ranked by starter roster value from preseason ranks (no games yet, no invented points)"
@@ -58,11 +58,11 @@ export function PowerRankings({ leagueId }: { leagueId: number }) {
             </span>
             {e.movement != null &&
               (e.movement > 0 ? (
-                <span className="flex items-center gap-0.5 text-xs font-semibold text-pitch-green">
+                <span className="flex items-center gap-0.5 text-xs font-semibold text-win-ink">
                   <ArrowUp className="h-3.5 w-3.5" /> {e.movement}
                 </span>
               ) : e.movement < 0 ? (
-                <span className="flex items-center gap-0.5 text-xs font-semibold text-brick-red">
+                <span className="flex items-center gap-0.5 text-xs font-semibold text-loss-ink">
                   <ArrowDown className="h-3.5 w-3.5" /> {Math.abs(e.movement)}
                 </span>
               ) : (

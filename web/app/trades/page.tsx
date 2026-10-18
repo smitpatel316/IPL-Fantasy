@@ -9,22 +9,22 @@ import { cn } from "@/lib/utils";
 import { ArrowLeftRight, ArrowRight, Clock, Handshake, Plus } from "lucide-react";
 
 const STATUS_STYLE: Record<string, string> = {
-  pending: "bg-trophy-gold/15 text-trophy-gold",
-  proposed: "bg-trophy-gold/15 text-trophy-gold",
-  accepted: "bg-pitch-green/15 text-pitch-green",
-  executed: "bg-pitch-green/15 text-pitch-green",
-  rejected: "bg-brick-red/15 text-brick-red",
-  vetoed: "bg-brick-red/15 text-brick-red",
+  pending: "bg-trophy-gold/15 text-gold-ink",
+  proposed: "bg-trophy-gold/15 text-gold-ink",
+  accepted: "bg-pitch-green/15 text-win-ink",
+  executed: "bg-pitch-green/15 text-win-ink",
+  rejected: "bg-brick-red/15 text-loss-ink",
+  vetoed: "bg-brick-red/15 text-loss-ink",
 };
 
 const input =
-  "rounded-md border border-slate-700 bg-midnight px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-ipl-blue-bright focus:outline-none";
+  "rounded-md border border-slate-700 bg-ink-950 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-ipl-blue-bright focus:outline-none";
 const btnPrimary =
   "rounded-md bg-ipl-blue px-4 py-2 text-sm font-semibold text-white hover:bg-ipl-blue-bright disabled:opacity-40 disabled:cursor-not-allowed";
 const btnGhost =
   "rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed";
 const btnDanger =
-  "rounded-md border border-brick-red/50 px-3 py-1.5 text-xs font-semibold text-brick-red hover:bg-brick-red/10 disabled:opacity-40 disabled:cursor-not-allowed";
+  "rounded-md border border-brick-red/50 px-3 py-1.5 text-xs font-semibold text-loss-ink hover:bg-brick-red/10 disabled:opacity-40 disabled:cursor-not-allowed";
 
 function fmtTs(iso: string): string {
   const d = new Date(iso);
@@ -114,9 +114,9 @@ function TradeAnalysisBox({
 
   return (
     <div className="rounded-lg border border-trophy-gold/30 bg-trophy-gold/5 p-3">
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-trophy-gold">Trade analyzer</p>
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gold-ink">Trade analyzer</p>
       {loading && !analysis && <p className="text-xs text-zinc-500">Analyzing…</p>}
-      {err && <p className="text-xs text-brick-red">{err}</p>}
+      {err && <p className="text-xs text-loss-ink">{err}</p>}
       {analysis && (
         <>
           <p className="text-sm font-semibold text-white">{analysis.summary}</p>
@@ -182,7 +182,7 @@ function TradeCard({
     <li id={`trade-${trade.id}`} className="scroll-mt-24 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-white">
-          <ArrowLeftRight className="h-4 w-4 text-trophy-gold" />
+          <ArrowLeftRight className="h-4 w-4 text-gold-ink" />
           {teamName.get(trade.from_team_id) ?? `Team ${trade.from_team_id}`}
         </span>
         <ArrowRight className="h-3.5 w-3.5 text-zinc-600" />
@@ -231,7 +231,7 @@ function TradeCard({
           {trade.counter_of != null && (
             <span>
               Counter to{" "}
-              <a href={`#trade-${trade.counter_of}`} className="font-semibold text-pitch-green hover:underline">
+              <a href={`#trade-${trade.counter_of}`} className="font-semibold text-win-ink hover:underline">
                 trade #{trade.counter_of}
               </a>{" "}
               ({teamName.get(trade.to_team_id) ?? "the original proposer"}&apos;s offer)
@@ -240,7 +240,7 @@ function TradeCard({
           {trade.countered_by.map((cid) => (
             <span key={cid}>
               Countered by{" "}
-              <a href={`#trade-${cid}`} className="font-semibold text-pitch-green hover:underline">
+              <a href={`#trade-${cid}`} className="font-semibold text-win-ink hover:underline">
                 trade #{cid}
               </a>
             </span>
@@ -516,7 +516,7 @@ export default function TradesPage() {
 
       {/* P5-W18: find a partner — surplus/deficit matches. */}
       <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <Handshake className="h-4 w-4 text-trophy-gold" /> Find a partner
+        <Handshake className="h-4 w-4 text-gold-ink" /> Find a partner
         {teamId != null && (
           <span className="font-medium normal-case text-zinc-500">
             for {teamName.get(teamId) ?? "your team"}
@@ -549,7 +549,7 @@ export default function TradesPage() {
                     <span className="font-medium text-white">{s.receive.name}</span>
                     <span className="text-zinc-500"> ({s.receive_role})</span>
                     {s.on_trade_block && (
-                      <span className="ml-2 rounded bg-trophy-gold/15 px-1.5 py-0.5 text-[11px] font-bold text-trophy-gold">
+                      <span className="ml-2 rounded bg-trophy-gold/15 px-1.5 py-0.5 text-[11px] font-bold text-gold-ink">
                         On their trade block
                       </span>
                     )}
@@ -584,7 +584,7 @@ export default function TradesPage() {
               <span className="text-sm font-semibold text-white">{e.name}</span>
               <span className="text-xs text-zinc-500">{e.role ?? ""} {e.ipl_team_code ?? ""}</span>
               <span className="text-xs text-zinc-400">— {e.team_name}</span>
-              {e.seeking && <span className="text-xs italic text-trophy-gold">seeking: {e.seeking}</span>}
+              {e.seeking && <span className="text-xs italic text-gold-ink">seeking: {e.seeking}</span>}
               {teamId != null && e.team_id === teamId && (
                 <button className={cn(btnDanger, "ml-auto")} onClick={() => removeBlock(e)} disabled={blockBusy}>
                   Remove

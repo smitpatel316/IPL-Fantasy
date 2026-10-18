@@ -56,7 +56,7 @@ export default function SchedulePage() {
                   {Array.from({ length: weeks }).map((_, i) => (
                     <th key={i} className="px-3 py-3 text-center font-semibold">
                       W{i + 1}
-                      {i + 1 >= 7 && <span className="ml-1 text-[10px] text-trophy-gold">PO</span>}
+                      {i + 1 >= 7 && <span className="ml-1 text-[10px] text-gold-ink">PO</span>}
                     </th>
                   ))}
                   <th className="px-4 py-3 text-right font-semibold">Total</th>
@@ -76,7 +76,7 @@ export default function SchedulePage() {
                           className={cn(
                             "inline-block min-w-7 rounded-md px-1.5 py-0.5 text-xs font-semibold",
                             games === 0 && "bg-brick-red/15 text-red-300",
-                            games >= 3 && "bg-pitch-green/15 font-bold text-pitch-green",
+                            games >= 3 && "bg-pitch-green/15 font-bold text-win-ink",
                             games > 0 && games < 3 && "text-zinc-300",
                           )}
                           title={
@@ -105,7 +105,7 @@ export default function SchedulePage() {
               <span className="rounded bg-brick-red/15 px-1.5 py-0.5 font-semibold text-red-300">0</span> bye week
             </span>
             <span>
-              <span className="rounded bg-pitch-green/15 px-1.5 py-0.5 font-semibold text-pitch-green">3+</span>{" "}
+              <span className="rounded bg-pitch-green/15 px-1.5 py-0.5 font-semibold text-win-ink">3+</span>{" "}
               double/triple-game round
             </span>
             <span className="ml-auto">

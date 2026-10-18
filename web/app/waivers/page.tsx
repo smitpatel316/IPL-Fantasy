@@ -14,8 +14,8 @@ import { cn } from "@/lib/utils";
 import { Gavel, CircleDollarSign, Timer, Scale, ArrowRight, Sparkles } from "lucide-react";
 
 const STATUS_STYLE: Record<string, string> = {
-  pending: "bg-trophy-gold/15 text-trophy-gold",
-  won: "bg-pitch-green/15 text-pitch-green",
+  pending: "bg-trophy-gold/15 text-gold-ink",
+  won: "bg-pitch-green/15 text-win-ink",
   lost: "bg-slate-800 text-zinc-500",
 };
 
@@ -29,7 +29,7 @@ const ROLE_COLOR: Record<string, string> = {
 const WEEKS = [8, 7, 6, 5, 4, 3, 2, 1];
 
 const input =
-  "rounded-md border border-slate-700 bg-midnight px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-ipl-blue-bright focus:outline-none";
+  "rounded-md border border-slate-700 bg-ink-950 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-ipl-blue-bright focus:outline-none";
 const btnPrimary =
   "rounded-md bg-ipl-blue px-4 py-2 text-sm font-semibold text-white hover:bg-ipl-blue-bright disabled:opacity-40 disabled:cursor-not-allowed";
 const btnGhost =
@@ -232,7 +232,7 @@ export default function WaiversPage() {
       <PageHeader title="Waivers" sub="Weekly blind FAAB · $100 season budget · runs Wednesday ~3am PT" />
       <p className="-mt-3 mb-5 text-xs text-zinc-500">
         Weighing a bid? Check bye weeks and double-game rounds in the{" "}
-        <Link href="/schedule" className="font-medium text-trophy-gold hover:underline">
+        <Link href="/schedule" className="font-medium text-gold-ink hover:underline">
           schedule matrix
         </Link>
         .
@@ -245,7 +245,7 @@ export default function WaiversPage() {
           { icon: Scale, label: "Tiebreak", sub: "Reverse standings" },
         ].map(({ icon: Icon, label, sub }) => (
           <div key={label} className="flex items-center gap-3 rounded-xl border border-slate-800 bg-midnight-soft px-4 py-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-trophy-gold/10 text-trophy-gold">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-trophy-gold/10 text-gold-ink">
               <Icon className="h-4 w-4" />
             </span>
             <div>
@@ -286,14 +286,14 @@ export default function WaiversPage() {
 
       <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
         <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-          <CircleDollarSign className="h-4 w-4 text-trophy-gold" /> FAAB remaining
+          <CircleDollarSign className="h-4 w-4 text-gold-ink" /> FAAB remaining
         </h2>
         <div className="space-y-3">
           {sorted.map((t) => (
             <div key={t.id}>
               <div className="mb-1 flex items-baseline justify-between text-sm">
                 <span className="font-medium text-zinc-200">{t.name}</span>
-                <span className="tabular-nums font-bold text-trophy-gold">${t.faab_remaining}</span>
+                <span className="tabular-nums font-bold text-gold-ink">${t.faab_remaining}</span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
                 <div
@@ -313,7 +313,7 @@ export default function WaiversPage() {
       {/* P5-W16: recommended adds for the managing-as team. */}
       <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
         <h2 className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-          <Sparkles className="h-4 w-4 text-trophy-gold" /> Recommended adds
+          <Sparkles className="h-4 w-4 text-gold-ink" /> Recommended adds
           {teamId != null && (
             <span className="font-medium normal-case text-zinc-500">
               for {teams.find((t) => t.id === teamId)?.name ?? "your team"}
@@ -396,7 +396,7 @@ export default function WaiversPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-zinc-300">Free agents</h2>
-          {watch.error && <p className="mb-2 text-xs text-brick-red">{watch.error}</p>}
+          {watch.error && <p className="mb-2 text-xs text-loss-ink">{watch.error}</p>}
           {freeAgents.length === 0 ? (
             <p className="text-sm text-slate-500">No free agents match{loading ? " (loading)…" : "."}</p>
           ) : (
@@ -439,7 +439,7 @@ export default function WaiversPage() {
                       <td className="px-3 py-2 text-slate-400">{p.ipl_team_code ?? "—"}</td>
                       <td className="px-3 py-2 text-right">
                         <button
-                          className="rounded-md bg-trophy-gold/15 px-3 py-1 text-xs font-semibold text-trophy-gold hover:bg-trophy-gold/25"
+                          className="rounded-md bg-trophy-gold/15 px-3 py-1 text-xs font-semibold text-gold-ink hover:bg-trophy-gold/25"
                           onClick={() => openBid(p)}
                         >
                           Bid
@@ -468,7 +468,7 @@ export default function WaiversPage() {
               {running ? "Running…" : "Run waivers now"}
             </button>
           </div>
-          {runMsg && <p className="mb-3 text-xs text-pitch-green">{runMsg}</p>}
+          {runMsg && <p className="mb-3 text-xs text-win-ink">{runMsg}</p>}
           {claims.length === 0 ? (
             <p className="text-sm text-slate-500">You have no bids in yet this week.</p>
           ) : (
@@ -489,7 +489,7 @@ export default function WaiversPage() {
                     </span>
                   )}
                   <span className="ml-auto flex items-center gap-2">
-                    <span className="tabular-nums font-bold text-trophy-gold">
+                    <span className="tabular-nums font-bold text-gold-ink">
                       {c.bid != null ? `$${c.bid}` : "sealed"}
                     </span>
                     <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-bold uppercase", STATUS_STYLE[c.status] ?? "bg-slate-800 text-zinc-400")}>
@@ -528,7 +528,7 @@ export default function WaiversPage() {
                     </span>
                   )}
                   <span className="ml-auto flex items-center gap-2">
-                    <span className="tabular-nums font-bold text-trophy-gold">${c.bid}</span>
+                    <span className="tabular-nums font-bold text-gold-ink">${c.bid}</span>
                     <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-bold uppercase", STATUS_STYLE[c.status] ?? "bg-slate-800 text-zinc-400")}>
                       {c.status}
                     </span>
@@ -549,7 +549,7 @@ export default function WaiversPage() {
             <h3 className="text-lg font-semibold text-white">Bid for {bidTarget.name}</h3>
             <p className="mt-1 text-sm text-slate-400">
               {bidTarget.role ?? "—"} · {bidTarget.ipl_team_code ?? "—"}
-              {bidTarget.is_overseas ? " · overseas" : ""} · you have <span className="font-semibold text-trophy-gold">${faab}</span> left
+              {bidTarget.is_overseas ? " · overseas" : ""} · you have <span className="font-semibold text-gold-ink">${faab}</span> left
             </p>
             <div className="mt-4 space-y-3">
               <div>

@@ -38,7 +38,7 @@ export function DraftPlayerCard({ player: p, myTurn, dnd, onDraft, onToggleDnd, 
         <p className="truncate text-sm font-medium text-white">
           {p.name}
           {noted && (
-            <span title="You have a private note on this player" className="ml-1.5 text-trophy-gold" aria-label="You have a private note on this player">
+            <span title="You have a private note on this player" className="ml-1.5 text-gold-ink" aria-label="You have a private note on this player">
               🗒
             </span>
           )}

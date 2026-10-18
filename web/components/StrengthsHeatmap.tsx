@@ -65,7 +65,7 @@ export function StrengthsHeatmap({ leagueId }: { leagueId: number }) {
         className="mb-5 rounded-xl border border-dashed border-slate-800 px-5 py-4"
       >
         <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-          <Grid3x3 className="h-4 w-4 text-trophy-gold" /> Team strengths
+          <Grid3x3 className="h-4 w-4 text-gold-ink" /> Team strengths
         </h2>
         <p className="mt-1 text-sm text-zinc-500">
           Strengths land when the draft completes — every team gets a
@@ -83,7 +83,7 @@ export function StrengthsHeatmap({ leagueId }: { leagueId: number }) {
       className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-5"
     >
       <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <Grid3x3 className="h-4 w-4 text-trophy-gold" /> Team strengths
+        <Grid3x3 className="h-4 w-4 text-gold-ink" /> Team strengths
         <span className="text-[11px] font-medium normal-case tracking-normal text-zinc-500">
           starter roster value by role, shaded vs the league average at
           that role — total matches the power-rankings roster value

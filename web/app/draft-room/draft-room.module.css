@@ -24,7 +24,14 @@
   }
 }
 .shimmer {
-  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  /* Theme-aware: ink-800/ink-700 flip with data-theme, so the loading
+     shimmer stays subtle in both dark and light. */
+  background: linear-gradient(
+    90deg,
+    var(--color-ink-800) 25%,
+    var(--color-ink-700) 50%,
+    var(--color-ink-800) 75%
+  );
   background-size: 800px 100%;
   animation: dr-shimmer 1.3s linear infinite;
 }

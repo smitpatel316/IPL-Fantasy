@@ -86,12 +86,12 @@ function NoteEditor({ leagueId, playerId }: { leagueId: number; playerId: number
   }
 
   const input =
-    "rounded-lg border border-slate-700 bg-midnight px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none";
+    "rounded-lg border border-slate-700 bg-ink-950 px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none";
 
   return (
     <section className="mt-5 rounded-xl border border-slate-800 bg-midnight-soft p-5">
       <h2 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <StickyNote className="h-4 w-4 text-trophy-gold" /> My private note
+        <StickyNote className="h-4 w-4 text-gold-ink" /> My private note
       </h2>
       <p className="mb-3 text-xs text-zinc-500">
         Private to the selected team — no other manager can read it, and it never
@@ -110,7 +110,7 @@ function NoteEditor({ leagueId, playerId }: { leagueId: number; playerId: number
         </select>
       </label>
       {denied ? (
-        <p className="flex items-start gap-2 rounded-lg border border-slate-800 bg-midnight px-3 py-2.5 text-sm text-zinc-400">
+        <p className="flex items-start gap-2 rounded-lg border border-slate-800 bg-ink-950 px-3 py-2.5 text-sm text-zinc-400">
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" />
           This team is claimed by its manager — its notes are private and stay
           hidden here. Claim your own team (League page → standings) to keep
@@ -125,7 +125,7 @@ function NoteEditor({ leagueId, playerId }: { leagueId: number; playerId: number
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
           />
-          {noteErr && <p className="mt-2 text-xs text-brick-red">{noteErr}</p>}
+          {noteErr && <p className="mt-2 text-xs text-loss-ink">{noteErr}</p>}
           <div className="mt-3 flex items-center gap-2">
             <button
               type="button"
@@ -145,7 +145,7 @@ function NoteEditor({ leagueId, playerId }: { leagueId: number; playerId: number
                 Delete note
               </button>
             )}
-            {saved && <span className="text-xs text-pitch-green">Saved — only this team can see it.</span>}
+            {saved && <span className="text-xs text-win-ink">Saved — only this team can see it.</span>}
           </div>
         </>
       )}
@@ -257,13 +257,13 @@ export default function PlayerDetailPage({ params }: { params: Promise<{ id: str
         <section className="rounded-xl border border-slate-800 bg-midnight-soft p-5">
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-300">Owned by</h2>
           {player.owners.length === 0 ? (
-            <p className="text-sm text-pitch-green">Free agent in every league.</p>
+            <p className="text-sm text-win-ink">Free agent in every league.</p>
           ) : (
             <ul className="space-y-2 text-sm">
               {player.owners.map((o) => (
                 <li key={`${o.league_id}-${o.team_id}`} className="flex items-baseline justify-between gap-4">
                   <span className="text-zinc-400">{o.league_name}</span>
-                  <Link href={`/league/${o.league_id}`} className="font-medium text-zinc-100 hover:text-trophy-gold">
+                  <Link href={`/league/${o.league_id}`} className="font-medium text-zinc-100 hover:text-gold-ink">
                     {o.team_name}
                   </Link>
                 </li>

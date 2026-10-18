@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Trophy, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/lib/theme";
 import { api } from "@/lib/api";
 import { useLeague } from "@/lib/league-context";
 import type { LeagueSummaryOut } from "@/lib/types";
@@ -12,7 +13,7 @@ import type { LeagueSummaryOut } from "@/lib/types";
 function Brand({ onClick }: { onClick?: () => void }) {
   return (
     <Link href="/" onClick={onClick} className="flex shrink-0 items-center gap-2.5">
-      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gold-500 text-ink-950 shadow-[0_4px_16px_-4px_rgb(245_158_11/0.6)]">
+      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gold-500 text-on-gold shadow-[0_4px_16px_-4px_rgb(245_158_11/0.6)]">
         <Trophy className="h-4.5 w-4.5" strokeWidth={2.25} />
       </span>
       <span className="text-[17px] font-extrabold tracking-tight text-white">
@@ -63,7 +64,7 @@ export default function Nav() {
       <span className="hidden font-semibold uppercase tracking-wide xl:inline">League</span>
       <select
         aria-label="Current league"
-        className="max-w-44 rounded-lg border border-slate-700 bg-midnight px-2 py-1.5 text-[13px] text-white focus:border-trophy-gold focus:outline-none"
+        className="max-w-44 rounded-lg border border-slate-700 bg-ink-950 px-2 py-1.5 text-[13px] text-white focus:border-trophy-gold focus:outline-none"
         value={leagueId}
         onChange={(e) => switchLeague(Number(e.target.value))}
       >
@@ -103,12 +104,14 @@ export default function Nav() {
 
         <div className="ml-auto hidden items-center gap-3 lg:flex">
           {switcher}
+          <ThemeToggle />
           <span className="badge-gold">IPL 2027</span>
         </div>
 
-        {/* Mobile toggle */}
+        {/* Mobile theme toggle + menu */}
+        <ThemeToggle className="ml-auto lg:hidden" />
         <button
-          className="btn-ghost btn-sm ml-auto px-2.5 lg:hidden"
+          className="btn-ghost btn-sm px-2.5 lg:hidden"
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}

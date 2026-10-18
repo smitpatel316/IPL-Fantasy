@@ -91,13 +91,13 @@ export function MessageBoard({
       className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-5"
     >
       <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <MessagesSquare className="h-4 w-4 text-trophy-gold" /> Message board
+        <MessagesSquare className="h-4 w-4 text-gold-ink" /> Message board
         <span className="text-[11px] font-medium normal-case tracking-normal text-zinc-500">
           {total} post{total === 1 ? "" : "s"} · trash talk responsibly
         </span>
       </h2>
 
-      {err && <p className="mt-2 text-xs text-brick-red">{err}</p>}
+      {err && <p className="mt-2 text-xs text-loss-ink">{err}</p>}
 
       <div className="mt-3 flex gap-2">
         <textarea
@@ -136,7 +136,7 @@ export function MessageBoard({
                   <span
                     className={cn(
                       "font-semibold",
-                      m.team_id === myTeamId ? "text-trophy-gold" : "text-zinc-300",
+                      m.team_id === myTeamId ? "text-gold-ink" : "text-zinc-300",
                     )}
                   >
                     {m.team_name}

@@ -190,7 +190,7 @@ export default function LineupPage() {
         <div className="flex flex-wrap items-center gap-3">
           <select
             aria-label="Team"
-            className="rounded-lg border border-slate-700 bg-midnight px-3 py-2 text-sm text-white focus:border-trophy-gold focus:outline-none"
+            className="rounded-lg border border-slate-700 bg-ink-950 px-3 py-2 text-sm text-white focus:border-trophy-gold focus:outline-none"
             value={teamId ?? ""}
             onChange={(e) => setTeamId(Number(e.target.value))}
           >
@@ -213,7 +213,7 @@ export default function LineupPage() {
                 )}
               >
                 {w}
-                {w >= 7 && <span className={cn("ml-1 text-[10px]", week === w ? "text-midnight/70" : "text-trophy-gold")}>PO</span>}
+                {w >= 7 && <span className={cn("ml-1 text-[10px]", week === w ? "text-midnight/70" : "text-gold-ink")}>PO</span>}
               </button>
             ))}
           </ScrollHint>
@@ -229,7 +229,7 @@ export default function LineupPage() {
             </div>
             <span className="text-xs text-zinc-400">{startersSet}/11</span>
           </div>
-          <div className={cn("flex items-center gap-1.5", overCap ? "text-brick-red" : "text-zinc-400")}>
+          <div className={cn("flex items-center gap-1.5", overCap ? "text-loss-ink" : "text-zinc-400")}>
             <Plane className="h-3.5 w-3.5" />
             <div className="flex gap-1" aria-label={`${overseas} of ${OVERSEAS_CAP} overseas starters`}>
               {Array.from({ length: OVERSEAS_CAP }).map((_, i) => (
@@ -262,7 +262,7 @@ export default function LineupPage() {
           </button>
         </div>
         {overCap && (
-          <p className="mt-2 flex items-center gap-1.5 text-xs text-brick-red">
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-loss-ink">
             <AlertTriangle className="h-3.5 w-3.5" /> Too many overseas starters — max {OVERSEAS_CAP} in the XI.
           </p>
         )}
@@ -293,7 +293,7 @@ export default function LineupPage() {
       )}
       {err && <div className="mb-4"><ErrorBox message={err} /></div>}
       {msg && (
-        <p className="mb-4 flex items-center gap-1.5 text-sm text-pitch-green">
+        <p className="mb-4 flex items-center gap-1.5 text-sm text-win-ink">
           <CheckCircle2 className="h-4 w-4" /> {msg}
         </p>
       )}
@@ -334,7 +334,7 @@ export default function LineupPage() {
                         <span className="mr-2 inline-block w-11 rounded bg-slate-800 px-1.5 py-0.5 text-center font-bold text-zinc-200">{slot}</span>
                         {label}
                       </p>
-                      <span className={cn("text-xs font-medium", ids.length === max ? "text-pitch-green" : "text-zinc-500")}>
+                      <span className={cn("text-xs font-medium", ids.length === max ? "text-win-ink" : "text-zinc-500")}>
                         {ids.length}/{max}
                       </span>
                     </div>
@@ -351,7 +351,7 @@ export default function LineupPage() {
                             <AvailabilityDot availability={availOf(pid)} />
                             {p?.name ?? `#${pid}`}
                             {p?.is_overseas && <Plane className="h-3 w-3 text-zinc-400" />}
-                            <X className="h-3 w-3 text-zinc-500 group-hover:text-brick-red" />
+                            <X className="h-3 w-3 text-zinc-500 group-hover:text-loss-ink" />
                           </button>
                         );
                       })}
@@ -400,7 +400,7 @@ export default function LineupPage() {
                             <AvailabilityDot availability={availOf(pid)} />
                             {p?.name ?? `#${pid}`}
                             {p?.is_overseas && <Plane className="h-3 w-3 text-zinc-500" />}
-                            <X className="h-3 w-3 text-zinc-500 group-hover:text-brick-red" />
+                            <X className="h-3 w-3 text-zinc-500 group-hover:text-loss-ink" />
                           </button>
                         );
                       })}
@@ -430,7 +430,7 @@ export default function LineupPage() {
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Search roster…"
-                  className="w-full rounded-lg border border-slate-700 bg-midnight py-2 pl-8 pr-3 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none"
+                  className="w-full rounded-lg border border-slate-700 bg-ink-950 py-2 pl-8 pr-3 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none"
                 />
               </div>
             </div>
@@ -472,12 +472,12 @@ export default function LineupPage() {
                           </span>
                         )}
                         <span>{p.ipl_team_code ?? "—"}</span>
-                        {assigned && <span className="font-semibold text-ipl-blue-bright">· {assigned}</span>}
+                        {assigned && <span className="font-semibold text-info-ink">· {assigned}</span>}
                       </p>
                     </div>
                     <select
                       aria-label={`Assign ${p.name} to slot`}
-                      className="shrink-0 rounded-md border border-slate-700 bg-midnight px-1.5 py-1.5 text-xs text-zinc-300 focus:border-trophy-gold focus:outline-none"
+                      className="shrink-0 rounded-md border border-slate-700 bg-ink-950 px-1.5 py-1.5 text-xs text-zinc-300 focus:border-trophy-gold focus:outline-none"
                       value={assigned ?? ""}
                       onChange={(e) => {
                         if (e.target.value) toggle(e.target.value, p.id);

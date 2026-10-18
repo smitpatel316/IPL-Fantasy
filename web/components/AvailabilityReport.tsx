@@ -35,7 +35,7 @@ export function AvailabilityReport({ leagueId }: { leagueId: number }) {
       className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5"
     >
       <h2 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <HeartPulse className="h-4 w-4 text-trophy-gold" /> Availability report
+        <HeartPulse className="h-4 w-4 text-gold-ink" /> Availability report
       </h2>
       <p className="mb-3 text-xs text-zinc-500">{data.basis}</p>
       {empty && (

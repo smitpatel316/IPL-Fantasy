@@ -104,7 +104,7 @@ export function WatchToggle({
       title={watched ? "Remove from watchlist" : "Add to watchlist"}
       className={`rounded-md p-1.5 transition ${
         watched
-          ? "text-trophy-gold hover:bg-trophy-gold/10"
+          ? "text-gold-ink hover:bg-trophy-gold/10"
           : "text-zinc-600 hover:bg-slate-800 hover:text-zinc-300"
       }`}
     >

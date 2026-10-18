@@ -126,7 +126,7 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
               aria-label="New team name"
               className="w-36 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[11px] text-white"
             />
-            <button type="button" onClick={() => void doRename(s.team_id)} className="font-semibold text-pitch-green hover:underline">
+            <button type="button" onClick={() => void doRename(s.team_id)} className="font-semibold text-win-ink hover:underline">
               Save
             </button>
             <button type="button" onClick={() => setRenameId(null)} className="text-zinc-500 underline hover:text-zinc-300">
@@ -136,7 +136,7 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
         );
       return (
         <span className="mt-0.5 flex items-center gap-2 text-[11px]">
-          <span className="font-bold text-trophy-gold">Yours</span>
+          <span className="font-bold text-gold-ink">Yours</span>
           <button
             type="button"
             onClick={() => {
@@ -158,7 +158,7 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
       <button
         type="button"
         onClick={() => doClaim(s.team_id)}
-        className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold text-pitch-green hover:underline"
+        className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold text-win-ink hover:underline"
       >
         <KeyRound className="h-3 w-3" /> Claim this team
       </button>
@@ -287,7 +287,7 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
         className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-midnight-soft px-5 py-4"
       >
         <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-          <Dices className="h-4 w-4 text-trophy-gold" /> Practice draft
+          <Dices className="h-4 w-4 text-gold-ink" /> Practice draft
         </h2>
         <p className="text-sm text-zinc-400">
           Run a mock draft against sharp and casual bots — your live league is never touched.
@@ -308,7 +308,7 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
         >
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-              <Swords className="h-4 w-4 text-trophy-gold" /> Week {league.current_week} · Your matchup
+              <Swords className="h-4 w-4 text-gold-ink" /> Week {league.current_week} · Your matchup
             </h2>
             <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[11px] font-bold uppercase text-zinc-300">
               {myMatchup.status}
@@ -336,7 +336,7 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
               className={cn(
                 "min-w-0 flex-1 truncate text-right font-semibold",
                 myMatchup.status === "final" && myMatchup.score_a > myMatchup.score_b ? "text-white" : "text-zinc-300",
-                myMatchup.team_a_id === myTeamId && "text-trophy-gold",
+                myMatchup.team_a_id === myTeamId && "text-gold-ink",
               )}
             >
               {myMatchup.team_a_name}
@@ -348,14 +348,14 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
               className={cn(
                 "min-w-0 flex-1 truncate font-semibold",
                 myMatchup.status === "final" && myMatchup.score_b > myMatchup.score_a ? "text-white" : "text-zinc-300",
-                myMatchup.team_b_id === myTeamId && "text-trophy-gold",
+                myMatchup.team_b_id === myTeamId && "text-gold-ink",
               )}
             >
               {myMatchup.team_b_name}
             </span>
           </div>
           <p className="mt-2 text-right">
-            <Link href="/matchup" className="text-xs font-semibold text-pitch-green hover:underline">
+            <Link href="/matchup" className="text-xs font-semibold text-win-ink hover:underline">
               View all matchups →
             </Link>
           </p>
@@ -398,7 +398,7 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
         {/* Standings */}
         <section className="overflow-hidden rounded-xl border border-slate-800 bg-midnight-soft lg:col-span-2">
           <h2 className="flex items-center gap-2 border-b border-slate-800 px-5 py-4 text-sm font-bold uppercase tracking-wider text-zinc-300">
-            <Trophy className="h-4 w-4 text-trophy-gold" /> Standings
+            <Trophy className="h-4 w-4 text-gold-ink" /> Standings
           </h2>
           {/* Desktop */}
           <table className="hidden w-full text-sm sm:table">
@@ -424,7 +424,7 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
                   <td className="px-5 py-3">
                     <span className={cn(
                       "flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-extrabold",
-                      i < playoffTeams ? "bg-trophy-gold/15 text-trophy-gold" : "bg-slate-800 text-zinc-500",
+                      i < playoffTeams ? "bg-trophy-gold/15 text-gold-ink" : "bg-slate-800 text-zinc-500",
                     )}>
                       {i + 1}
                     </span>
@@ -435,13 +435,13 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
                   </td>
                   <td className="hidden px-2 py-3 text-zinc-400 md:table-cell">{s.owner_name ?? "—"}</td>
                   <td className="px-2 py-3 text-center tabular-nums">
-                    <span className="font-semibold text-pitch-green">{s.wins}</span>
+                    <span className="font-semibold text-win-ink">{s.wins}</span>
                     <span className="text-zinc-600">–</span>
-                    <span className="font-semibold text-brick-red">{s.losses}</span>
+                    <span className="font-semibold text-loss-ink">{s.losses}</span>
                     {s.ties > 0 && <span className="text-zinc-500">–{s.ties}</span>}
                   </td>
                   <td className="px-2 py-3 text-right tabular-nums text-zinc-300">{s.points_for.toFixed(1)}</td>
-                  <td className="px-5 py-3 text-right tabular-nums font-semibold text-trophy-gold">${s.faab_remaining}</td>
+                  <td className="px-5 py-3 text-right tabular-nums font-semibold text-gold-ink">${s.faab_remaining}</td>
                 </tr>
               ))}
             </tbody>
@@ -452,28 +452,28 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
               <li key={s.team_id} className="flex items-center gap-3 px-4 py-3">
                 <span className={cn(
                   "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-extrabold",
-                  i < playoffTeams ? "bg-trophy-gold/15 text-trophy-gold" : "bg-slate-800 text-zinc-500",
+                  i < playoffTeams ? "bg-trophy-gold/15 text-gold-ink" : "bg-slate-800 text-zinc-500",
                 )}>
                   {i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-white">{s.team_name}</p>
                   <p className="text-[11px] tabular-nums text-zinc-500">
-                    <span className="text-pitch-green">{s.wins}W</span>–<span className="text-brick-red">{s.losses}L</span>
+                    <span className="text-win-ink">{s.wins}W</span>–<span className="text-loss-ink">{s.losses}L</span>
                     {" · "}{s.points_for.toFixed(0)} PF
                   </p>
                   {claimControl(s)}
                 </div>
-                <span className="shrink-0 text-sm font-bold tabular-nums text-trophy-gold">${s.faab_remaining}</span>
+                <span className="shrink-0 text-sm font-bold tabular-nums text-gold-ink">${s.faab_remaining}</span>
               </li>
             ))}
           </ul>
           <p className="border-t border-slate-800 px-5 py-3 text-[11px] text-zinc-600">
-            <Crown className="mr-1 inline h-3 w-3 text-trophy-gold/70" />
+            <Crown className="mr-1 inline h-3 w-3 text-gold-ink/70" />
             Top {playoffTeams} make the fantasy playoffs (weeks 7–8).
             {" "}Claim your team to lock its lineups, bids and trades to this browser.
           </p>
-          {claimMsg && <p className="border-t border-slate-800 px-5 py-2 text-[11px] text-pitch-green">{claimMsg}</p>}
+          {claimMsg && <p className="border-t border-slate-800 px-5 py-2 text-[11px] text-win-ink">{claimMsg}</p>}
         </section>
 
         {/* Side column */}
@@ -570,12 +570,12 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
             Record move
           </button>
         </form>
-        {rmMsg && <p className="mt-2 text-xs text-pitch-green">{rmMsg}</p>}
+        {rmMsg && <p className="mt-2 text-xs text-win-ink">{rmMsg}</p>}
         {moves.length > 0 && (
           <ul className="mt-4 space-y-1.5 border-t border-slate-800 pt-3 text-sm">
             {moves.map((m) => (
               <li key={m.id} className="flex flex-wrap items-baseline gap-x-2 text-zinc-400">
-                <span className={m.kind === "roster_add" ? "font-bold text-pitch-green" : "font-bold text-brick-red"}>
+                <span className={m.kind === "roster_add" ? "font-bold text-win-ink" : "font-bold text-loss-ink"}>
                   {m.kind === "roster_add" ? "ADD" : "DROP"}
                 </span>
                 <span className="text-zinc-200">{m.player_name}</span>
@@ -624,7 +624,7 @@ function CommissionerTools({
   }, [league.id]);
 
   const input =
-    "rounded-lg border border-slate-700 bg-midnight px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none";
+    "rounded-lg border border-slate-700 bg-ink-950 px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none";
 
   async function saveSettings(e: React.FormEvent) {
     e.preventDefault();
@@ -716,7 +716,7 @@ function CommissionerTools({
           <ErrorBox message={err} />
         </div>
       )}
-      {msg && <p className="mb-3 text-sm text-pitch-green">{msg}</p>}
+      {msg && <p className="mb-3 text-sm text-win-ink">{msg}</p>}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <form onSubmit={saveSettings} className="space-y-3">
@@ -811,7 +811,7 @@ function CommissionerTools({
             {adjustments.map((a) => (
               <li key={a.id} className="flex flex-wrap items-baseline gap-x-3 rounded-lg bg-slate-800/50 px-3 py-2">
                 <span className="font-semibold text-white">{a.team_name}</span>
-                <span className={a.faab_delta >= 0 ? "text-pitch-green" : "text-brick-red"}>
+                <span className={a.faab_delta >= 0 ? "text-win-ink" : "text-loss-ink"}>
                   {a.faab_delta >= 0 ? "+" : ""}${a.faab_delta} → ${a.faab_after}
                 </span>
                 <span className="text-zinc-400">{a.note}</span>
@@ -830,7 +830,7 @@ function CommissionerTools({
  * GET /leagues/{id}/draft-recap). Pre-draft this is the honest empty
  * state; grades land when the draft completes. */
 const GRADE_STYLE: Record<string, string> = {
-  A: "bg-pitch-green/15 text-pitch-green",
+  A: "bg-pitch-green/15 text-win-ink",
   B: "bg-emerald-900/40 text-emerald-300",
   C: "bg-slate-800 text-zinc-300",
   D: "bg-amber-950/50 text-amber-300",
@@ -845,7 +845,7 @@ function DraftRecapSection({ recap }: { recap: DraftRecapOut }) {
         className="mb-5 rounded-xl border border-dashed border-slate-800 px-5 py-4"
       >
         <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-          <GraduationCap className="h-4 w-4 text-trophy-gold" /> Draft recap
+          <GraduationCap className="h-4 w-4 text-gold-ink" /> Draft recap
         </h2>
         <p className="mt-1 text-sm text-zinc-500">
           Grades land when the draft completes — every team gets a grade, its biggest
@@ -862,7 +862,7 @@ function DraftRecapSection({ recap }: { recap: DraftRecapOut }) {
       className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-5"
     >
       <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <GraduationCap className="h-4 w-4 text-trophy-gold" /> Draft recap &amp; grades
+        <GraduationCap className="h-4 w-4 text-gold-ink" /> Draft recap &amp; grades
       </h2>
       {(steal || best) && (
         <p className="mt-2 text-sm text-zinc-400">

@@ -47,7 +47,7 @@ function CompareToggle({
       className={cn(
         "rounded p-1 transition",
         active
-          ? "bg-trophy-gold/15 text-trophy-gold"
+          ? "bg-trophy-gold/15 text-gold-ink"
           : "text-zinc-500 hover:bg-slate-800 hover:text-white",
         !active && disabled && "cursor-not-allowed opacity-30 hover:bg-transparent hover:text-zinc-500",
       )}
@@ -153,7 +153,7 @@ export default function PlayersPage() {
   const freeAgents = useMemo(() => players.filter((p) => !p.owned_by_team_id).length, [players]);
 
   const input =
-    "rounded-lg border border-slate-700 bg-midnight px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none";
+    "rounded-lg border border-slate-700 bg-ink-950 px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-trophy-gold focus:outline-none";
 
   return (
     <div>
@@ -217,10 +217,10 @@ export default function PlayersPage() {
       <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
         <div className="mb-3 flex flex-wrap items-center gap-3">
           <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-            <Star className="h-4 w-4 fill-trophy-gold text-trophy-gold" /> Watched
+            <Star className="h-4 w-4 fill-trophy-gold text-gold-ink" /> Watched
           </h2>
           <div className="ml-auto flex flex-wrap items-center gap-3">
-            <Link href="/cheat-sheet" className="text-xs font-medium text-trophy-gold hover:underline">Draft cheat sheet →</Link>
+            <Link href="/cheat-sheet" className="text-xs font-medium text-gold-ink hover:underline">Draft cheat sheet →</Link>
             <ScheduleWeekPicker weeks={sched.weeks} week={sched.week} setWeek={sched.setWeek} />
             <label className="flex items-center gap-2 text-xs font-medium text-slate-400">
               Managing as
@@ -236,7 +236,7 @@ export default function PlayersPage() {
             </label>
           </div>
         </div>
-        {watch.error && <p className="mb-3 text-xs text-brick-red">{watch.error}</p>}
+        {watch.error && <p className="mb-3 text-xs text-loss-ink">{watch.error}</p>}
         {watch.entries.length === 0 ? (
           <p className="text-sm text-zinc-500">
             No players watched yet — tap the star on any player below (or on the waiver wire) and
@@ -248,7 +248,7 @@ export default function PlayersPage() {
               <li key={p.watch_id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2.5">
                 <WatchToggle watched onToggle={() => watch.toggle(p.id)} playerName={p.name} />
                 <AvailabilityDot availability={p.availability} />
-                <Link href={`/players/${p.id}`} className="font-medium text-white hover:text-trophy-gold hover:underline">
+                <Link href={`/players/${p.id}`} className="font-medium text-white hover:text-gold-ink hover:underline">
                   {p.name}
                 </Link>
                 {p.role && (
@@ -288,7 +288,7 @@ export default function PlayersPage() {
       {compareIds.length > 0 && (
         <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-            <Scale className="h-4 w-4 text-trophy-gold" /> Compare
+            <Scale className="h-4 w-4 text-gold-ink" /> Compare
             <span className="font-medium normal-case text-zinc-500">
               {compareIds.length}/3 picked
             </span>
@@ -299,7 +299,7 @@ export default function PlayersPage() {
               (compare holds 2–3 players).
             </p>
           ) : compareErr ? (
-            <p className="text-sm text-brick-red">{compareErr}</p>
+            <p className="text-sm text-loss-ink">{compareErr}</p>
           ) : !compare ? (
             <p className="text-sm text-zinc-500">Loading…</p>
           ) : (
@@ -313,14 +313,14 @@ export default function PlayersPage() {
                     {compare.players.map((p) => (
                       <th key={p.id} className="px-3 py-2">
                         <span className="inline-flex items-center gap-2 font-semibold text-white">
-                          <Link href={`/players/${p.id}`} className="hover:text-trophy-gold hover:underline">
+                          <Link href={`/players/${p.id}`} className="hover:text-gold-ink hover:underline">
                             {p.name}
                           </Link>
                           <button
                             type="button"
                             aria-label={`Remove ${p.name} from compare`}
                             onClick={() => toggleCompare(p.id)}
-                            className="rounded p-0.5 text-zinc-500 transition hover:bg-slate-800 hover:text-brick-red"
+                            className="rounded p-0.5 text-zinc-500 transition hover:bg-slate-800 hover:text-loss-ink"
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
@@ -407,12 +407,12 @@ export default function PlayersPage() {
                 <td className="px-4 py-2.5 font-medium text-white">
                   <span className="inline-flex items-center gap-2">
                     <AvailabilityDot availability={p.availability} />
-                    <Link href={`/players/${p.id}`} className="hover:text-trophy-gold hover:underline">
+                    <Link href={`/players/${p.id}`} className="hover:text-gold-ink hover:underline">
                       {p.name}
                     </Link>
                     {notesByPlayer.has(p.id) && (
                       <span title={`Your note: ${notesByPlayer.get(p.id)}`}>
-                        <StickyNote className="h-3.5 w-3.5 text-trophy-gold" aria-label="You have a private note on this player" />
+                        <StickyNote className="h-3.5 w-3.5 text-gold-ink" aria-label="You have a private note on this player" />
                       </span>
                     )}
                   </span>
@@ -438,7 +438,7 @@ export default function PlayersPage() {
                   {p.owned_by_team_id ? (
                     <span className="text-zinc-400">{teamName.get(p.owned_by_team_id) ?? `Team ${p.owned_by_team_id}`}</span>
                   ) : (
-                    <span className="rounded bg-pitch-green/15 px-1.5 py-0.5 text-xs font-bold text-pitch-green">FA</span>
+                    <span className="rounded bg-pitch-green/15 px-1.5 py-0.5 text-xs font-bold text-win-ink">FA</span>
                   )}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-zinc-300">
@@ -470,7 +470,7 @@ export default function PlayersPage() {
                 <AvailabilityDot availability={p.availability} />
                 {p.name}
                 {notesByPlayer.has(p.id) && (
-                  <StickyNote className="h-3.5 w-3.5 shrink-0 text-trophy-gold" aria-label="You have a private note on this player" />
+                  <StickyNote className="h-3.5 w-3.5 shrink-0 text-gold-ink" aria-label="You have a private note on this player" />
                 )}
                 {p.is_overseas && <Plane className="ml-1.5 inline h-3 w-3 text-zinc-500" />}
               </p>
@@ -485,7 +485,7 @@ export default function PlayersPage() {
             {p.owned_by_team_id ? (
               <span className="shrink-0 text-xs text-zinc-500">{teamName.get(p.owned_by_team_id) ?? `T${p.owned_by_team_id}`}</span>
             ) : (
-              <span className="shrink-0 rounded bg-pitch-green/15 px-1.5 py-0.5 text-xs font-bold text-pitch-green">FA</span>
+              <span className="shrink-0 rounded bg-pitch-green/15 px-1.5 py-0.5 text-xs font-bold text-win-ink">FA</span>
             )}
             <WatchToggle
               watched={watch.watchedIds.has(p.id)}

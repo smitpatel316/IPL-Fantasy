@@ -27,7 +27,7 @@ export function PlayoffPicture({ leagueId }: { leagueId: number }) {
   if (err)
     return (
       <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-5">
-        <p className="text-xs text-brick-red">{err}</p>
+        <p className="text-xs text-loss-ink">{err}</p>
       </section>
     );
   if (!data) return null;
@@ -38,7 +38,7 @@ export function PlayoffPicture({ leagueId }: { leagueId: number }) {
       className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-5"
     >
       <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <Flag className="h-4 w-4 text-trophy-gold" /> Playoff picture
+        <Flag className="h-4 w-4 text-gold-ink" /> Playoff picture
         <span className="text-[11px] font-medium normal-case tracking-normal text-zinc-500">
           {data.regular_season_complete
             ? "regular season complete — the final picture"
@@ -87,11 +87,11 @@ export function PlayoffPicture({ leagueId }: { leagueId: number }) {
                 <td className="py-2 pr-2 text-zinc-400">{e.remaining_games}</td>
                 <td className="py-2 pr-2">
                   {e.clinch_status === "clinched" ? (
-                    <span className="rounded bg-pitch-green/15 px-1.5 py-0.5 text-[11px] font-bold uppercase text-pitch-green">
+                    <span className="rounded bg-pitch-green/15 px-1.5 py-0.5 text-[11px] font-bold uppercase text-win-ink">
                       Clinched
                     </span>
                   ) : e.clinch_status === "eliminated" ? (
-                    <span className="rounded bg-brick-red/15 px-1.5 py-0.5 text-[11px] font-bold uppercase text-brick-red">
+                    <span className="rounded bg-brick-red/15 px-1.5 py-0.5 text-[11px] font-bold uppercase text-loss-ink">
                       Eliminated
                     </span>
                   ) : (

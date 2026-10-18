@@ -43,7 +43,7 @@ export function AllRosters({ leagueId }: { leagueId: number }) {
       className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-5"
     >
       <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <Users className="h-4 w-4 text-trophy-gold" /> Teams
+        <Users className="h-4 w-4 text-gold-ink" /> Teams
         <span className="text-[11px] font-medium normal-case tracking-normal text-zinc-500">
           every roster, grouped by slot · overseas starters vs the 4-cap · read-only
         </span>

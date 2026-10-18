@@ -14,9 +14,9 @@ const WEEKS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 const STATUS_STYLE: Record<string, string> = {
   scheduled: "bg-slate-800 text-zinc-400",
-  live: "bg-brick-red/15 text-brick-red",
-  final: "bg-pitch-green/15 text-pitch-green",
-  complete: "bg-pitch-green/15 text-pitch-green",
+  live: "bg-brick-red/15 text-loss-ink",
+  final: "bg-pitch-green/15 text-win-ink",
+  complete: "bg-pitch-green/15 text-win-ink",
 };
 
 function TeamRow({
@@ -33,7 +33,7 @@ function TeamRow({
   return (
     <div className="flex-1">
       <div className={cn("flex items-center gap-2", align === "right" && "flex-row-reverse text-right")}>
-        {winner && <Trophy className="h-4 w-4 shrink-0 text-trophy-gold" aria-label="Winner" />}
+        {winner && <Trophy className="h-4 w-4 shrink-0 text-gold-ink" aria-label="Winner" />}
         <p className={cn("min-w-0 flex-1 truncate text-sm font-semibold", winner ? "text-white" : "text-zinc-300")}>
           {name}
         </p>
@@ -42,7 +42,7 @@ function TeamRow({
         className={cn(
           "mt-1 text-3xl font-extrabold tabular-nums tracking-tight",
           align === "right" && "text-right",
-          winner ? "text-trophy-gold" : "text-white",
+          winner ? "text-gold-ink" : "text-white",
         )}
       >
         {score.toFixed(1)}
@@ -241,7 +241,7 @@ export default function MatchupPage() {
       <PageHeader title="Matchups" sub="Weekly head-to-head · Monday–Sunday periods" />
       <p className="-mt-3 mb-5 text-xs text-zinc-500">
         Planning ahead? See every IPL team&apos;s games per week in the{" "}
-        <Link href="/schedule" className="font-medium text-trophy-gold hover:underline">
+        <Link href="/schedule" className="font-medium text-gold-ink hover:underline">
           schedule matrix
         </Link>
         .

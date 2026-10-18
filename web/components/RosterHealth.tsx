@@ -76,9 +76,9 @@ export function RosterHealth({
       className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-5"
     >
       <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
-        <HeartPulse className="h-4 w-4 text-trophy-gold" /> Roster health
+        <HeartPulse className="h-4 w-4 text-gold-ink" /> Roster health
       </h2>
-      {err && <p className="mt-2 text-xs text-brick-red">{err}</p>}
+      {err && <p className="mt-2 text-xs text-loss-ink">{err}</p>}
       {!data && !err && <p className="mt-3 text-sm text-zinc-500">Checking your roster…</p>}
       {data && healthy && (
         <p className="mt-3 text-sm text-zinc-500">

@@ -219,8 +219,8 @@ export default function PlayoffsPage() {
                 />
               )}
               <div className="rounded-xl border border-dashed border-trophy-gold/40 bg-trophy-gold/5 p-5 text-center">
-                <Trophy className="mx-auto mb-2 h-8 w-8 text-trophy-gold" />
-                <p className="text-sm font-bold text-trophy-gold">Champion</p>
+                <Trophy className="mx-auto mb-2 h-8 w-8 text-gold-ink" />
+                <p className="text-sm font-bold text-gold-ink">Champion</p>
                 {data.champion_team_name ? (
                   <p className="mt-1 text-base font-bold text-white">
                     {data.champion_team_name}
@@ -279,7 +279,7 @@ function GameCardBody({
 }) {
   return (
     <>
-      <h2 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-trophy-gold">
+      <h2 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gold-ink">
         <Trophy className="h-4 w-4" /> {game.label}
       </h2>
       <p className="mb-3 text-xs text-zinc-600">

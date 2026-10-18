@@ -193,7 +193,7 @@ export default function MockDraftPage() {
         <>
           <section className="mb-6 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-slate-800 bg-midnight-soft px-5 py-3 text-sm text-zinc-300">
             <span className="flex items-center gap-2 font-semibold text-white">
-              <Bot className="h-4 w-4 text-trophy-gold" />
+              <Bot className="h-4 w-4 text-gold-ink" />
               {done ? "Mock draft complete" : `Drafting… pick ${revealed} of ${total}`}
             </span>
             <span>Seed {result.seed}</span>
@@ -272,7 +272,7 @@ export default function MockDraftPage() {
                         className={cn(
                           "rounded-full px-2 py-0.5 text-[11px] font-bold uppercase",
                           t.difficulty === "sharp"
-                            ? "bg-trophy-gold/15 text-trophy-gold"
+                            ? "bg-trophy-gold/15 text-gold-ink"
                             : "bg-slate-800 text-slate-300",
                         )}
                       >

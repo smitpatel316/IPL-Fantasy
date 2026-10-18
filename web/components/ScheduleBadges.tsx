@@ -49,7 +49,7 @@ export function useScheduleBadges(leagueId: number | string, initialWeek = 1): S
 
 /** Color semantics: more games = more lineup chances. */
 export function gamesBadgeClass(games: number): string {
-  if (games >= 3) return "border-trophy-gold/50 bg-trophy-gold/10 text-trophy-gold";
+  if (games >= 3) return "border-trophy-gold/50 bg-trophy-gold/10 text-gold-ink";
   if (games === 2) return "border-emerald-800 bg-emerald-950/50 text-emerald-300";
   if (games === 1) return "border-slate-700 bg-slate-800/60 text-slate-400";
   return "border-slate-800 bg-slate-900/60 text-slate-600";
