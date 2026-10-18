@@ -9,7 +9,7 @@ import { AvailabilityDot, AvailabilityLegend, AVAILABILITY_META } from "@/compon
 import { ScrollHint } from "@/components/ScrollHint";
 import { RosterHealth } from "@/components/RosterHealth";
 import { cn } from "@/lib/utils";
-import { Plane, Save, Search, Sparkles, X, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Plane, Save, Search, Sparkles, X, CheckCircle2, AlertTriangle, Copy } from "lucide-react";
 
 const STARTERS: { slot: string; max: number; label: string }[] = [
   { slot: "WK", max: 1, label: "Wicket-keeper" },
@@ -53,6 +53,7 @@ export default function LineupPage() {
   const [msg, setMsg] = useState("");
   const [saving, setSaving] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
 
@@ -129,6 +130,49 @@ export default function LineupPage() {
       setErr(e instanceof ApiError ? e.message : "suggestion failed");
     } finally {
       setSuggesting(false);
+    }
+  }
+
+  // P5-W44: copy the previous week's saved lineup into this week's
+  // form. Players no longer on the roster are dropped with a notice;
+  // nothing is saved — the manager reviews and saves through the normal
+  // PUT, so lock/D8 validation applies exactly as enforced there.
+  async function copyFromPrev() {
+    if (!teamId || week <= 1) return;
+    setErr("");
+    setMsg("");
+    setCopying(true);
+    try {
+      const prev = await api.getLineup(teamId, week - 1);
+      const prevSlots = prev.slots ?? {};
+      if (Object.values(prevSlots).flat().length === 0) {
+        setMsg(`No saved lineup for week ${week - 1} — nothing to copy.`);
+        return;
+      }
+      const rosterIds = new Set(roster.map((p) => p.id));
+      const dropped: string[] = [];
+      const next: Record<string, number[]> = {};
+      for (const [slot, pids] of Object.entries(prevSlots)) {
+        const kept = pids.filter((pid) => {
+          if (rosterIds.has(pid)) return true;
+          dropped.push(byId.get(pid)?.name ?? `#${pid}`);
+          return false;
+        });
+        if (kept.length) next[slot] = kept;
+      }
+      setSlots(next);
+      setCarriedFrom(null);
+      setAvailMap(prev.player_availability ?? {});
+      setMsg(
+        `Copied your week ${prev.carried_over_from_week ?? week - 1} lineup into week ${week} — review, then Save.` +
+          (dropped.length
+            ? ` Dropped, no longer on roster: ${dropped.join(", ")}.`
+            : ""),
+      );
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "copy failed");
+    } finally {
+      setCopying(false);
     }
   }
 
@@ -252,6 +296,21 @@ export default function LineupPage() {
             <Sparkles className="h-4 w-4" />
             {suggesting ? "Thinking…" : "Suggest best XI"}
           </button>
+          {week > 1 && (
+            <button
+              onClick={copyFromPrev}
+              disabled={copying || !teamId || locked}
+              title={
+                locked
+                  ? `Week ${week} is locked`
+                  : `Pre-fill this week's lineup from your saved week ${week - 1} lineup`
+              }
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-trophy-gold hover:text-white disabled:opacity-50"
+            >
+              <Copy className="h-4 w-4" />
+              {copying ? "Copying…" : `Copy from week ${week - 1}`}
+            </button>
+          )}
           <button
             onClick={save}
             disabled={saving || !teamId || locked}
