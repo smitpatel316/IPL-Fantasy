@@ -8,6 +8,7 @@ import { clearTeamClaim, getTeamClaim, setTeamClaim } from "@/lib/identity";
 import { ApiError, type AdjustmentOut, type DraftRecapOut, type LeagueDetailOut, type MatchupOut, type PlayerOut, type RosterMoveOut } from "@/lib/types";
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { MessageBoard } from "@/components/MessageBoard";
+import { MyLeaguesStrip } from "@/components/MyLeagues";
 import { LeaguePolls } from "@/components/LeaguePolls";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { NotificationsInbox } from "@/components/NotificationsInbox";
@@ -258,6 +259,9 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
         title={league.name}
         sub={`Season ${league.season} · invite code ${league.invite_code} · ${league.status}`}
       />
+
+      {/* P5-W45: jump between this browser's leagues. */}
+      <MyLeaguesStrip currentLeagueId={league.id} />
 
       {/* P5-W11: onboarding nudge — only when the visitor's selected
           team is still unclaimed. */}

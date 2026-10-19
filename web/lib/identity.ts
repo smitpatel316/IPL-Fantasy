@@ -34,3 +34,20 @@ export function claimHeaders(teamId: number): Record<string, string> {
   const code = getTeamClaim(teamId);
   return code ? { "X-Team-Claim": code } : {};
 }
+
+/** P5-W45: every team id this browser holds a claim code for — the
+ *  visitor's teams, found by scanning localStorage for the P4-W18 keys. */
+export function myClaimedTeamIds(): number[] {
+  const ids: number[] = [];
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (!k || !k.startsWith("ipl-claim-")) continue;
+      const n = Number(k.slice("ipl-claim-".length));
+      if (Number.isFinite(n) && n > 0 && !ids.includes(n)) ids.push(n);
+    }
+  } catch {
+    /* storage unavailable — no claims */
+  }
+  return ids;
+}

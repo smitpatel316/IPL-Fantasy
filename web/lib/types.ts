@@ -67,6 +67,20 @@ export interface LeagueSummaryOut {
   team_count: number;
 }
 
+/** P5-W45: one of this browser's claimed teams and the league it lives in. */
+export interface MyLeagueTeamOut {
+  team_id: number;
+  team_name: string;
+  league_id: number;
+  league_name: string;
+  season: string;
+  league_status: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  points_for: number;
+}
+
 export interface LeagueDetailOut extends LeagueOut {
   standings: TeamStandingOut[];
   current_week: number;
