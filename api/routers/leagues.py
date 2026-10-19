@@ -200,13 +200,6 @@ def league_records(league_id: int, con: sqlite3.Connection = Depends(get_db)):
     unscored league returns scored=0 and no records — the UI renders
     the honest pre-season empty state."""
     league = get_league(con, league_id)  # 404 if missing
-@router.get("/{league_id}/waivers/order", response_model=schemas.WaiverOrderOut)
-def waiver_order(league_id: int, con: sqlite3.Connection = Depends(get_db)):
-    """P5-W47: the current waiver-wire tiebreak order — the engine's
-    reverse-standings order (services.standings_best_first, reversed:
-    the worst team wins tied bids), with each team's W-L. Read
-    projection only; no engine changes."""
-    get_league(con, league_id)  # 404 if missing
     names = {
         r["id"]: r["name"] for r in con.execute(
             "SELECT id, name FROM teams WHERE league_id = ?", (league_id,))
@@ -313,6 +306,19 @@ def waiver_order(league_id: int, con: sqlite3.Connection = Depends(get_db)):
                         else f"{best[1]} · weeks {best[2]}–{best[3]}")))
     return schemas.LeagueRecordsOut(
         league_id=league_id, scored=len(finals), records=records)
+
+
+@router.get("/{league_id}/waivers/order", response_model=schemas.WaiverOrderOut)
+def waiver_order(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+    """P5-W47: the current waiver-wire tiebreak order — the engine's
+    reverse-standings order (services.standings_best_first, reversed:
+    the worst team wins tied bids), with each team's W-L. Read
+    projection only; no engine changes."""
+    get_league(con, league_id)  # 404 if missing
+    names = {
+        r["id"]: r["name"] for r in con.execute(
+            "SELECT id, name FROM teams WHERE league_id = ?", (league_id,))
+    }
     order = []
     for pos, tid in enumerate(
             reversed(services.standings_best_first(con, league_id)), start=1):
@@ -330,8 +336,6 @@ def waiver_order(league_id: int, con: sqlite3.Connection = Depends(get_db)):
         league_id=league_id, order=order,
         basis=("Reverse standings — the team with the worst record "
                "wins tied bids."))
-
-
 @router.patch("/{league_id}/settings", response_model=schemas.LeagueOut)
 def patch_league_settings(league_id: int, body: schemas.LeagueSettingsPatch,
                           con: sqlite3.Connection = Depends(get_db)):
@@ -824,3 +828,121 @@ def get_draft_recap(league_id: int, con: sqlite3.Connection = Depends(get_db)):
         league_id=league_id, status="complete", draft_id=d["id"],
         teams=teams_out, headline_biggest_steal=headline_steal,
         headline_best_pick=best_pick, basis=_RECAP_BASIS)
+
+
+_RECAP_LABELS = {
+    "biggest_upset": "Biggest upset",
+    "highest_scorer": "Highest scorer",
+    "closest_matchup": "Closest matchup",
+    "biggest_blowout": "Biggest blowout",
+}
+
+
+def _fmt_score(v: float) -> str:
+    return ("%g" % v)
+
+
+@router.get("/{league_id}/recap/{week_no}",
+            response_model=schemas.WeeklyRecapOut)
+def weekly_recap(league_id: int, week_no: int,
+                 con: sqlite3.Connection = Depends(get_db)):
+    """P5-W48: the 'week in review' for one scored week. Biggest upset
+    (the winner's pre-week average points-for vs the loser's — a winner
+    who was outscored on average before this week), highest scorer,
+    closest matchup, and biggest blowout. Computed from persisted
+    matchup scores only; a week with no final matchups returns
+    scored=false and no facts (the UI shows the honest 'week not scored
+    yet' state). Read-only."""
+    if not 1 <= week_no <= TOTAL_WEEKS:
+        raise HTTPException(422, f"week_no must be 1..{TOTAL_WEEKS}")
+    get_league(con, league_id)  # 404 if missing
+    names = {
+        r["id"]: r["name"] for r in con.execute(
+            "SELECT id, name FROM teams WHERE league_id = ?", (league_id,))
+    }
+    games = con.execute(
+        """SELECT team_a_id, team_b_id, score_a, score_b FROM matchups
+           WHERE league_id = ? AND week_no = ? AND status = 'final'""",
+        (league_id, week_no)).fetchall()
+
+    def name(tid: int) -> str:
+        return names.get(tid, f"team {tid}")
+
+    def side(m, tid: int) -> float:
+        return m["score_a"] if tid == m["team_a_id"] else m["score_b"]
+
+    def winner_loser(m):
+        if m["score_a"] > m["score_b"]:
+            return (m["team_a_id"], m["team_b_id"])
+        if m["score_b"] > m["score_a"]:
+            return (m["team_b_id"], m["team_a_id"])
+        return None
+
+    facts: list[schemas.RecapFactOut] = []
+    if games:
+        decided = [(m, w, l) for m in games
+                   for wl in [winner_loser(m)] if wl for (w, l) in [wl]]
+
+        # Biggest upset: winner entered the week with a lower average
+        # points-for than the loser (computed from prior final weeks).
+        if week_no > 1:
+            prior: dict[int, list[float]] = {}
+            for m in con.execute(
+                    """SELECT team_a_id, team_b_id, score_a, score_b
+                       FROM matchups WHERE league_id = ? AND week_no < ?
+                       AND status = 'final'""",
+                    (league_id, week_no)):
+                prior.setdefault(m["team_a_id"], []).append(m["score_a"])
+                prior.setdefault(m["team_b_id"], []).append(m["score_b"])
+            avg = {tid: sum(v) / len(v) for tid, v in prior.items()}
+            upsets = [(avg[l] - avg[w], w, l) for _, w, l in decided
+                      if w in avg and l in avg and avg[w] < avg[l]]
+            if upsets:
+                delta, w, l = max(upsets, key=lambda e: (e[0], name(e[1])))
+                facts.append(schemas.RecapFactOut(
+                    key="biggest_upset",
+                    label=_RECAP_LABELS["biggest_upset"],
+                    value=f"+{_fmt_score(delta)} underdog",
+                    detail=(f"{name(w)} beat {name(l)} (pre-week avg "
+                            f"{_fmt_score(avg[w])} vs {_fmt_score(avg[l])})")))
+
+        # Highest scorer.
+        hs_tid, hs_m, hs_sc = max(
+            ((tid, m, side(m, tid)) for m in games
+             for tid in (m["team_a_id"], m["team_b_id"])),
+            key=lambda e: (e[2], name(e[0])))
+        hs_opp = (hs_m["team_b_id"] if hs_tid == hs_m["team_a_id"]
+                  else hs_m["team_a_id"])
+        facts.append(schemas.RecapFactOut(
+            key="highest_scorer", label=_RECAP_LABELS["highest_scorer"],
+            value=_fmt_score(hs_sc),
+            detail=f"{name(hs_tid)} vs {name(hs_opp)}"))
+
+        if decided:
+            def margin(m) -> float:
+                return abs(m["score_a"] - m["score_b"])
+
+            # Closest matchup.
+            nm, nw, nl = min(decided,
+                             key=lambda e: (margin(e[0]), name(e[1])))
+            nw_sc, nl_sc = side(nm, nw), side(nm, nl)
+            facts.append(schemas.RecapFactOut(
+                key="closest_matchup", label=_RECAP_LABELS["closest_matchup"],
+                value=_fmt_score(margin(nm)),
+                detail=(f"{name(nw)} {_fmt_score(nw_sc)} – "
+                        f"{_fmt_score(nl_sc)} {name(nl)}")))
+
+            # Biggest blowout (a shutout gets the callout).
+            bm, bw, bl = max(decided,
+                             key=lambda e: (margin(e[0]), name(e[1])))
+            bw_sc, bl_sc = side(bm, bw), side(bm, bl)
+            detail = (f"{name(bw)} {_fmt_score(bw_sc)} – "
+                      f"{_fmt_score(bl_sc)} {name(bl)}")
+            if bl_sc == 0:
+                detail += " — shutout"
+            facts.append(schemas.RecapFactOut(
+                key="biggest_blowout", label=_RECAP_LABELS["biggest_blowout"],
+                value=_fmt_score(margin(bm)), detail=detail))
+    return schemas.WeeklyRecapOut(
+        league_id=league_id, week_no=week_no,
+        scored=bool(games), matchup_count=len(games), facts=facts)

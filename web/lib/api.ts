@@ -62,6 +62,7 @@ import type {
   WaiverRunResultOut,
   PlayerNoteOut,
   WatchlistEntryOut,
+  WeeklyRecapOut,
 } from "./types";
 
 const BASE =
@@ -108,6 +109,9 @@ export const api = {
   // P5-W47: waiver-wire tiebreak order.
   waiverOrder: (leagueId: number | string) =>
     req<WaiverOrderOut>(`/leagues/${leagueId}/waivers/order`),
+  // P5-W48: weekly recap.
+  getRecap: (leagueId: number | string, weekNo: number | string) =>
+    req<WeeklyRecapOut>(`/leagues/${leagueId}/recap/${weekNo}`),
   getActivity: (leagueId: number, limit = 50, offset = 0) =>
     req<ActivityOut>(`/leagues/${leagueId}/activity?limit=${limit}&offset=${offset}`),
   getLedger: (leagueId: number, teamId: number) =>

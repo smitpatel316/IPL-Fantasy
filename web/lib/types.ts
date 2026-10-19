@@ -89,6 +89,14 @@ export interface LeagueRecordOut {
   detail: string;
 }
 
+/** P5-W48: one display-ready recap fact for a scored week. */
+export interface RecapFactOut {
+  key: string;
+  label: string;
+  value: string;
+  detail: string;
+}
+
 /** P5-W46: the league records book. records is [] pre-season. */
 export interface LeagueRecordsOut {
   league_id: number;
@@ -110,6 +118,15 @@ export interface WaiverOrderOut {
   league_id: number;
   order: WaiverOrderTeamOut[];
   basis: string;
+}
+
+/** P5-W48: the weekly recap; facts is [] when the week isn't scored. */
+export interface WeeklyRecapOut {
+  league_id: number;
+  week_no: number;
+  scored: boolean;
+  matchup_count: number;
+  facts: RecapFactOut[];
 }
 
 export interface LeagueDetailOut extends LeagueOut {

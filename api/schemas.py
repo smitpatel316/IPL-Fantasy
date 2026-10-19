@@ -1174,3 +1174,20 @@ class WaiverOrderOut(BaseModel):
     league_id: int
     order: list[WaiverOrderTeamOut]  # worst record first
     basis: str
+
+class RecapFactOut(BaseModel):
+    """P5-W48: one display-ready recap fact for a scored week, computed
+    from persisted matchup scores only."""
+
+    key: str  # biggest_upset | highest_scorer | closest_matchup | biggest_blowout
+    label: str
+    value: str
+    detail: str
+
+
+class WeeklyRecapOut(BaseModel):
+    league_id: int
+    week_no: int
+    scored: bool  # any final matchups for this week
+    matchup_count: int
+    facts: list[RecapFactOut]

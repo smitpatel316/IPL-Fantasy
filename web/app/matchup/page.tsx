@@ -268,6 +268,14 @@ export default function MatchupPage() {
 
       {err && <div className="mb-4"><ErrorBox message={err} /></div>}
 
+      {/* P5-W48: week-in-review. */}
+      <p className="mb-5 text-xs text-zinc-500">
+        <Link href={`/recap/${leagueId}/week/${week}`} className="font-medium text-gold-ink hover:underline">
+          Week {week} recap →
+        </Link>{" "}
+        biggest upset, highest scorer, closest matchup, biggest blowout.
+      </p>
+
       {preview && preview.previews.length > 0 && (
         <section className="mb-5 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
           <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-300">
