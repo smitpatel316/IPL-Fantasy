@@ -81,6 +81,22 @@ export interface MyLeagueTeamOut {
   points_for: number;
 }
 
+/** P5-W46: one display-ready record line. */
+export interface LeagueRecordOut {
+  key: string;
+  label: string;
+  value: string;
+  detail: string;
+}
+
+/** P5-W46: the league records book. records is [] pre-season. */
+export interface LeagueRecordsOut {
+  league_id: number;
+  scored: number;
+  records: LeagueRecordOut[];
+}
+
+
 export interface LeagueDetailOut extends LeagueOut {
   standings: TeamStandingOut[];
   current_week: number;

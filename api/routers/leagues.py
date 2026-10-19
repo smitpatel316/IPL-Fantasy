@@ -179,6 +179,135 @@ def get_league_detail(league_id: int, con: sqlite3.Connection = Depends(get_db))
     )
 
 
+_RECORD_LABELS = {
+    "highest_weekly_score": "Highest weekly score",
+    "largest_margin": "Largest margin of victory",
+    "longest_win_streak": "Longest win streak",
+    "narrowest_win": "Narrowest win",
+    "most_points_in_loss": "Most points in a loss",
+}
+
+
+def _fmt_score(v: float) -> str:
+    return ("%g" % v)
+
+
+@router.get("/{league_id}/records", response_model=schemas.LeagueRecordsOut)
+def league_records(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+    """P5-W46: the league records book. Every record derives from
+    persisted FINAL matchups (read-only); ties resolve deterministically
+    to the earliest week, then the alphabetically-first team name. An
+    unscored league returns scored=0 and no records — the UI renders
+    the honest pre-season empty state."""
+    league = get_league(con, league_id)  # 404 if missing
+    names = {
+        r["id"]: r["name"] for r in con.execute(
+            "SELECT id, name FROM teams WHERE league_id = ?", (league_id,))
+    }
+    finals = con.execute(
+        """SELECT week_no, team_a_id, team_b_id, score_a, score_b
+           FROM matchups WHERE league_id = ? AND status = 'final'
+           ORDER BY week_no""",
+        (league_id,)).fetchall()
+    records: list[schemas.LeagueRecordOut] = []
+    if finals:
+        def name(tid: int) -> str:
+            return names.get(tid, f"team {tid}")
+
+        def winner_loser(m):
+            if m["score_a"] > m["score_b"]:
+                return (m["team_a_id"], m["team_b_id"])
+            if m["score_b"] > m["score_a"]:
+                return (m["team_b_id"], m["team_a_id"])
+            return None
+
+        # Highest weekly score.
+        hs, hs_tid, hs_wk = max(
+            ((max(m["score_a"], m["score_b"]),
+              m["team_a_id"] if m["score_a"] >= m["score_b"] else m["team_b_id"],
+              m["week_no"]) for m in finals),
+            key=lambda e: (e[0], -e[2], name(e[1])))
+        records.append(schemas.LeagueRecordOut(
+            key="highest_weekly_score",
+            label=_RECORD_LABELS["highest_weekly_score"],
+            value=_fmt_score(hs),
+            detail=f"{name(hs_tid)} · week {hs_wk}"))
+
+        # Largest margin and narrowest win (ties excluded from both).
+        decided = [(m, winner_loser(m)) for m in finals]
+        decided = [(m, wl) for m, wl in decided if wl is not None]
+        if decided:
+            def margin(m):
+                return abs(m["score_a"] - m["score_b"])
+
+            lm, lm_wl = max(decided,
+                            key=lambda e: (margin(e[0]), -e[0]["week_no"],
+                                           name(e[1][0])))
+            w_id, l_id = lm_wl
+            w_sc = lm["score_a"] if w_id == lm["team_a_id"] else lm["score_b"]
+            l_sc = lm["score_b"] if w_id == lm["team_a_id"] else lm["score_a"]
+            records.append(schemas.LeagueRecordOut(
+                key="largest_margin",
+                label=_RECORD_LABELS["largest_margin"],
+                value=_fmt_score(margin(lm)),
+                detail=(f"{name(w_id)} {_fmt_score(w_sc)} – "
+                        f"{_fmt_score(l_sc)} {name(l_id)} · week {lm['week_no']}")))
+
+            nw, nw_wl = min(decided,
+                            key=lambda e: (margin(e[0]), e[0]["week_no"],
+                                           name(e[1][0])))
+            w_id, l_id = nw_wl
+            w_sc = nw["score_a"] if w_id == nw["team_a_id"] else nw["score_b"]
+            l_sc = nw["score_b"] if w_id == nw["team_a_id"] else nw["score_a"]
+            records.append(schemas.LeagueRecordOut(
+                key="narrowest_win",
+                label=_RECORD_LABELS["narrowest_win"],
+                value=_fmt_score(margin(nw)),
+                detail=(f"{name(w_id)} {_fmt_score(w_sc)} – "
+                        f"{_fmt_score(l_sc)} {name(l_id)} · week {nw['week_no']}")))
+
+            # Most points scored in a loss.
+            mpl_m, mpl_lid, mpl_lsc = max(
+                ((m, wl[1], (m["score_a"] if wl[1] == m["team_a_id"]
+                             else m["score_b"])) for m, wl in decided),
+                key=lambda e: (e[2], -e[0]["week_no"], name(e[1])))
+            records.append(schemas.LeagueRecordOut(
+                key="most_points_in_loss",
+                label=_RECORD_LABELS["most_points_in_loss"],
+                value=_fmt_score(mpl_lsc),
+                detail=(f"{name(mpl_lid)} · week {mpl_m['week_no']}")))
+
+        # Longest win streak (a tie or loss resets the run).
+        per_team: dict[int, list[tuple[int, str]]] = {}
+        for m in finals:
+            wl = winner_loser(m)
+            for tid in (m["team_a_id"], m["team_b_id"]):
+                oc = "w" if wl and wl[0] == tid else ("t" if wl is None else "l")
+                per_team.setdefault(tid, []).append((m["week_no"], oc))
+        best = (0, "", 0, 0)  # (length, team_name, from_week, to_week)
+        for tid in sorted(per_team, key=name):
+            run, start = 0, 0
+            for wk, oc in per_team[tid]:
+                if oc == "w":
+                    if run == 0:
+                        start = wk
+                    run += 1
+                    if run > best[0]:
+                        best = (run, name(tid), start, wk)
+                else:
+                    run = 0
+        if best[0] > 0:
+            records.append(schemas.LeagueRecordOut(
+                key="longest_win_streak",
+                label=_RECORD_LABELS["longest_win_streak"],
+                value=f"{best[0]} week{'s' if best[0] != 1 else ''}",
+                detail=(f"{best[1]} · week {best[2]}"
+                        if best[2] == best[3]
+                        else f"{best[1]} · weeks {best[2]}–{best[3]}")))
+    return schemas.LeagueRecordsOut(
+        league_id=league_id, scored=len(finals), records=records)
+
+
 @router.patch("/{league_id}/settings", response_model=schemas.LeagueOut)
 def patch_league_settings(league_id: int, body: schemas.LeagueSettingsPatch,
                           con: sqlite3.Connection = Depends(get_db)):
