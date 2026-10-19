@@ -67,6 +67,23 @@ export interface LeagueSummaryOut {
   team_count: number;
 }
 
+/** P5-W48: one display-ready recap fact for a scored week. */
+export interface RecapFactOut {
+  key: string;
+  label: string;
+  value: string;
+  detail: string;
+}
+
+/** P5-W48: the weekly recap; facts is [] when the week isn't scored. */
+export interface WeeklyRecapOut {
+  league_id: number;
+  week_no: number;
+  scored: boolean;
+  matchup_count: number;
+  facts: RecapFactOut[];
+}
+
 export interface LeagueDetailOut extends LeagueOut {
   standings: TeamStandingOut[];
   current_week: number;

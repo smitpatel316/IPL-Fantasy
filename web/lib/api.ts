@@ -59,6 +59,7 @@ import type {
   WaiverRunResultOut,
   PlayerNoteOut,
   WatchlistEntryOut,
+  WeeklyRecapOut,
 } from "./types";
 
 const BASE =
@@ -96,6 +97,9 @@ export const api = {
   createLeague: (name: string, commissioner_name: string) =>
     req<LeagueOut>("/leagues", { method: "POST", body: JSON.stringify({ name, commissioner_name }) }),
   getLeague: (id: number | string) => req<LeagueDetailOut>(`/leagues/${id}`),
+  // P5-W48: weekly recap.
+  getRecap: (leagueId: number | string, weekNo: number | string) =>
+    req<WeeklyRecapOut>(`/leagues/${leagueId}/recap/${weekNo}`),
   getActivity: (leagueId: number, limit = 50, offset = 0) =>
     req<ActivityOut>(`/leagues/${leagueId}/activity?limit=${limit}&offset=${offset}`),
   getLedger: (leagueId: number, teamId: number) =>
