@@ -134,6 +134,36 @@ def get_league_detail(league_id: int, con: sqlite3.Connection = Depends(get_db))
     )
 
 
+@router.get("/{league_id}/waivers/order", response_model=schemas.WaiverOrderOut)
+def waiver_order(league_id: int, con: sqlite3.Connection = Depends(get_db)):
+    """P5-W47: the current waiver-wire tiebreak order — the engine's
+    reverse-standings order (services.standings_best_first, reversed:
+    the worst team wins tied bids), with each team's W-L. Read
+    projection only; no engine changes."""
+    get_league(con, league_id)  # 404 if missing
+    names = {
+        r["id"]: r["name"] for r in con.execute(
+            "SELECT id, name FROM teams WHERE league_id = ?", (league_id,))
+    }
+    order = []
+    for pos, tid in enumerate(
+            reversed(services.standings_best_first(con, league_id)), start=1):
+        w = con.execute(
+            """SELECT
+                 SUM(CASE WHEN (team_a_id = ? AND score_a > score_b) OR (team_b_id = ? AND score_b > score_a) THEN 1 ELSE 0 END),
+                 SUM(CASE WHEN (team_a_id = ? AND score_a < score_b) OR (team_b_id = ? AND score_b < score_a) THEN 1 ELSE 0 END)
+               FROM matchups WHERE league_id = ? AND status = 'final'""",
+            (tid, tid, tid, tid, league_id)).fetchone()
+        order.append(schemas.WaiverOrderTeamOut(
+            position=pos, team_id=tid,
+            team_name=names.get(tid, f"team {tid}"),
+            wins=w[0] or 0, losses=w[1] or 0))
+    return schemas.WaiverOrderOut(
+        league_id=league_id, order=order,
+        basis=("Reverse standings — the team with the worst record "
+               "wins tied bids."))
+
+
 @router.patch("/{league_id}/settings", response_model=schemas.LeagueOut)
 def patch_league_settings(league_id: int, body: schemas.LeagueSettingsPatch,
                           con: sqlite3.Connection = Depends(get_db)):

@@ -22,6 +22,7 @@ import type {
   LineupOut,
   LineupSuggestionOut,
   MatchupOut,
+  WaiverOrderOut,
   MatchupPreviewOut,
   MessageBoardOut,
   MessageOut,
@@ -96,6 +97,9 @@ export const api = {
   createLeague: (name: string, commissioner_name: string) =>
     req<LeagueOut>("/leagues", { method: "POST", body: JSON.stringify({ name, commissioner_name }) }),
   getLeague: (id: number | string) => req<LeagueDetailOut>(`/leagues/${id}`),
+  // P5-W47: waiver-wire tiebreak order.
+  waiverOrder: (leagueId: number | string) =>
+    req<WaiverOrderOut>(`/leagues/${leagueId}/waivers/order`),
   getActivity: (leagueId: number, limit = 50, offset = 0) =>
     req<ActivityOut>(`/leagues/${leagueId}/activity?limit=${limit}&offset=${offset}`),
   getLedger: (leagueId: number, teamId: number) =>

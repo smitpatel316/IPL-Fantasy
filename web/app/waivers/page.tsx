@@ -9,6 +9,7 @@ import { ApiError, type PlayerOut, type TeamOut, type WaiverClaimOut, type Waive
 import { PageHeader, ErrorBox } from "@/components/ui";
 import { GameCountBadge, ScheduleWeekPicker, useScheduleBadges } from "@/components/ScheduleBadges";
 import { useWatchlist, WatchToggle } from "@/components/Watchlist";
+import { WaiverOrderStrip } from "@/components/WaiverOrderStrip";
 import { AvailabilityDot } from "@/components/AvailabilityDot";
 import { cn } from "@/lib/utils";
 import { Gavel, CircleDollarSign, Timer, Scale, ArrowRight, Sparkles } from "lucide-react";
@@ -257,6 +258,9 @@ export default function WaiversPage() {
       </div>
 
       {err && <div className="mb-4"><ErrorBox message={err} onRetry={load} /></div>}
+
+      {/* P5-W47: current tiebreak order (reverse standings). */}
+      <WaiverOrderStrip leagueId={leagueId} teamId={teamId} />
 
       {/* P3-A6 schedule-aware nudge: target players from teams with more games. */}
       <section className="mb-6 rounded-xl border border-slate-800 bg-midnight-soft p-4 sm:p-5">
