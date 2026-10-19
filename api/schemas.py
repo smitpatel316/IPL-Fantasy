@@ -1125,3 +1125,19 @@ class ScheduleNudgesOut(BaseModel):
     source: str = ""
     weeks_available: list[int] = []
     games: list[TeamGameCount] = []
+
+
+class LeagueRecordOut(BaseModel):
+    """P5-W46: one display-ready record line, computed from persisted
+    FINAL matchups only — no fabricated data."""
+
+    key: str  # highest_weekly_score | largest_margin | longest_win_streak | narrowest_win | most_points_in_loss
+    label: str  # display label
+    value: str  # display value, e.g. "182.4" / "3 weeks"
+    detail: str  # e.g. "Smit XI vs Rival XI · week 3"
+
+
+class LeagueRecordsOut(BaseModel):
+    league_id: int
+    scored: int  # final matchup count; 0 => pre-season empty state
+    records: list[LeagueRecordOut]

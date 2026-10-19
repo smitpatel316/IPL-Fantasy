@@ -12,6 +12,7 @@ import type {
   DndOut,
   DraftOut,
   DraftRecapOut,
+  LeagueRecordsOut,
   DraftPickOut,
   HealthOut,
   AdjustmentOut,
@@ -282,6 +283,9 @@ export const api = {
     }),
   getDraftRecap: (leagueId: number | string) =>
     req<DraftRecapOut>(`/leagues/${leagueId}/draft-recap`),
+  // P5-W46: league records book.
+  getRecords: (leagueId: number | string) =>
+    req<LeagueRecordsOut>(`/leagues/${leagueId}/records`),
   listPicks: (id: number | string) => req<DraftPickOut[]>(`/drafts/${id}/picks`),
   startDraft: (leagueId: number | string) =>
     req<DraftOut>(`/leagues/${leagueId}/draft/start`, { method: "POST" }),
