@@ -1158,3 +1158,19 @@ class LeagueRecordsOut(BaseModel):
     league_id: int
     scored: int  # final matchup count; 0 => pre-season empty state
     records: list[LeagueRecordOut]
+
+class WaiverOrderTeamOut(BaseModel):
+    """P5-W47: one team in the tiebreak order. position=1 wins tied bids
+    (worst record, per reverse standings)."""
+
+    position: int
+    team_id: int
+    team_name: str
+    wins: int
+    losses: int
+
+
+class WaiverOrderOut(BaseModel):
+    league_id: int
+    order: list[WaiverOrderTeamOut]  # worst record first
+    basis: str

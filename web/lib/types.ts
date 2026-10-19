@@ -97,6 +97,21 @@ export interface LeagueRecordsOut {
 }
 
 
+/** P5-W47: waiver-wire tiebreak order (position 1 wins tied bids). */
+export interface WaiverOrderTeamOut {
+  position: number;
+  team_id: number;
+  team_name: string;
+  wins: number;
+  losses: number;
+}
+
+export interface WaiverOrderOut {
+  league_id: number;
+  order: WaiverOrderTeamOut[];
+  basis: string;
+}
+
 export interface LeagueDetailOut extends LeagueOut {
   standings: TeamStandingOut[];
   current_week: number;
