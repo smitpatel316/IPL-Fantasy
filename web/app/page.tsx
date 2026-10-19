@@ -16,6 +16,7 @@ import { api } from "@/lib/api";
 import { setTeamClaim } from "@/lib/identity";
 import { ApiError } from "@/lib/types";
 import { Card, Badge, ErrorBox } from "@/components/ui";
+import { MyLeaguesCard } from "@/components/MyLeagues";
 
 const STATS = [
   { k: "15", v: "roster spots" },
@@ -137,6 +138,11 @@ export default function Home() {
           <ErrorBox message={err} />
         </div>
       )}
+
+      {/* --------------------------- My leagues --------------------------- */}
+      {/* P5-W45: only renders when this browser holds claimed teams; the
+          create/join view below is untouched for unclaimed visitors. */}
+      <MyLeaguesCard />
 
       {/* --------------------------- Create / Join --------------------------- */}
       <section id="start" className="mx-auto grid max-w-3xl scroll-mt-24 gap-4 md:grid-cols-2">

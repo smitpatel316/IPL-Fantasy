@@ -1125,3 +1125,21 @@ class ScheduleNudgesOut(BaseModel):
     source: str = ""
     weeks_available: list[int] = []
     games: list[TeamGameCount] = []
+
+
+class MyLeagueTeamOut(BaseModel):
+    """P5-W45: one of this browser's claimed teams, anywhere it lives.
+
+    Powers the "My leagues" switcher on the home page. The claim code is
+    never projected (it already lives in the visitor's localStorage)."""
+
+    team_id: int
+    team_name: str
+    league_id: int
+    league_name: str
+    season: str
+    league_status: str
+    wins: int
+    losses: int
+    ties: int
+    points_for: float

@@ -52,6 +52,7 @@ import type {
   TeamOut,
   TradeAnalysisOut,
   TradeFinderOut,
+  MyLeagueTeamOut,
   TradeBlockEntryOut,
   TradeOut,
   WaiverClaimOut,
@@ -93,6 +94,12 @@ export const api = {
 
   // leagues
   listLeagues: () => req<LeagueSummaryOut[]>("/leagues"),
+
+  // P5-W45: this browser's claimed teams and the leagues they live in.
+  myLeagues: (teamIds: number[]) =>
+    teamIds.length === 0
+      ? Promise.resolve([] as MyLeagueTeamOut[])
+      : req<MyLeagueTeamOut[]>(`/leagues/my-leagues?team_ids=${teamIds.join(",")}`),
   createLeague: (name: string, commissioner_name: string) =>
     req<LeagueOut>("/leagues", { method: "POST", body: JSON.stringify({ name, commissioner_name }) }),
   getLeague: (id: number | string) => req<LeagueDetailOut>(`/leagues/${id}`),

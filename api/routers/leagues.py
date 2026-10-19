@@ -95,6 +95,59 @@ def _standings_sort_key(s: schemas.TeamStandingOut) -> tuple:
             s.team_name.casefold(), s.team_id)
 
 
+def _team_record(con: sqlite3.Connection, league_id: int,
+                team_id: int) -> tuple[int, int, int, float]:
+    """P5-W45: (wins, losses, ties, points_for) for one team from finalized
+    matchups — the same query get_league_detail uses for the standings."""
+    w = con.execute(
+        """SELECT
+             SUM(CASE WHEN (team_a_id = ? AND score_a > score_b) OR (team_b_id = ? AND score_b > score_a) THEN 1 ELSE 0 END),
+             SUM(CASE WHEN (team_a_id = ? AND score_a < score_b) OR (team_b_id = ? AND score_b < score_a) THEN 1 ELSE 0 END),
+             SUM(CASE WHEN status = 'final' AND score_a = score_b AND (team_a_id = ? OR team_b_id = ?) THEN 1 ELSE 0 END),
+             SUM(CASE WHEN team_a_id = ? THEN score_a WHEN team_b_id = ? THEN score_b ELSE 0 END)
+           FROM matchups WHERE league_id = ? AND status = 'final'""",
+        (team_id, team_id, team_id, team_id, team_id, team_id, team_id, team_id, league_id),
+    ).fetchone()
+    return (w[0] or 0, w[1] or 0, w[2] or 0, w[3] or 0.0)
+
+
+@router.get("/my-leagues", response_model=list[schemas.MyLeagueTeamOut])
+def my_leagues(team_ids: str = Query("",
+              description="comma-separated team ids this browser holds claim codes for (P4-W18)"),
+              con: sqlite3.Connection = Depends(get_db)):
+    """P5-W45: for each team id this browser has claimed, the league it
+    lives in (name, season, status) plus the team's W-L record from
+    finalized matchups. Read-only; claim codes are never projected.
+    Placed before /{league_id} so the literal path wins."""
+    ids: list[int] = []
+    for raw in team_ids.split(","):
+        raw = raw.strip()
+        if not raw:
+            continue
+        if not raw.isdigit():
+            raise HTTPException(422, f"bad team id '{raw}'")
+        if int(raw) not in ids:
+            ids.append(int(raw))
+    if not ids:
+        raise HTTPException(422, "supply at least one team id (team_ids)")
+    if len(ids) > 100:
+        raise HTTPException(422, "too many team ids (max 100)")
+    out = []
+    for tid in ids:
+        try:
+            team = get_team(con, tid)  # unknown teams are skipped below
+        except HTTPException:
+            continue
+        league = get_league(con, team["league_id"])
+        wins, losses, ties, pf = _team_record(con, team["league_id"], tid)
+        out.append(schemas.MyLeagueTeamOut(
+            team_id=tid, team_name=team["name"],
+            league_id=league["id"], league_name=league["name"],
+            season=league["season"], league_status=league["status"],
+            wins=wins, losses=losses, ties=ties, points_for=pf))
+    return out
+
+
 @router.get("/{league_id}", response_model=schemas.LeagueDetailOut)
 def get_league_detail(league_id: int, con: sqlite3.Connection = Depends(get_db)):
     league = get_league(con, league_id)
@@ -105,20 +158,12 @@ def get_league_detail(league_id: int, con: sqlite3.Connection = Depends(get_db))
         (league_id,),
     ):
         # W-L-T derives from finalized matchups; scaffold has none final yet.
-        w = con.execute(
-            """SELECT
-                 SUM(CASE WHEN (team_a_id = ? AND score_a > score_b) OR (team_b_id = ? AND score_b > score_a) THEN 1 ELSE 0 END),
-                 SUM(CASE WHEN (team_a_id = ? AND score_a < score_b) OR (team_b_id = ? AND score_b < score_a) THEN 1 ELSE 0 END),
-                 SUM(CASE WHEN status = 'final' AND score_a = score_b AND (team_a_id = ? OR team_b_id = ?) THEN 1 ELSE 0 END),
-                 SUM(CASE WHEN team_a_id = ? THEN score_a WHEN team_b_id = ? THEN score_b ELSE 0 END)
-               FROM matchups WHERE league_id = ? AND status = 'final'""",
-            (t["id"], t["id"], t["id"], t["id"], t["id"], t["id"], t["id"], t["id"], league_id),
-        ).fetchone()
+        wins, losses, ties, pf = _team_record(con, league_id, t["id"])
         standings.append(
             schemas.TeamStandingOut(
                 team_id=t["id"], team_name=t["name"], owner_name=t["owner_name"],
-                wins=w[0] or 0, losses=w[1] or 0, ties=w[2] or 0,
-                points_for=w[3] or 0.0, faab_remaining=t["faab_remaining"],
+                wins=wins, losses=losses, ties=ties,
+                points_for=pf, faab_remaining=t["faab_remaining"],
                 claimed=bool(t["claim_code"]),
             )
         )
