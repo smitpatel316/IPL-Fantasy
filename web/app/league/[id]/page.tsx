@@ -49,6 +49,10 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
   const [rmAction, setRmAction] = useState<"add" | "drop">("add");
   const [rmNote, setRmNote] = useState("");
   const [rmMsg, setRmMsg] = useState("");
+  // P5-W54: roster fiat is commissioner-gated — the commissioner's team
+  // id is fetched once the league loads and rides in the request body,
+  // with its claim code in the headers.
+  const [commissionerTeamId, setCommissionerTeamId] = useState<number | null>(null);
 
   useEffect(() => {
     params.then((p) => {
@@ -225,12 +229,23 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
     loadMoves(id);
   }, [id]);
 
+  useEffect(() => {
+    if (!league) return;
+    api
+      .getMessageBoard(league.id, 1)
+      .then((b) => setCommissionerTeamId(b.commissioner_team_id))
+      .catch(() => {});
+  }, [league]);
+
   async function submitMove(e: React.FormEvent) {
     e.preventDefault();
     if (!id || rmTeam === "" || rmPlayer === "" || !rmNote.trim()) return;
     setRmMsg("");
     try {
-      await api.rosterMove(id, {
+      if (commissionerTeamId == null) {
+        throw new ApiError(0, "Couldn't identify the commissioner's team — refresh and try again.");
+      }
+      await api.rosterMove(id, commissionerTeamId, {
         team_id: rmTeam, player_id: rmPlayer, action: rmAction, note: rmNote.trim(),
       });
       setRmMsg("Move recorded in the audit log.");
@@ -531,7 +546,9 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
       </div>
 
       <CommissionerTools league={league} onChanged={refresh} />
-      {/* P4-W25: commissioner roster fiat (audited) */}
+      {/* P4-W25: commissioner roster fiat (audited). P5-W54: server-gated
+          on the commissioner's team — the acting team id + claim headers
+          ride with the request; the server 403s non-commissioners. */}
       <section className="mt-5 rounded-xl border border-slate-800 bg-midnight-soft p-5">
         <h2 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
           <UserCog className="h-4 w-4 text-zinc-500" /> Commissioner — roster moves

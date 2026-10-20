@@ -200,10 +200,18 @@ export const api = {
   listAdjustments: (id: number | string) =>
     req<AdjustmentOut[]>(`/leagues/${id}/adjustments`),
   getCantCut: (leagueId: number | string) => req<CantCutOut>(`/leagues/${leagueId}/cant-cut`),
-  rosterMove: (leagueId: number | string, body: { team_id: number; player_id: number; action: "add" | "drop"; note: string }) =>
+  rosterMove: (
+    leagueId: number | string,
+    commissionerTeamId: number,
+    body: { team_id: number; player_id: number; action: "add" | "drop"; note: string },
+  ) =>
+    // P5-W54: roster fiat is server-gated on the commissioner's team
+    // (P4-W18 claim gate) — the acting team rides in the body and its
+    // claim code rides in the headers.
     req<RosterMoveOut>(`/leagues/${leagueId}/roster-moves`, {
       method: "POST",
-      body: JSON.stringify(body),
+      headers: claimHeaders(commissionerTeamId),
+      body: JSON.stringify({ commissioner_team_id: commissionerTeamId, ...body }),
     }),
   listRosterMoves: (leagueId: number | string) =>
     req<RosterMoveOut[]>(`/leagues/${leagueId}/roster-moves`),
