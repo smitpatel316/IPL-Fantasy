@@ -17,6 +17,7 @@ import { setTeamClaim } from "@/lib/identity";
 import { ApiError } from "@/lib/types";
 import { Card, Badge, ErrorBox } from "@/components/ui";
 import { MyLeaguesCard } from "@/components/MyLeagues";
+import InstallPrompt from "@/components/InstallPrompt";
 
 const STATS = [
   { k: "15", v: "roster spots" },
@@ -96,6 +97,7 @@ export default function Home() {
 
   return (
     <div>
+      <InstallPrompt />
       {/* ------------------------------ Hero ------------------------------ */}
       <section className="pb-10 pt-8 text-center sm:pt-14">
         <Badge tone="gold" className="mb-5">
