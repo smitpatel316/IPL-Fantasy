@@ -17,6 +17,7 @@ import { StrengthsHeatmap } from "@/components/StrengthsHeatmap";
 import { ReadinessChecklist } from "@/components/ReadinessChecklist";
 import { KeyDates } from "@/components/KeyDates";
 import { DraftCountdown } from "@/components/DraftCountdown";
+import { ScheduledDraftSetter } from "@/components/ScheduledDraftSetter";
 import { AllRosters } from "@/components/AllRosters";
 import { cn } from "@/lib/utils";
 import { Trophy, Settings2, ArrowRight, Crown, KeyRound, Swords, UserCog, Dices, GraduationCap } from "lucide-react";
@@ -37,6 +38,9 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
   const [myMatchup, setMyMatchup] = useState<MatchupOut | null>(null);
   // P5-W4: draft recap + grades (null until loaded / on error).
   const [recap, setRecap] = useState<DraftRecapOut | null>(null);
+  // P5-W53: bumped whenever the commissioner saves/clears the draft
+  // schedule so the countdown remounts off the new instant.
+  const [draftTick, setDraftTick] = useState(0);
   // P4-W25: commissioner roster-fiat section state.
   const [players, setPlayers] = useState<PlayerOut[]>([]);
   const [moves, setMoves] = useState<RosterMoveOut[]>([]);
@@ -510,9 +514,19 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
             Enter draft room
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
+          {/* P5-W53: commissioner datetime control for the scheduled
+              draft. Standalone until the P5-W50 settings editor merges,
+              then fold it into the settings form. */}
+          <ScheduledDraftSetter
+            leagueId={league.id}
+            leagueStatus={league.status}
+            claimedTeams={mine}
+            onSaved={() => setDraftTick((v) => v + 1)}
+          />
           {/* P5-W51: scheduled-draft countdown — only renders when the
-              commissioner has set a draft instant. */}
-          <DraftCountdown leagueId={league.id} leagueStatus={league.status} />
+              commissioner has set a draft instant. key={draftTick}
+              remounts it after the commissioner saves/clears. */}
+          <DraftCountdown key={draftTick} leagueId={league.id} leagueStatus={league.status} />
         </div>
       </div>
 
