@@ -88,7 +88,12 @@ class JoinLeagueIn(BaseModel):
 class LeagueSettingsPatch(BaseModel):
     """Commissioner-editable settings (P4-W15). Only keys that stay
     meaningful after league creation are patchable; structural choices
-    (rounds, roster slots, scoring table) are creation-time decisions."""
+    (rounds, roster slots, scoring table) are creation-time decisions.
+
+    P5-W52: commissioner_team_id names the acting team — the server
+    gates on the commissioner's team (P4-W18 claim gate) before any
+    key is applied. It is identity only, never persisted to settings."""
+    commissioner_team_id: int  # P5-W52: the acting team; must be the commissioner's team
     pick_clock_secs: Optional[int] = Field(default=None, ge=0, le=600)
     trade_deadline_week: Optional[int] = Field(default=None, ge=1, le=8)
     # P5-W30: commissioner-set draft order — an exact permutation of

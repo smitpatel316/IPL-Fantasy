@@ -621,6 +621,9 @@ const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "satur
  *  landed, so the panel renders only when this browser holds the
  *  commissioner's team claim code (mirroring the P5-W43 export gate).
  *  Every adjustment is written to the league's audit log below. */
+ *  The settings form is server-gated (P5-W52) — PATCH carries the
+ *  commissioner's team id and claim headers. Every change is written
+ *  to the league's audit log below. */
 function CommissionerTools({
   league,
   onChanged,
@@ -687,7 +690,10 @@ function CommissionerTools({
     setMsg("");
     setBusy(true);
     try {
-      await api.patchLeagueSettings(league.id, {
+      if (commissionerTeamId == null) {
+        throw new ApiError(0, "Couldn't identify the commissioner's team — refresh and try again.");
+      }
+      await api.patchLeagueSettings(league.id, commissionerTeamId, {
         pick_clock_secs: Number(clock),
         trade_deadline_week: Number(deadline),
         waiver_run_weekday: weekday,
@@ -706,7 +712,10 @@ function CommissionerTools({
     setMsg("");
     setBusy(true);
     try {
-      await api.patchLeagueSettings(league.id, {
+      if (commissionerTeamId == null) {
+        throw new ApiError(0, "Couldn't identify the commissioner's team — refresh and try again.");
+      }
+      await api.patchLeagueSettings(league.id, commissionerTeamId, {
         draft_order: clear ? [] : order,
       });
       setMsg(clear ? "Draft order cleared — the seeded shuffle will deal round 1." : "Draft order saved.");

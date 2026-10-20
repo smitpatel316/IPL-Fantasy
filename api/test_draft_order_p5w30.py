@@ -86,8 +86,10 @@ def _con(db_path):
 def test_set_order_is_used_by_start_draft(env):
     tc, db_path, league, teams = env
     a, b = teams
+    # P5-W52: the endpoint is now commissioner-gated; a is the
+    # commissioner's team (first team owned by the commissioner user).
     r = tc.patch(f"/api/leagues/{league}/settings",
-                 json={"draft_order": [b, a]})
+                 json={"commissioner_team_id": a, "draft_order": [b, a]})
     assert r.status_code == 200, r.text
     assert r.json()["settings"]["draft_order"] == [b, a]
     con = _con(db_path)
@@ -101,7 +103,7 @@ def test_invalid_permutations_rejected(env):
     a, b = teams
     for bad in ([a, a], [a], [a, b, 999], [999, 998]):
         r = tc.patch(f"/api/leagues/{league}/settings",
-                     json={"draft_order": bad})
+                     json={"commissioner_team_id": a, "draft_order": bad})
         assert r.status_code == 422, (bad, r.text)
 
 
@@ -112,6 +114,7 @@ def test_post_start_edit_rejected_and_shuffle_default(env):
     assert sorted(draft["draft_order"]) == sorted(teams)
     con.close()
     r = tc.patch(f"/api/leagues/{league}/settings",
-                 json={"draft_order": teams})
+                 json={"commissioner_team_id": teams[0],
+                       "draft_order": teams})
     assert r.status_code == 422
     assert "locks" in r.json()["detail"]
