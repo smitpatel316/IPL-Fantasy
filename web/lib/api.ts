@@ -171,11 +171,16 @@ export const api = {
     }),
   patchLeagueSettings: (
     id: number | string,
+    commissionerTeamId: number,
     patch: { pick_clock_secs?: number; trade_deadline_week?: number; waiver_run_weekday?: string; draft_order?: number[] },
   ) =>
+    // P5-W52: the settings endpoint is server-gated on the
+    // commissioner's team (P4-W18 claim gate) — the acting team rides
+    // in the body and its claim code rides in the headers.
     req<LeagueOut>(`/leagues/${id}/settings`, {
       method: "PATCH",
-      body: JSON.stringify(patch),
+      headers: claimHeaders(commissionerTeamId),
+      body: JSON.stringify({ commissioner_team_id: commissionerTeamId, ...patch }),
     }),
   createAdjustment: (
     id: number | string,

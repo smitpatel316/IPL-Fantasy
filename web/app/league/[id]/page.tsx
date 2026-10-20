@@ -599,7 +599,8 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
 const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
 /** Commissioner tools (P4-W15): settings edit + audited FAAB adjustments.
- *  Ungated until team identity lands (P4-W18) — every change is written
+ *  The settings form is server-gated (P5-W52) — PATCH carries the
+ *  commissioner's team id and claim headers. Every change is written
  *  to the league's audit log below. */
 function CommissionerTools({
   league,
@@ -665,7 +666,10 @@ function CommissionerTools({
     setMsg("");
     setBusy(true);
     try {
-      await api.patchLeagueSettings(league.id, {
+      if (commissionerTeamId == null) {
+        throw new ApiError(0, "Couldn't identify the commissioner's team — refresh and try again.");
+      }
+      await api.patchLeagueSettings(league.id, commissionerTeamId, {
         pick_clock_secs: Number(clock),
         trade_deadline_week: Number(deadline),
         waiver_run_weekday: weekday,
@@ -684,7 +688,10 @@ function CommissionerTools({
     setMsg("");
     setBusy(true);
     try {
-      await api.patchLeagueSettings(league.id, {
+      if (commissionerTeamId == null) {
+        throw new ApiError(0, "Couldn't identify the commissioner's team — refresh and try again.");
+      }
+      await api.patchLeagueSettings(league.id, commissionerTeamId, {
         draft_order: clear ? [] : order,
       });
       setMsg(clear ? "Draft order cleared — the seeded shuffle will deal round 1." : "Draft order saved.");

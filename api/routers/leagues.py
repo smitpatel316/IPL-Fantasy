@@ -5,7 +5,7 @@ import secrets
 import sqlite3
 import string
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from .. import schemas, services
 from ..constants import FAAB_BUDGET, TOTAL_WEEKS
@@ -338,11 +338,20 @@ def waiver_order(league_id: int, con: sqlite3.Connection = Depends(get_db)):
                "wins tied bids."))
 @router.patch("/{league_id}/settings", response_model=schemas.LeagueOut)
 def patch_league_settings(league_id: int, body: schemas.LeagueSettingsPatch,
+                          request: Request,
                           con: sqlite3.Connection = Depends(get_db)):
-    """Commissioner settings edit (P4-W15). Ungated until team identity
-    lands (P4-W18); only the patchable keys are applied."""
+    """Commissioner settings edit (P4-W15). Gated on the commissioner's
+    team (P5-W52): body.commissioner_team_id must name the league's
+    commissioner team, and a claimed commissioner's team must present
+    its X-Team-Claim code (the P4-W18 claim gate); only the patchable
+    keys are applied."""
+    from .message_board import _require_commissioner_actor
     league = get_league(con, league_id)
-    updates = {k: v for k, v in body.model_dump().items() if v is not None}
+    _require_commissioner_actor(con, league, body.commissioner_team_id,
+                                request, "edit league settings")
+    updates = {k: v for k, v in
+               body.model_dump(exclude={"commissioner_team_id"}).items()
+               if v is not None}
     if not updates:
         raise HTTPException(422, "no settings supplied")
     if "draft_order" in updates:
