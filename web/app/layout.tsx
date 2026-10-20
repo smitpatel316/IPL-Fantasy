@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Nav from "@/components/Nav";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { LeagueProvider } from "@/lib/league-context";
 import { ThemeProvider } from "@/lib/theme";
 import { THEME_STORAGE_KEY } from "@/lib/theme-key";
@@ -9,6 +10,11 @@ export const metadata: Metadata = {
   title: "IPL Fantasy — Season-Long Fantasy Cricket",
   description:
     "Yahoo-style season-long IPL fantasy: snake draft, weekly head-to-head, FAAB waivers, trades, playoffs.",
+  manifest: "/manifest.webmanifest",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#09090c",
 };
 
 /** Runs before first paint: applies the stored theme, else
@@ -30,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </main>
           </LeagueProvider>
         </ThemeProvider>
+        <ServiceWorkerRegister />
         <footer className="border-t hairline">
           <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-zinc-600 sm:flex-row">
             <p>
