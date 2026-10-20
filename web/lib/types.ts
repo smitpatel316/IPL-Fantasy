@@ -24,6 +24,8 @@ export interface LeagueSettings {
   trade_deadline_week: number;
   waiver_run_weekday: string;
   draft_order?: number[];
+  /** P5-W51: commissioner-set draft instant (ISO 8601 UTC), absent when unscheduled. */
+  draft_scheduled_at?: string;
 }
 
 export interface AdjustmentOut {

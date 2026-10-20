@@ -6,9 +6,10 @@ second copy: weekly lineup locks come from lineup_lock_at (the P4-W8
 D5 enforcement seam), the waiver run from the league's
 waiver_run_weekday setting + the scheduler's 03:00 PT rule, the trade
 deadline from the trade_deadline_week setting (its instant = that
-week's lock), the draft from league/draft status + pick_clock_secs,
-and the playoffs from D9 weeks 7-8. Dates render in PT and IST; each
-entry is past / next-up / upcoming relative to now. Read-only.
+week's lock), the draft from league/draft status + pick_clock_secs
+(+ the commissioner's scheduled instant, P5-W51), and the playoffs
+from D9 weeks 7-8. Dates render in PT and IST; each entry is past /
+next-up / upcoming relative to now. Read-only.
 """
 
 import sqlite3
@@ -34,6 +35,22 @@ _WEEKDAYS = {"monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
 
 def _fmt(dt: datetime | None, tz: ZoneInfo) -> str | None:
     return dt.astimezone(tz).strftime("%a %b %d, %Y %H:%M %Z") if dt else None
+
+
+def _draft_scheduled_at(settings: dict) -> datetime | None:
+    """P5-W51: the commissioner's draft instant (UTC) from league
+    settings, or None when unscheduled / unparseable. Stored values
+    are normalized by the PATCH endpoint; this stays defensive."""
+    raw = settings.get("draft_scheduled_at")
+    if not raw:
+        return None
+    try:
+        dt = datetime.fromisoformat(raw)
+    except (ValueError, TypeError):
+        return None
+    if dt.tzinfo is None:
+        return None
+    return dt.astimezone(timezone.utc)
 
 
 def build_key_dates(league_id: int,
@@ -84,20 +101,43 @@ def build_key_dates(league_id: int,
         "Top 4 seeds play off over weeks 7-8 (D9).", locks.get(PLAYOFF_WEEKS[0]))
 
     # State pass over dated entries: past < now; the earliest future
-    # dated entry is next-up; the rest are upcoming.
+    # dated entry is next-up; the rest are upcoming. A scheduled draft
+    # (P5-W51) joins the dated set while the league is still in setup.
+    status = league["status"]
+    draft_at = (_draft_scheduled_at(settings)
+                if status == "setup" else None)
     future = [at for at, _ in dated if at is not None and at >= now]
+    if draft_at is not None and draft_at >= now:
+        future.append(draft_at)
     next_up_at = min(future) if future else None
     entries: list[schemas.KeyDateEntryOut] = []
-    status = league["status"]
-    draft_state = ("past" if status not in ("setup", "drafting")
-                   else "next-up" if status == "drafting" else "upcoming")
+    if status == "drafting":
+        draft_state, draft_detail = "next-up", "Draft is live now."
+    elif status != "setup":
+        draft_state, draft_detail = "past", "Draft complete."
+    elif draft_at is None:
+        draft_state, draft_detail = (
+            "upcoming",
+            "Not started yet — the commissioner starts it from the "
+            "league page.")
+    elif draft_at < now:
+        # The instant passed but the draft never started: overdue, not
+        # "past" — it is the thing needing action.
+        draft_state, draft_detail = (
+            "next-up",
+            "Scheduled time has passed — start the draft from the "
+            "league page.")
+    elif draft_at == next_up_at:
+        draft_state, draft_detail = (
+            "next-up", "Commissioner-scheduled — not started yet.")
+    else:
+        draft_state, draft_detail = (
+            "upcoming", "Commissioner-scheduled — not started yet.")
     entries.append(schemas.KeyDateEntryOut(
         key="draft", label="Snake draft",
-        detail=(f"Pick clock {pick_clock}s per pick. "
-                + {"setup": "Not started yet — the commissioner starts it "
-                            "from the league page.",
-                   "drafting": "Draft is live now."}.get(
-                       status, "Draft complete.")),
+        detail=f"Pick clock {pick_clock}s per pick. {draft_detail}",
+        at=draft_at.isoformat() if draft_at else None,
+        at_pt=_fmt(draft_at, _PT), at_ist=_fmt(draft_at, _IST),
         state=draft_state))
     for at, entry in sorted(dated, key=lambda x: (x[0] is None, x[0])):
         if at is not None:
@@ -152,9 +192,10 @@ def _is_standin(con: sqlite3.Connection, league_id: int,
 def key_dates_ics(league_id: int,
                   con: sqlite3.Connection = Depends(get_db)):
     """RFC 5545 rendering of build_key_dates — every VEVENT instant
-    is the payload's `at` for the same league, in UTC. The undated
-    draft entry has no instant and is omitted (a VEVENT requires a
-    DTSTART). The single weekly waiver-run entry becomes a weekly
+    is the payload's `at` for the same league, in UTC. A draft with no
+    scheduled instant (P5-W51) is omitted (a VEVENT requires a
+    DTSTART); a scheduled draft renders as a VEVENT at its stored
+    instant. The single weekly waiver-run entry becomes a weekly
     RRULE event from its projected next run. Lock-derived events
     carry the standin note when their date is a stand-in."""
     payload = build_key_dates(league_id, con)  # 404 if missing
@@ -167,7 +208,7 @@ def key_dates_ics(league_id: int,
     ]
     for entry in payload.entries:
         if entry.at is None:
-            continue  # undated (draft) — cannot be a VEVENT
+            continue  # no instant (e.g. unscheduled draft) — cannot be a VEVENT
         start = datetime.fromisoformat(entry.at)
         description = entry.detail
         if entry.key != "waiver_run" and _is_standin(con, league_id, entry):
