@@ -103,12 +103,12 @@ export function ScheduledDraftSetter({
     }
     setBusy(true);
     try {
-      // P5-W51 request shape: ?team_id= + the commissioner's claim
-      // header; "" clears the schedule.
+      // P5-W52 request shape: commissioner_team_id in the body + the
+      // commissioner's claim header (server-gated); "" clears the schedule.
       const updated = await api.patchLeagueSettings(
         leagueId,
-        { draft_scheduled_at: instant },
         commissionerTeamId!,
+        { draft_scheduled_at: instant },
       );
       const stored = updated.settings.draft_scheduled_at;
       setValue(stored ? toDatetimeLocal(stored) : "");

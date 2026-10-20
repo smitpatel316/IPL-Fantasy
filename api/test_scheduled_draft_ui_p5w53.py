@@ -72,10 +72,11 @@ def env_fixture(tmp_path):
 
 
 def _ui_patch(tc, league, team_id, instant, claim="sekrit-a"):
-    """The component's exact request: ?team_id= + claim header + the key."""
+    """The component's exact request: commissioner_team_id in the body
+    (P5-W52) + claim header + the key."""
     return tc.patch(
-        f"/api/leagues/{league}/settings?team_id={team_id}",
-        json={"draft_scheduled_at": instant},
+        f"/api/leagues/{league}/settings",
+        json={"commissioner_team_id": team_id, "draft_scheduled_at": instant},
         headers={"X-Team-Claim": claim})
 
 

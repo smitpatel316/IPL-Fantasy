@@ -356,18 +356,6 @@ def waiver_order(league_id: int, con: sqlite3.Connection = Depends(get_db)):
 @router.patch("/{league_id}/settings", response_model=schemas.LeagueOut)
 def patch_league_settings(league_id: int, body: schemas.LeagueSettingsPatch,
                           request: Request,
-                          team_id: int | None = Query(
-                              default=None,
-                              description="acting team for commissioner-gated"
-                              " keys (P4-W18 claim gate; P5-W51)"),
-                          con: sqlite3.Connection = Depends(get_db)):
-    """Commissioner settings edit (P4-W15). Ungated until team identity
-    lands (P4-W18); only the patchable keys are applied. P5-W51:
-    draft_scheduled_at IS commissioner-gated — only the commissioner's
-    team (claim code via X-Team-Claim) can set or clear the draft
-    instant, and only while the draft hasn't started."""
-    from .message_board import _require_commissioner_actor
-
                           con: sqlite3.Connection = Depends(get_db)):
     """Commissioner settings edit (P4-W15). Gated on the commissioner's
     team (P5-W52): body.commissioner_team_id must name the league's
@@ -385,12 +373,8 @@ def patch_league_settings(league_id: int, body: schemas.LeagueSettingsPatch,
         raise HTTPException(422, "no settings supplied")
     scheduled = updates.pop("draft_scheduled_at", None)
     if scheduled is not None:
-        # P5-W51: commissioner-only, pre-draft.
-        if team_id is None:
-            raise HTTPException(
-                422, "team_id is required to schedule the draft")
-        _require_commissioner_actor(
-            con, league, team_id, request, "schedule the draft")
+        # P5-W51: the draft schedule can only change before the draft
+        # starts (commissioner identity already gated above, P5-W52).
         if league["status"] != "setup":
             raise HTTPException(
                 422, "the draft schedule can only change before the draft"

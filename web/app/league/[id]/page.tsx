@@ -637,7 +637,6 @@ const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "satur
  *  P5-W50: the whole panel is commissioner-only — team identity (P4-W18)
  *  landed, so the panel renders only when this browser holds the
  *  commissioner's team claim code (mirroring the P5-W43 export gate).
- *  Every adjustment is written to the league's audit log below. */
  *  The settings form is server-gated (P5-W52) — PATCH carries the
  *  commissioner's team id and claim headers. Every change is written
  *  to the league's audit log below. */

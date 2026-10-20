@@ -82,9 +82,10 @@ def env(tmp_path):
 
 
 def _schedule(tc, league, team_id, instant, claim="sekrit-a"):
+    # P5-W52: commissioner identity rides in the body (claim code in header).
     return tc.patch(
-        f"/api/leagues/{league}/settings?team_id={team_id}",
-        json={"draft_scheduled_at": instant},
+        f"/api/leagues/{league}/settings",
+        json={"commissioner_team_id": team_id, "draft_scheduled_at": instant},
         headers={"X-Team-Claim": claim})
 
 
@@ -194,12 +195,13 @@ def test_gating(env):
     assert r.status_code == 200, r.text
 
 
-def test_other_settings_stay_ungated(env):
+def test_other_settings_require_identity_too(env):
+    # P5-W52 superseded the old "other keys stay ungated" behavior: the
+    # whole endpoint is commissioner-gated now (security fix).
     tc, _, league, _, _ = env
     r = tc.patch(f"/api/leagues/{league}/settings",
                  json={"pick_clock_secs": 60})
-    assert r.status_code == 200, r.text
-    assert r.json()["settings"]["pick_clock_secs"] == 60
+    assert r.status_code == 422, r.text  # missing commissioner_team_id
 
 
 def test_invalid_instants_rejected(env):

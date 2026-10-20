@@ -79,8 +79,9 @@ def league_id(db_path):
             "waiver_run_weekday": "wednesday", "pick_clock_secs": 90,
         }),)).lastrowid
     comm = con.execute(
-        "INSERT INTO teams (league_id, owner_id, name, faab_remaining)"
-        " VALUES (?, 1, 'w50-COMM', 100)", (lid,)).lastrowid
+        "INSERT INTO teams (league_id, owner_id, name, faab_remaining,"
+        " claim_code) VALUES (?, 1, 'w50-COMM', 100, 'sekrit-comm')",
+        (lid,)).lastrowid
     rival = con.execute(
         "INSERT INTO teams (league_id, owner_id, name, faab_remaining)"
         " VALUES (?, 2, 'w50-RIVAL', 100)", (lid,)).lastrowid
@@ -89,13 +90,19 @@ def league_id(db_path):
     return lid, comm, rival
 
 
-def test_settings_round_trip(client, league_id, db_path):
-    lid, _, _ = league_id
-    r = client.patch(
+def _patch(client, lid, comm, body, claim="sekrit-comm"):
+    # P5-W52: commissioner identity rides in the body (claim code in header).
+    return client.patch(
         f"/api/leagues/{lid}/settings",
-        json={"trade_deadline_week": 5, "waiver_run_weekday": "friday",
-              "pick_clock_secs": 120},
-    )
+        json={"commissioner_team_id": comm, **body},
+        headers={"X-Team-Claim": claim})
+
+
+def test_settings_round_trip(client, league_id, db_path):
+    lid, comm, _ = league_id
+    r = _patch(client, lid, comm,
+               {"trade_deadline_week": 5, "waiver_run_weekday": "friday",
+                "pick_clock_secs": 120})
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["settings"]["trade_deadline_week"] == 5
@@ -113,28 +120,24 @@ def test_settings_round_trip(client, league_id, db_path):
 
 
 def test_settings_validation_422s(client, league_id):
-    lid, _, _ = league_id
+    lid, comm, _ = league_id
     # pick_clock_secs out of range (0..600)
-    r = client.patch(f"/api/leagues/{lid}/settings",
-                     json={"pick_clock_secs": 999})
+    r = _patch(client, lid, comm, {"pick_clock_secs": 999})
     assert r.status_code == 422, r.text
     # waiver_run_weekday must be a lowercase weekday
-    r = client.patch(f"/api/leagues/{lid}/settings",
-                     json={"waiver_run_weekday": "Funday"})
+    r = _patch(client, lid, comm, {"waiver_run_weekday": "Funday"})
     assert r.status_code == 422, r.text
     # trade_deadline_week out of range (1..8)
-    r = client.patch(f"/api/leagues/{lid}/settings",
-                     json={"trade_deadline_week": 9})
+    r = _patch(client, lid, comm, {"trade_deadline_week": 9})
     assert r.status_code == 422, r.text
 
 
 def test_invalid_key_and_empty_patch_422(client, league_id):
-    lid, _, _ = league_id
+    lid, comm, _ = league_id
     # unknown keys are ignored by the patch schema, leaving no settings
-    r = client.patch(f"/api/leagues/{lid}/settings",
-                     json={"faab_budget": 200})
+    r = _patch(client, lid, comm, {"faab_budget": 200})
     assert r.status_code == 422, r.text
-    r = client.patch(f"/api/leagues/{lid}/settings", json={})
+    r = _patch(client, lid, comm, {})
     assert r.status_code == 422, r.text
 
 
