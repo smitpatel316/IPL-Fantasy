@@ -617,8 +617,10 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
 const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
 /** Commissioner tools (P4-W15): settings edit + audited FAAB adjustments.
- *  Ungated until team identity lands (P4-W18) — every change is written
- *  to the league's audit log below. */
+ *  P5-W50: the whole panel is commissioner-only — team identity (P4-W18)
+ *  landed, so the panel renders only when this browser holds the
+ *  commissioner's team claim code (mirroring the P5-W43 export gate).
+ *  Every adjustment is written to the league's audit log below. */
 function CommissionerTools({
   league,
   onChanged,
@@ -642,6 +644,8 @@ function CommissionerTools({
   const [busy, setBusy] = useState(false);
   // P5-W43: commissioner full-league export — only the commissioner's
   // team (this browser holding its claim code) sees the button.
+  // P5-W50: the same identity gates the whole panel — a non-commissioner
+  // browser never sees the settings form, draft order, or FAAB tools.
   const [commissionerTeamId, setCommissionerTeamId] = useState<number | null>(null);
   const [exporting, setExporting] = useState(false);
 
@@ -652,7 +656,7 @@ function CommissionerTools({
       .catch(() => {});
   }, [league.id]);
 
-  const canExport =
+  const isCommissioner =
     commissionerTeamId != null && getTeamClaim(commissionerTeamId) != null;
 
   async function exportLeague() {
@@ -753,6 +757,10 @@ function CommissionerTools({
     }
   }
 
+  // P5-W50: commissioner-only — a non-commissioner browser never sees
+  // the settings form, draft order, or FAAB tools.
+  if (!isCommissioner) return null;
+
   return (
     <section className="mt-6 rounded-xl border border-slate-800 bg-midnight-soft p-5">
       <h2 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300">
@@ -772,6 +780,24 @@ function CommissionerTools({
       <div className="grid gap-6 lg:grid-cols-2">
         <form onSubmit={saveSettings} className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">League settings</h3>
+          {/* P5-W50: FAAB budget and playoff teams are creation-time only —
+              the PATCH /leagues/{id}/settings endpoint (P4-W15) accepts just
+              pick_clock_secs, trade_deadline_week, waiver_run_weekday (and
+              draft_order, which has its own control below). Shown here so the
+              commissioner sees the full settings picture in one place. */}
+          <div className="space-y-1.5 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+            <p className="text-[11px] uppercase tracking-wider text-zinc-500">
+              Creation-time only — the PATCH endpoint leaves these untouched
+            </p>
+            <div className="flex items-baseline justify-between text-sm">
+              <span className="text-zinc-500">FAAB budget</span>
+              <span className="font-medium tabular-nums text-zinc-300">${league.settings.faab_budget}</span>
+            </div>
+            <div className="flex items-baseline justify-between text-sm">
+              <span className="text-zinc-500">Playoff teams</span>
+              <span className="font-medium tabular-nums text-zinc-300">Top {league.settings.playoff_teams}</span>
+            </div>
+          </div>
           <label className="block text-xs text-zinc-500">
             Pick clock (seconds, applies to future drafts)
             <input type="number" min={0} max={600} className={cn(input, "mt-1 w-full")} value={clock} onChange={(e) => setClock(e.target.value)} />
@@ -876,8 +902,7 @@ function CommissionerTools({
       {/* P5-W43: offline backup — the full league snapshot as JSON.
           Commissioner-only (this browser must hold the commissioner's
           team claim; the server 403s everyone else). */}
-      {canExport && (
-        <div className="mt-6 rounded-xl border border-slate-800 p-4">
+      <div className="mt-6 rounded-xl border border-slate-800 p-4">
           <h3 className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400">Offline backup</h3>
           <p className="mb-3 text-xs text-zinc-500">
             Download the full league snapshot — settings, teams and rosters,
@@ -892,7 +917,6 @@ function CommissionerTools({
             {exporting ? "Exporting…" : "Export league data"}
           </button>
         </div>
-      )}
     </section>
   );
 }
