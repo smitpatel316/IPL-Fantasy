@@ -5,7 +5,7 @@ import secrets
 import sqlite3
 import string
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from .. import schemas, services
 from ..constants import FAAB_BUDGET, TOTAL_WEEKS
@@ -458,8 +458,18 @@ def set_cant_cut(league_id: int, body: schemas.CantCutIn,
     return _cant_cut_out(con, league_id)
 @router.post("/{league_id}/roster-moves", response_model=schemas.RosterMoveOut)
 def create_roster_move(league_id: int, body: schemas.RosterMoveCreate,
+                       request: Request,
                        con: sqlite3.Connection = Depends(get_db)):
-    """Commissioner add/drop by fiat with a mandatory audit note (P4-W25)."""
+    """Commissioner add/drop by fiat with a mandatory audit note (P4-W25).
+    Gated on the commissioner's team (P5-W54): body.commissioner_team_id
+    must name the league's commissioner team, and a claimed
+    commissioner's team must present its X-Team-Claim code (the P4-W18
+    claim gate). The identity field is not persisted — only the fiat
+    move lands in the audit log."""
+    from .message_board import _require_commissioner_actor
+    league = get_league(con, league_id)
+    _require_commissioner_actor(con, league, body.commissioner_team_id,
+                                request, "record commissioner roster moves")
     out = services.commissioner_roster_move(
         con, league_id, body.team_id, body.player_id, body.action, body.note)
     return schemas.RosterMoveOut(**out)

@@ -42,10 +42,17 @@ class LeagueSummaryOut(BaseModel):
     status: str
     team_count: int
 class RosterMoveCreate(BaseModel):
+    """Commissioner roster fiat (P4-W25): add/drop a player on a target
+    team by decree, with a mandatory audit note.
+
+    P5-W54: commissioner_team_id names the acting team — the server
+    gates on the commissioner's team (P4-W18 claim gate) before the
+    move is recorded. It is identity only, never persisted."""
     team_id: int
     player_id: int
     action: str = Field(pattern="^(add|drop)$")
     note: str = Field(min_length=1, max_length=200)
+    commissioner_team_id: int  # P5-W54: the acting team; must be the commissioner's team
 
 
 class RosterMoveOut(BaseModel):
