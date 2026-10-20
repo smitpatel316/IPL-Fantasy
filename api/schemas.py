@@ -98,6 +98,10 @@ class LeagueSettingsPatch(BaseModel):
         default=None,
         pattern="^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$",
     )
+    # P5-W51: commissioner-set draft instant — ISO 8601 with an explicit
+    # timezone (stored normalized to UTC); "" clears it. Gated on the
+    # commissioner's team in the PATCH endpoint, not here.
+    draft_scheduled_at: Optional[str] = None
 
 
 class AdjustmentCreate(BaseModel):
@@ -1040,8 +1044,10 @@ class MatchupPreviewOut(BaseModel):
                   "schedule — no win probability, no projected points.")
     previews: list[MatchupPreviewEntryOut] = []
 class KeyDateEntryOut(BaseModel):
-    # P5-W27: one key date. `at` is ISO UTC (null for the undated draft
-    # entry); at_pt / at_ist are the same instant rendered for managers.
+    # P5-W27: one key date. `at` is ISO UTC (null for the unscheduled
+    # draft entry — P5-W51 schedules it).
+    # draft entry — P5-W51 schedules it); at_pt / at_ist are the same
+    # instant rendered for managers.
     key: str
     label: str
     detail: str = ""

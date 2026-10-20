@@ -4,8 +4,9 @@ import json
 import secrets
 import sqlite3
 import string
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from .. import schemas, services
 from ..constants import FAAB_BUDGET, TOTAL_WEEKS
@@ -25,6 +26,22 @@ router = APIRouter()
 def _invite_code() -> str:
     alphabet = string.ascii_uppercase + string.digits
     return "".join(secrets.choice(alphabet) for _ in range(6))
+
+
+def _draft_scheduled_at_utc(raw: str) -> str:
+    """P5-W51: validate a commissioner-supplied draft instant — ISO 8601
+    with an explicit timezone — and return it normalized to UTC
+    (ISO 8601) for storage. 422 on naive or unparseable input. A past
+    instant is accepted (the draft is then overdue, never 'past')."""
+    try:
+        dt = datetime.fromisoformat(raw)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            422, "draft_scheduled_at must be an ISO 8601 instant")
+    if dt.tzinfo is None:
+        raise HTTPException(
+            422, "draft_scheduled_at must include a timezone offset")
+    return dt.astimezone(timezone.utc).isoformat()
 
 
 def _default_settings() -> dict:
@@ -338,13 +355,35 @@ def waiver_order(league_id: int, con: sqlite3.Connection = Depends(get_db)):
                "wins tied bids."))
 @router.patch("/{league_id}/settings", response_model=schemas.LeagueOut)
 def patch_league_settings(league_id: int, body: schemas.LeagueSettingsPatch,
+                          request: Request,
+                          team_id: int | None = Query(
+                              default=None,
+                              description="acting team for commissioner-gated"
+                              " keys (P4-W18 claim gate; P5-W51)"),
                           con: sqlite3.Connection = Depends(get_db)):
     """Commissioner settings edit (P4-W15). Ungated until team identity
-    lands (P4-W18); only the patchable keys are applied."""
+    lands (P4-W18); only the patchable keys are applied. P5-W51:
+    draft_scheduled_at IS commissioner-gated — only the commissioner's
+    team (claim code via X-Team-Claim) can set or clear the draft
+    instant, and only while the draft hasn't started."""
+    from .message_board import _require_commissioner_actor
+
     league = get_league(con, league_id)
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
     if not updates:
         raise HTTPException(422, "no settings supplied")
+    scheduled = updates.pop("draft_scheduled_at", None)
+    if scheduled is not None:
+        # P5-W51: commissioner-only, pre-draft.
+        if team_id is None:
+            raise HTTPException(
+                422, "team_id is required to schedule the draft")
+        _require_commissioner_actor(
+            con, league, team_id, request, "schedule the draft")
+        if league["status"] != "setup":
+            raise HTTPException(
+                422, "the draft schedule can only change before the draft"
+                     " starts")
     if "draft_order" in updates:
         # P5-W30: the order locks once the draft starts, and a set order
         # must be an exact permutation of the joined team ids.
@@ -366,6 +405,12 @@ def patch_league_settings(league_id: int, body: schemas.LeagueSettingsPatch,
     settings.update(updates)
     if "draft_order" in body.model_dump() and body.draft_order == []:
         settings.pop("draft_order", None)
+    if scheduled is not None:
+        # P5-W51: "" clears the schedule; otherwise validate + store UTC.
+        if scheduled == "":
+            settings.pop("draft_scheduled_at", None)
+        else:
+            settings["draft_scheduled_at"] = _draft_scheduled_at_utc(scheduled)
     con.execute("UPDATE leagues SET settings = ? WHERE id = ?",
                 (json.dumps(settings), league_id))
     con.commit()

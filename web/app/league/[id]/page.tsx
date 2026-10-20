@@ -16,6 +16,7 @@ import { PowerRankings } from "@/components/PowerRankings";
 import { StrengthsHeatmap } from "@/components/StrengthsHeatmap";
 import { ReadinessChecklist } from "@/components/ReadinessChecklist";
 import { KeyDates } from "@/components/KeyDates";
+import { DraftCountdown } from "@/components/DraftCountdown";
 import { AllRosters } from "@/components/AllRosters";
 import { cn } from "@/lib/utils";
 import { Trophy, Settings2, ArrowRight, Crown, KeyRound, Swords, UserCog, Dices, GraduationCap } from "lucide-react";
@@ -509,6 +510,9 @@ export default function LeaguePage({ params }: { params: Promise<{ id: string }>
             Enter draft room
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
+          {/* P5-W51: scheduled-draft countdown — only renders when the
+              commissioner has set a draft instant. */}
+          <DraftCountdown leagueId={league.id} leagueStatus={league.status} />
         </div>
       </div>
 

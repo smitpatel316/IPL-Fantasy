@@ -171,11 +171,13 @@ export const api = {
     }),
   patchLeagueSettings: (
     id: number | string,
-    patch: { pick_clock_secs?: number; trade_deadline_week?: number; waiver_run_weekday?: string; draft_order?: number[] },
+    patch: { pick_clock_secs?: number; trade_deadline_week?: number; waiver_run_weekday?: string; draft_order?: number[]; draft_scheduled_at?: string },
+    teamId?: number,
   ) =>
-    req<LeagueOut>(`/leagues/${id}/settings`, {
+    req<LeagueOut>(`/leagues/${id}/settings${teamId != null ? `?team_id=${teamId}` : ""}`, {
       method: "PATCH",
       body: JSON.stringify(patch),
+      ...(teamId != null ? { headers: claimHeaders(teamId) } : {}),
     }),
   createAdjustment: (
     id: number | string,
